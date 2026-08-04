@@ -533,17 +533,15 @@ var Config = {
     try { lsData = _lsGet(this._storageKey); } catch(e) {}
     try { if (lsData) s = JSON.parse(lsData); } catch(e) { s = null; }
     s = s || {};
-    if (!s.version || s.version < 9) {
-      var old = null;
-      try { old = JSON.parse(_lsGet('vplayer_settings_v7') || '{}'); } catch(e2) {}
-      if (s.version < 9) {
-        s.sources = this.defaultSources;
-      } else if (old && old.sources && old.sources.length > 0) {
-        s.sources = old.sources; s.favorites = old.favorites || []; s.history = old.history || []; s.proxyMode = old.proxyMode || 'auto';
-      } else { s.sources = this.defaultSources; }
-      s.version = 9;
+    if (!s.sources || s.sources.length === 0) {
+      s.sources = this.defaultSources;
+    } else {
+      var savedUrls = {};
+      s.sources.forEach(function(src) { savedUrls[src.url] = 1; });
+      this.defaultSources.forEach(function(def) {
+        if (!savedUrls[def.url]) s.sources.push(def);
+      });
     }
-    if (!s.sources || s.sources.length === 0) s.sources = this.defaultSources;
     if (!s.favorites) s.favorites = [];
     if (!s.history) s.history = [];
     if (!s.proxyMode) s.proxyMode = 'auto';
