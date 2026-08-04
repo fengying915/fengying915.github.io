@@ -119,7 +119,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .search-back{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .search-back-btn{background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:20px;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
 .search-back-btn:active{background:var(--card-hover)}
-.cat-tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cat-tabs-wrap{display:flex;flex-direction:column;gap:6px;padding:4px 0 8px}
+.cat-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .cat-tabs::-webkit-scrollbar{display:none}
 .cat-tab{padding:6px 14px;background:var(--card);border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;white-space:nowrap;color:var(--text-dim);transition:background-color .15s,color .15s,border-color .15s;touch-action:pan-x}
 .cat-tab.active{background:var(--primary);border-color:var(--primary);color:#fff}
@@ -147,7 +148,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
 <div class="container" id="mainContent">
 <div id="homeView">
-<div class="cat-tabs" id="catTabs"></div>
+<div class="cat-tabs-wrap" id="catTabs"></div>
 <div id="homeList"><div class="loading"><div class="spinner"></div><p style="margin-top:12px">加载中...</p></div></div>
 </div>
 </div>
@@ -750,7 +751,7 @@ function loadHomeTypes() {
   fetchJson(apiUrl, function(data) {
     if (data && data.class && data.class.length > 0) {
       _homeRetryCount = 0;
-      var types = data.class.filter(function(t) { return t.type_id !== undefined && t.type_name && t.type_pid !== 0 && t.type_pid !== '0'; });
+      var types = data.class.filter(function(t) { return t.type_id !== undefined && t.type_name; });
       var seen = {};
       var unique = [];
       types.forEach(function(t) {
@@ -782,10 +783,21 @@ function loadHomeTypes() {
 function renderTypeTabs() {
   var container = document.getElementById('catTabs');
   if (!container) return;
-  var html = '';
+  var groups = {};
   State.homeTypes.forEach(function(t) {
-    var active = (t.type_id === State.homeCurrentType) ? ' active' : '';
-    html += '<div class="cat-tab' + active + '" data-type-id="' + t.type_id + '">' + t.type_name + '</div>';
+    var pid = t.type_pid || 0;
+    if (!groups[pid]) groups[pid] = [];
+    groups[pid].push(t);
+  });
+  var pids = Object.keys(groups).sort(function(a, b) { return parseInt(a) - parseInt(b); });
+  var html = '';
+  pids.forEach(function(pid) {
+    html += '<div class="cat-tabs">';
+    groups[pid].forEach(function(t) {
+      var active = (t.type_id === State.homeCurrentType) ? ' active' : '';
+      html += '<div class="cat-tab' + active + '" data-type-id="' + t.type_id + '">' + t.type_name + '</div>';
+    });
+    html += '</div>';
   });
   container.innerHTML = html;
 }
@@ -817,6 +829,14 @@ function loadHomeVideos(typeId, page, isRefresh) {
   }
   if (State.homeLoading) return;
   State.homeLoading = true;
+  if (typeId > 0) {
+    var childIds = [];
+    State.homeTypes.forEach(function(t) { if (t.type_pid == typeId) childIds.push(t.type_id); });
+    if (childIds.length > 0) {
+      loadParentCategoryVideos(typeId, childIds, page, isRefresh);
+      return;
+    }
+  }
   var apiUrl = getHomeSourceUrl() + '?ac=videolist&pg=' + page;
   if (typeId > 0) apiUrl += '&t=' + typeId;
   fetchJson(apiUrl, function(data) {
@@ -859,6 +879,50 @@ function loadHomeVideos(typeId, page, isRefresh) {
       removeLoadMoreIndicator();
     }
   }, 12000);
+}
+
+function loadParentCategoryVideos(typeId, childIds, page, isRefresh) {
+  var container = document.getElementById('homeList');
+  var allVideos = [];
+  var completed = 0;
+  var total = childIds.length;
+  childIds.forEach(function(cid) {
+    var apiUrl = getHomeSourceUrl() + '?ac=videolist&pg=' + page + '&t=' + cid;
+    fetchJson(apiUrl, function(data) {
+      if (data && data.list) allVideos = allVideos.concat(data.list);
+      completed++;
+      if (completed >= total) finishParentLoad(typeId, allVideos, page, isRefresh);
+    }, function() {
+      completed++;
+      if (completed >= total) finishParentLoad(typeId, allVideos, page, isRefresh);
+    }, 12000);
+  });
+}
+
+function finishParentLoad(typeId, allVideos, page, isRefresh) {
+  State.homeLoading = false;
+  var container = document.getElementById('homeList');
+  var seen = {};
+  var unique = allVideos.filter(function(item) {
+    if (seen[item.vod_id]) return false;
+    seen[item.vod_id] = true;
+    return true;
+  });
+  unique.sort(function(a, b) { return (b.vod_time || '').localeCompare(a.vod_time || ''); });
+  if (page === 1) {
+    State.homeCache[typeId] = unique;
+  } else {
+    if (!State.homeCache[typeId]) State.homeCache[typeId] = [];
+    State.homeCache[typeId] = State.homeCache[typeId].concat(unique);
+  }
+  State.homeCurrentPage = page;
+  State.homeHasMore = unique.length >= 20;
+  if (unique.length > 0) {
+    renderHomeGrid(unique, !isRefresh);
+  } else {
+    if (page === 1) container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无内容</p></div>';
+    else { State.homeHasMore = false; removeLoadMoreIndicator(); }
+  }
 }
 
 function removeLoadMoreIndicator() {
@@ -1937,7 +2001,7 @@ function goHomeDirect() {
   document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
   var navs = document.querySelectorAll('.nav-item');
   if (navs[0]) navs[0].classList.add('active');
-  var html = '<div class="cat-tabs" id="catTabs"></div>';
+  var html = '<div class="cat-tabs-wrap" id="catTabs"></div>';
   html += '<div id="homeList"><div class="loading"><div class="spinner"></div><p style="margin-top:12px">加载中...</p></div></div>';
   document.getElementById('mainContent').innerHTML = html;
   if (_homeTypesLoaded && State.homeTypes.length > 0) {
