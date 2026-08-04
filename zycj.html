@@ -1776,9 +1776,9 @@ function generatePlayerHtml(detail, epIdx, resumeTime) {
 
   // 控制栏：非全屏时常驻显示，不自动隐藏
   html += 'function showControls(){if(pState.isLocked)return;pState.controlsVisible=true;el("topBar").classList.remove("hide");el("bottomBar").classList.remove("hide");el("centerPlay").classList.remove("hide");el("rightCluster").classList.remove("hide");startCtrlTimer();}';
-  html += 'function hideControls(){if(pState.isLocked)return;if(!pState.isFullscreen)return;pState.controlsVisible=false;el("topBar").classList.add("hide");el("bottomBar").classList.add("hide");el("centerPlay").classList.add("hide");el("rightCluster").classList.add("hide");clearTimeout(pState.ctrlTimer);}';
+  html += 'function hideControls(){if(pState.isLocked)return;pState.controlsVisible=false;el("topBar").classList.add("hide");el("bottomBar").classList.add("hide");el("centerPlay").classList.add("hide");el("rightCluster").classList.add("hide");clearTimeout(pState.ctrlTimer);}';
   html += 'function toggleControls(){if(pState.isSeeking||pState.gestureMode)return;if(pState.controlsVisible)hideControls();else showControls();}';
-  html += 'function startCtrlTimer(){clearTimeout(pState.ctrlTimer);if(!pState.isFullscreen)return;pState.ctrlTimer=setTimeout(function(){var v=el("videoPlayer");if(!v.paused&&!isPanelOpen()&&!pState.isSeeking&&!pState.gestureMode)hideControls();},4000);}';
+  html += 'function startCtrlTimer(){clearTimeout(pState.ctrlTimer);pState.ctrlTimer=setTimeout(function(){var v=el("videoPlayer");if(!v.paused&&!isPanelOpen()&&!pState.isSeeking&&!pState.gestureMode)hideControls();},4000);}';
   html += 'function togglePlay(){var v=el("videoPlayer");if (!v) return;if (v.paused) {if (!v.src || v.src === "" || v.src === "about:blank") {if(!hls){showToast("⚠️ 视频源为空", 3000);return;}}v.muted=false;v.play().catch(function(e){showToast("播放失败: " + (e.message||"未知错误"), 3000);});} else {v.pause();}}';
   html += 'var PLAY_ICON=\'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>\';';
   html += 'var PAUSE_ICON=\'<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>\';';
