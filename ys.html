@@ -748,11 +748,10 @@ var _homeRetryCount = 0;
 function loadHomeTypes() {
   var apiUrl = getHomeSourceUrl() + '?ac=list';
   fetchJson(apiUrl, function(data) {
-    var typeSource = (data && data.class && data.class.length > 0) ? data.class : (data && data.list) ? data.list : null;
-    if (typeSource) {
+    if (data && data.class && data.class.length > 0) {
       _homeRetryCount = 0;
-      var types = typeSource.filter(function(t) { return t.type_pid === 0 || t.type_pid === '0'; });
-      if (types.length === 0) types = typeSource;
+      var types = data.class.filter(function(t) { return t.type_pid === 0 || t.type_pid === '0'; });
+      if (types.length === 0) types = data.class.filter(function(t) { return t.type_id !== undefined && t.type_name; });
       var seen = {};
       var unique = [];
       types.forEach(function(t) {
