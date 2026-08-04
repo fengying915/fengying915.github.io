@@ -750,8 +750,7 @@ function loadHomeTypes() {
   fetchJson(apiUrl, function(data) {
     if (data && data.class && data.class.length > 0) {
       _homeRetryCount = 0;
-      var types = data.class.filter(function(t) { return t.type_pid === 0 || t.type_pid === '0'; });
-      if (types.length === 0) types = data.class.filter(function(t) { return t.type_id !== undefined && t.type_name; });
+      var types = data.class.filter(function(t) { return t.type_id !== undefined && t.type_name; });
       var seen = {};
       var unique = [];
       types.forEach(function(t) {
