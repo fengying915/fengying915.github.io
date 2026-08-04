@@ -825,6 +825,8 @@ function switchHomeType(typeId, el) {
   State.homeCurrentPage = 1;
   State.homeHasMore = true;
   var isParent = el && el.getAttribute('data-is-parent') === '1';
+  var panel = document.getElementById('subCatPanel');
+
   if (isParent && typeId > 0) {
     var children = State.homeTypes.filter(function(t) { return t.type_pid == typeId; });
     if (children.length > 0) {
@@ -833,9 +835,8 @@ function switchHomeType(typeId, el) {
         State.homeCurrentType = typeId;
         document.querySelectorAll('.cat-tab').forEach(function(t) { t.classList.remove('active'); });
         el.classList.add('active');
-        var panel = document.getElementById('subCatPanel');
         if (panel) panel.classList.remove('show');
-        loadHomeVideos(typeId, 1, true);
+        loadParentAllVideos(typeId, children);
         return;
       }
       State.homeCurrentParent = typeId;
@@ -852,14 +853,15 @@ function switchHomeType(typeId, el) {
     State.homeCurrentType = 0;
     document.querySelectorAll('.cat-tab').forEach(function(t) { t.classList.remove('active'); });
     if (el) el.classList.add('active');
-    var panel = document.getElementById('subCatPanel');
     if (panel) panel.classList.remove('show');
     loadHomeVideos(0, 1, true);
     return;
   }
+  State.homeCurrentParent = 0;
   State.homeCurrentType = typeId;
   document.querySelectorAll('.cat-tab').forEach(function(t) { t.classList.remove('active'); });
   if (el) el.classList.add('active');
+  if (panel) panel.classList.remove('show');
   loadHomeVideos(typeId, 1, true);
 }
 
@@ -872,12 +874,12 @@ function loadParentAllVideos(parentId, children) {
   for (var i = 0; i < 9; i++) sk += '<div><div class="sk-poster"></div><div class="sk-line"></div></div>';
   sk += '</div>';
   container.innerHTML = sk;
-  var source = getActiveSource();
+  var apiUrl = getHomeSourceUrl();
   var allResults = [];
   var done = 0;
   children.forEach(function(c, idx) {
-    fetchJson(source.apiUrl + '?ac=videolist&t=' + c.type_id + '&pg=1&h=48', function(d) {
-      if (d && d.list) allResults[idx] = d.list; else allResults[idx] = [];
+    fetchJson(apiUrl + '?ac=videolist&t=' + c.type_id + '&pg=1&h=48', function(d) {
+      allResults[idx] = (d && d.list) ? d.list : [];
       done++;
       if (done === children.length) mergeAndRender();
     }, function() {
@@ -891,7 +893,7 @@ function loadParentAllVideos(parentId, children) {
     var merged = [];
     allResults.forEach(function(list) {
       (list || []).forEach(function(v) {
-        var key = source.key + '_' + v.vod_id;
+        var key = v.vod_id;
         if (!seen[key]) { seen[key] = 1; merged.push(v); }
       });
     });
