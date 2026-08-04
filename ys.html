@@ -1112,8 +1112,11 @@ function generateDetailHtml(item) {
   html += '.episode-btn.active{background:#0071e3;border-color:#0071e3;color:#fff}';
   html += '.empty{text-align:center;padding:40px 0;color:#86868b}';
   html += '.empty .icon{font-size:48px;margin-bottom:8px}';
+  html += '.detail-back{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#fff;border:1px solid #e5e5ea;border-radius:20px;cursor:pointer;font-size:14px;color:#1d1d1f;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin:12px 0;-webkit-tap-highlight-color:transparent;text-decoration:none}';
+  html += '.detail-back:active{background:#f0f0f2}';
   html += '</style></head><body>';
   html += '<div class="container">';
+  html += '<a class="detail-back" onclick="parent.closeDetail()">← 返回</a>';
   html += '<div class="detail-info"><div>';
   if (cover) html += '<img class="detail-cover" src="' + cover + '" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">';
   else html += '<div class="detail-cover" style="display:flex;align-items:center;justify-content:center;color:#888;font-size:12px;">无封面</div>';
