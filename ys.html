@@ -870,6 +870,7 @@ function loadParentAllVideos(parentId, children) {
   if (!container) return;
   State.homeCurrentPage = 1;
   State.homeHasMore = false;
+  State.homeLoading = false;
   var sk = '<div class="home-skeleton">';
   for (var i = 0; i < 9; i++) sk += '<div><div class="sk-poster"></div><div class="sk-line"></div></div>';
   sk += '</div>';
@@ -877,8 +878,9 @@ function loadParentAllVideos(parentId, children) {
   var apiUrl = getHomeSourceUrl();
   var allResults = [];
   var done = 0;
+  if (children.length === 0) { container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无内容</p></div>'; return; }
   children.forEach(function(c, idx) {
-    fetchJson(apiUrl + '?ac=videolist&t=' + c.type_id + '&pg=1&h=48', function(d) {
+    fetchJson(apiUrl + '?ac=videolist&t=' + c.type_id + '&pg=1', function(d) {
       allResults[idx] = (d && d.list) ? d.list : [];
       done++;
       if (done === children.length) mergeAndRender();
