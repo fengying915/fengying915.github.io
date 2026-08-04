@@ -679,7 +679,7 @@ function saveHomeView() {
   var mc = document.getElementById('mainContent');
   if (mc && (_currentTab === 'home' || _currentTab === 'history' || _currentTab === 'favorites' || State.isSearchView)) {
     _savedViews[_currentTab] = mc.innerHTML;
-    if (_currentTab === 'home') {
+    if (_currentTab === 'home' && !State.isSearchView) {
       _homeViewHTML = mc.innerHTML;
       _homeScrollY = window.scrollY;
     }
@@ -1953,7 +1953,7 @@ function goHomeDirect() {
 function showHomeDirect() { goHomeDirect(); }
 
 function goHome() {
-  if (_currentTab !== 'home') {
+  if (_currentTab !== 'home' || State.isSearchView) {
     resetOverlays();
     viewStack = [];
     updateBackButton();
