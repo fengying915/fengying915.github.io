@@ -527,19 +527,21 @@ var Config = {
     { name: '火速🔞', url: 'https://api.huosuapi.cc/api.php/provide/vod' },
     { name: '滴滴🔞', url: 'https://api.ddapi.cc/api.php/provide/vod' }
   ],
-  _storageKey: 'vplayer_settings_v8',
+  _storageKey: 'vplayer_settings_v9',
   loadSync: function() {
     var s = null, lsData = null;
     try { lsData = _lsGet(this._storageKey); } catch(e) {}
     try { if (lsData) s = JSON.parse(lsData); } catch(e) { s = null; }
     s = s || {};
-    if (!s.version || s.version < 8) {
+    if (!s.version || s.version < 9) {
       var old = null;
       try { old = JSON.parse(_lsGet('vplayer_settings_v7') || '{}'); } catch(e2) {}
-      if (old && old.sources && old.sources.length > 0) {
+      if (s.version < 9) {
+        s.sources = this.defaultSources;
+      } else if (old && old.sources && old.sources.length > 0) {
         s.sources = old.sources; s.favorites = old.favorites || []; s.history = old.history || []; s.proxyMode = old.proxyMode || 'auto';
       } else { s.sources = this.defaultSources; }
-      s.version = 8;
+      s.version = 9;
     }
     if (!s.sources || s.sources.length === 0) s.sources = this.defaultSources;
     if (!s.favorites) s.favorites = [];
