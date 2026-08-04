@@ -119,12 +119,17 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .search-back{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .search-back-btn{background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:20px;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
 .search-back-btn:active{background:var(--card-hover)}
-.cat-tabs-wrap{display:flex;flex-direction:column;gap:6px;padding:4px 0 8px}
+.cat-tabs-wrap{position:relative;display:flex;flex-direction:column;gap:0;padding:4px 0 8px}
 .cat-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .cat-tabs::-webkit-scrollbar{display:none}
 .cat-tabs:empty{display:none}
 .cat-tab{padding:6px 14px;background:var(--card);border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;white-space:nowrap;color:var(--text-dim);transition:background-color .15s,color .15s,border-color .15s;touch-action:pan-x}
 .cat-tab.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.sub-cat-panel{display:none;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:6px;margin-top:4px;max-height:50vh;overflow-y:auto}
+.sub-cat-panel.show{display:block}
+.sub-cat-panel .cat-tab{display:block;width:100%;text-align:left;padding:10px 14px;border-radius:8px;border:none;background:transparent;font-size:13px}
+.sub-cat-panel .cat-tab:active{background:var(--card-hover)}
+.sub-cat-panel .cat-tab.active{background:rgba(108,92,231,0.1);color:var(--primary);border:none}
 .card-wrap{position:relative;min-width:0;max-width:100%;width:100%;overflow:hidden}
 .card-resume-btn{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;padding:6px 4px;background:rgba(108,92,231,0.1);border:none;border-radius:6px;color:var(--primary);cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-appearance:none;appearance:none}
 .card-resume-btn.no-progress{opacity:0.5}
@@ -797,23 +802,23 @@ function renderTypeTabs() {
     var active = (t.type_id === State.homeCurrentType || (State.homeCurrentParent === t.type_id)) ? ' active' : '';
     html += '<div class="cat-tab' + active + '" data-type-id="' + t.type_id + '" data-is-parent="1">' + t.type_name + '</div>';
   });
-  html += '</div><div class="cat-tabs" id="subCatTabs"></div>';
+  html += '</div><div class="sub-cat-panel" id="subCatPanel"></div>';
   container.innerHTML = html;
   if (State.homeCurrentParent > 0) renderSubTabs(State.homeCurrentParent);
 }
 
 function renderSubTabs(parentTypeId) {
-  var sub = document.getElementById('subCatTabs');
-  if (!sub) return;
+  var panel = document.getElementById('subCatPanel');
+  if (!panel) return;
   var children = State.homeTypes.filter(function(t) { return t.type_pid == parentTypeId; });
-  if (children.length === 0) { sub.innerHTML = ''; sub.style.display = 'none'; return; }
-  sub.style.display = '';
+  if (children.length === 0) { panel.classList.remove('show'); return; }
   var html = '';
   children.forEach(function(t) {
     var active = (t.type_id === State.homeCurrentType) ? ' active' : '';
     html += '<div class="cat-tab' + active + '" data-type-id="' + t.type_id + '">' + t.type_name + '</div>';
   });
-  sub.innerHTML = html;
+  panel.innerHTML = html;
+  panel.classList.add('show');
 }
 
 function switchHomeType(typeId, el) {
@@ -821,9 +826,19 @@ function switchHomeType(typeId, el) {
   State.homeHasMore = true;
   var isParent = el && el.getAttribute('data-is-parent') === '1';
   if (isParent && typeId > 0) {
-    State.homeCurrentParent = typeId;
     var children = State.homeTypes.filter(function(t) { return t.type_pid == typeId; });
     if (children.length > 0) {
+      if (State.homeCurrentParent === typeId) {
+        State.homeCurrentParent = 0;
+        State.homeCurrentType = typeId;
+        document.querySelectorAll('.cat-tab').forEach(function(t) { t.classList.remove('active'); });
+        el.classList.add('active');
+        var panel = document.getElementById('subCatPanel');
+        if (panel) panel.classList.remove('show');
+        loadHomeVideos(typeId, 1, true);
+        return;
+      }
+      State.homeCurrentParent = typeId;
       State.homeCurrentType = children[0].type_id;
       document.querySelectorAll('.cat-tab').forEach(function(t) { t.classList.remove('active'); });
       el.classList.add('active');
@@ -837,8 +852,8 @@ function switchHomeType(typeId, el) {
     State.homeCurrentType = 0;
     document.querySelectorAll('.cat-tab').forEach(function(t) { t.classList.remove('active'); });
     if (el) el.classList.add('active');
-    var sub = document.getElementById('subCatTabs');
-    if (sub) { sub.innerHTML = ''; sub.style.display = 'none'; }
+    var panel = document.getElementById('subCatPanel');
+    if (panel) panel.classList.remove('show');
     loadHomeVideos(0, 1, true);
     return;
   }
