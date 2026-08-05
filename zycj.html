@@ -1353,8 +1353,12 @@ function generateDetailHtml(item) {
   html += '}';
   html += 'if (playUrlArr.length > 0 && playUrlArr[0]) switchTab(0, null);';
   html += 'var xsAllItems=[];';
-  html += 'window.addEventListener("message",function(e){if(e.data&&e.data.type==="xsResults"){renderXsResults(e.data.results);}});';
-  html += 'function renderXsResults(results){var box=document.getElementById("xsResults");var ld=document.getElementById("xsLoading");if(ld)ld.style.display="none";if(!results||results.length===0){if(box)box.innerHTML="<div style=\\"font-size:12px;color:#86868b;padding:4px 0\\">未在其他源找到</div>";return;}';
+  html += 'window.addEventListener("message",function(e){if(e.data&&e.data.type==="xsResults"){renderXsResults(e.data.results,e.data.total);}});';
+  html += 'function renderXsResults(results,total){var box=document.getElementById("xsResults");var ld=document.getElementById("xsLoading");if(!results)results=[];';
+  html += 'var okCount=0;results.forEach(function(r){if(r.items.length>0)okCount++;});';
+  html += 'var summary="搜索完成："+okCount+"/"+(total||results.length)+" 个源有结果";';
+  html += 'if(ld){ld.textContent=summary;ld.style.color=okCount>0?"#00b894":"#86868b";}';
+  html += 'if(!results||results.length===0){if(box)box.innerHTML="<div style=\\"font-size:12px;color:#86868b;padding:4px 0\\">未在其他源找到</div>";return;}';
   html += 'var h="";xsAllItems=[];';
   html += 'results.forEach(function(r){if(!r.items||r.items.length===0)return;h+="<div class=\\"xs-source\\"><div class=\\"xs-source-name\\">"+r.name+"<span class=\\"cnt\\">("+r.items.length+"部)</span></div>";';
   html += 'r.items.slice(0,5).forEach(function(it){var idx=xsAllItems.length;xsAllItems.push({item:it,url:r.url});var pic=it.vod_pic||"";var rmk=it.vod_remarks||"";';
@@ -1365,7 +1369,7 @@ function generateDetailHtml(item) {
   html += 'h+="</div></div>";';
   html += '});h+="</div>";});box.innerHTML=h;}';
   html += 'function playXsItem(idx){var entry=xsAllItems[idx];if(!entry)return;parent.showDetail(entry.item);}';
-  html += 'function refreshXsSearch(){var ld=document.getElementById("xsLoading");var box=document.getElementById("xsResults");if(ld){ld.style.display="";ld.textContent="搜索中...";}if(box)box.innerHTML="";try{parent.postMessage({type:"xsSearch",title:detailData.vod_name},"*");}catch(e){}}';
+  html += 'function refreshXsSearch(){var ld=document.getElementById("xsLoading");var box=document.getElementById("xsResults");if(ld){ld.style.display="";ld.style.color="";ld.textContent="搜索中...";}if(box)box.innerHTML="";try{parent.postMessage({type:"xsSearch",title:detailData.vod_name},"*");}catch(e){}}';
   html += 'try{parent.postMessage({type:"xsSearch",title:detailData.vod_name},"*");}catch(e){}';
   html += '<\/script>';
   html += '</body></html>';
@@ -1394,33 +1398,34 @@ window.addEventListener('message', function(e) {
 
 function crossSourceSearch(title) {
   var sources = State.settings.sources;
-  var currentUrl = State.currentSourceUrl || getHomeSourceUrl();
   var results = [];
   var done = 0;
   var total = sources.length;
   function sendBack() {
     var iframe = document.getElementById('detailIframe');
     if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({ type: 'xsResults', results: results }, '*');
+      iframe.contentWindow.postMessage({ type: 'xsResults', results: results, total: total }, '*');
     }
   }
   sources.forEach(function(source) {
     var apiUrl = source.url + '?ac=videolist&wd=' + encodeURIComponent(title);
-    fetchJson(apiUrl, function(data) {
-      var items = [];
-      if (data && data.list && data.list.length > 0) {
-        items = data.list.filter(function(v) {
-          return v.vod_name && v.vod_name.indexOf(title) > -1;
-        });
-      }
+    fetchDirect(apiUrl, function(data) {
+      var items = (data && data.list) ? data.list : [];
       results.push({ name: source.name, url: source.url, items: items });
       done++;
       if (done >= total) sendBack();
     }, function() {
-      results.push({ name: source.name, url: source.url, items: [] });
-      done++;
-      if (done >= total) sendBack();
-    }, 8000);
+      fetchJson(apiUrl, function(data) {
+        var items = (data && data.list) ? data.list : [];
+        results.push({ name: source.name, url: source.url, items: items });
+        done++;
+        if (done >= total) sendBack();
+      }, function() {
+        results.push({ name: source.name, url: source.url, items: [] });
+        done++;
+        if (done >= total) sendBack();
+      }, 6000);
+    }, 6000);
   });
 }
 
@@ -1998,21 +2003,32 @@ function searchVideos(keyword) {
   var sources = State.settings.sources, completed = 0, total = sources.length;
   sources.forEach(function(source) {
     var apiUrl = source.url + '?ac=videolist&wd=' + encodeURIComponent(keyword);
-    fetchJson(apiUrl, function(data) {
-      if (data && data.list && data.list.length > 0) State.searchResults[source.name] = { list: data.list, url: source.url };
-      completed++;
-      if (completed >= total) renderSearchResults(keyword);
-      else updateSearchProgress(keyword, completed, total);
-    }, function(e) {
-      completed++;
-      if (completed >= total) renderSearchResults(keyword);
-      else updateSearchProgress(keyword, completed, total);
-    }, 10000);
+    function tryDirect() {
+      fetchDirect(apiUrl, function(data) {
+        if (data && data.list && data.list.length > 0) State.searchResults[source.name] = { list: data.list, url: source.url };
+        completed++;
+        if (completed >= total) renderSearchResults(keyword);
+        else updateSearchProgress(keyword, completed, total);
+      }, function() {
+        fetchJson(apiUrl, function(data) {
+          if (data && data.list && data.list.length > 0) State.searchResults[source.name] = { list: data.list, url: source.url };
+          completed++;
+          if (completed >= total) renderSearchResults(keyword);
+          else updateSearchProgress(keyword, completed, total);
+        }, function(e) {
+          completed++;
+          if (completed >= total) renderSearchResults(keyword);
+          else updateSearchProgress(keyword, completed, total);
+        }, 8000);
+      }, 6000);
+    }
+    tryDirect();
   });
 }
 function updateSearchProgress(keyword, done, total) {
+  var found = Object.keys(State.searchResults).length;
   var view = document.getElementById('mainContent');
-  if (view.querySelector('.loading')) view.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:12px">搜索 "' + keyword + '" 中... (' + done + '/' + total + ')</p></div>';
+  if (view.querySelector('.loading')) view.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:12px">搜索 "' + keyword + '" 中... (' + done + '/' + total + ', 已找到 ' + found + ' 个源)</p></div>';
 }
 function renderSearchResults(keyword) {
   var view = document.getElementById('mainContent');
