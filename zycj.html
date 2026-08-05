@@ -1269,6 +1269,19 @@ function generateDetailHtml(item) {
   html += '.empty .icon{font-size:48px;margin-bottom:8px}';
   html += '.detail-back{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#fff;border:1px solid #e5e5ea;border-radius:20px;cursor:pointer;font-size:14px;color:#1d1d1f;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin:12px 0;-webkit-tap-highlight-color:transparent;text-decoration:none}';
   html += '.detail-back:active{background:#f0f0f2}';
+  html += '.xs-section{margin-top:16px;padding:0 0 12px}';
+  html += '.xs-title{font-size:13px;font-weight:600;color:#1d1d1f;margin-bottom:8px;display:flex;align-items:center;gap:6px}';
+  html += '.xs-loading{font-size:12px;color:#86868b;padding:8px 0}';
+  html += '.xs-source{margin-bottom:10px}';
+  html += '.xs-source-name{font-size:12px;font-weight:500;color:#0071e3;margin-bottom:4px;display:flex;align-items:center;gap:4px}';
+  html += '.xs-source-name .cnt{color:#86868b;font-weight:400}';
+  html += '.xs-item{display:flex;gap:10px;padding:8px;background:#fff;border-radius:8px;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,0.06);cursor:pointer;-webkit-tap-highlight-color:transparent}';
+  html += '.xs-item:active{background:#f0f0f2}';
+  html += '.xs-item .xs-cover{width:48px;height:64px;border-radius:4px;object-fit:cover;background:#e8e8ec;flex-shrink:0}';
+  html += '.xs-item .xs-info{flex:1;min-width:0}';
+  html += '.xs-item .xs-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}';
+  html += '.xs-item .xs-remark{font-size:11px;color:#86868b;margin-top:2px}';
+  html += '.xs-item .xs-eps{font-size:11px;color:#0071e3;margin-top:2px}';
   html += '</style></head><body>';
   html += '<div class="container">';
   html += '<a class="detail-back" onclick="parent.closeDetail()">← 返回</a>';
@@ -1295,6 +1308,7 @@ function generateDetailHtml(item) {
     });
     html += '</div><div id="episodeGrid" class="episode-grid"></div>';
   } else html += '<div class="empty"><div class="icon">😢</div><p>暂无播放资源</p></div>';
+  html += '<div class="xs-section" id="xsSection"><div class="xs-title">📡 其他源搜索结果</div><div class="xs-loading" id="xsLoading">搜索中...</div><div id="xsResults"></div></div>';
   html += '</div>';
   html += '<script>';
   html += 'var detailData = ' + dataStr + ';';
@@ -1337,6 +1351,20 @@ function generateDetailHtml(item) {
   html += '  }';
   html += '}';
   html += 'if (playUrlArr.length > 0 && playUrlArr[0]) switchTab(0, null);';
+  html += 'var xsAllItems=[];';
+  html += 'window.addEventListener("message",function(e){if(e.data&&e.data.type==="xsResults"){renderXsResults(e.data.results);}});';
+  html += 'function renderXsResults(results){var box=document.getElementById("xsResults");var ld=document.getElementById("xsLoading");if(ld)ld.style.display="none";if(!results||results.length===0){if(box)box.innerHTML="<div style=\\"font-size:12px;color:#86868b;padding:4px 0\\">未在其他源找到</div>";return;}';
+  html += 'var h="";xsAllItems=[];';
+  html += 'results.forEach(function(r){if(!r.items||r.items.length===0)return;h+="<div class=\\"xs-source\\"><div class=\\"xs-source-name\\">"+r.name+"<span class=\\"cnt\\">("+r.items.length+"部)</span></div>";';
+  html += 'r.items.slice(0,5).forEach(function(it){var idx=xsAllItems.length;xsAllItems.push({item:it,url:r.url});var pic=it.vod_pic||"";var rmk=it.vod_remarks||"";';
+  html += 'h+="<div class=\\"xs-item\\" onclick=\\"playXsItem("+idx+");\\">";';
+  html += 'h+="<img class=\\"xs-cover\\" src=\\""+pic+"\\" referrerpolicy=\\"no-referrer\\" onerror=\\"this.style.display=\'none\'\\">";';
+  html += 'h+="<div class=\\"xs-info\\"><div class=\\"xs-name\\">"+it.vod_name+"</div>";';
+  html += 'if(rmk)h+="<div class=\\"xs-remark\\">"+rmk+"</div>";';
+  html += 'h+="</div></div>";';
+  html += '});h+="</div>";});box.innerHTML=h;}';
+  html += 'function playXsItem(idx){var entry=xsAllItems[idx];if(!entry)return;parent.showDetail(entry.item);}';
+  html += 'try{parent.postMessage({type:"xsSearch",title:detailData.vod_name},"*");}catch(e){}';
   html += '<\/script>';
   html += '</body></html>';
   return html;
@@ -1352,12 +1380,47 @@ function closeDetailFrame() {
 
 function closeSettingsUI() { document.getElementById('settingsModal').classList.remove('show'); }
 
-// ========== 详情页 iframe → 父页面 播放消息桥 ==========
+// ========== 详情页 iframe → 父页面 消息桥 ==========
 window.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'playEp' && e.data.detail) {
     openPlayerFrame(e.data.detail, e.data.epIdx, 0);
   }
+  if (e.data && e.data.type === 'xsSearch' && e.data.title) {
+    crossSourceSearch(e.data.title);
+  }
 });
+
+function crossSourceSearch(title) {
+  var sources = State.settings.sources;
+  var currentUrl = State.currentSourceUrl || getHomeSourceUrl();
+  var results = [];
+  var done = 0;
+  var total = sources.length;
+  function sendBack() {
+    var iframe = document.getElementById('detailIframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({ type: 'xsResults', results: results }, '*');
+    }
+  }
+  sources.forEach(function(source) {
+    var apiUrl = source.url + '?ac=videolist&wd=' + encodeURIComponent(title);
+    fetchJson(apiUrl, function(data) {
+      var items = [];
+      if (data && data.list && data.list.length > 0) {
+        items = data.list.filter(function(v) {
+          return v.vod_name && v.vod_name.indexOf(title) > -1;
+        });
+      }
+      results.push({ name: source.name, url: source.url, items: items });
+      done++;
+      if (done >= total) sendBack();
+    }, function() {
+      results.push({ name: source.name, url: source.url, items: [] });
+      done++;
+      if (done >= total) sendBack();
+    }, 8000);
+  });
+}
 
 // ========== 播放器核心（修复版，整合弹幕） ==========
 function openPlayerFrame(detail, epIdx, resumeTime) {
