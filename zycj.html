@@ -1353,10 +1353,15 @@ function generateDetailHtml(item) {
   html += '}';
   html += 'if (playUrlArr.length > 0 && playUrlArr[0]) switchTab(0, null);';
   html += 'var xsAllItems=[];';
-  html += 'window.addEventListener("message",function(e){if(e.data&&e.data.type==="xsResults"){renderXsResults(e.data.results,e.data.total);}});';
-  html += 'function renderXsResults(results,total){var box=document.getElementById("xsResults");var ld=document.getElementById("xsLoading");if(!results)results=[];';
+  html += 'window.addEventListener("message",function(e){';
+  html += 'if(e.data&&e.data.type==="xsResults"){renderXsResults(e.data.results,e.data.total,e.data.failedSources);}';
+  html += 'if(e.data&&e.data.type==="xsRetrying"){var ld=document.getElementById("xsLoading");if(ld)ld.textContent="重试中... ("+e.data.count+"个源)";}';
+  html += '});';
+  html += 'function renderXsResults(results,total,failedSources){var box=document.getElementById("xsResults");var ld=document.getElementById("xsLoading");if(!results)results=[];if(!failedSources)failedSources=[];';
   html += 'var okCount=0;results.forEach(function(r){if(r.items.length>0)okCount++;});';
+  html += 'var failCount=failedSources.length;';
   html += 'var summary="搜索完成："+okCount+"/"+(total||results.length)+" 个源有结果";';
+  html += 'if(failCount>0)summary+="，"+failCount+" 个源超时";';
   html += 'if(ld){ld.textContent=summary;ld.style.color=okCount>0?"#00b894":"#86868b";}';
   html += 'if(!results||results.length===0){if(box)box.innerHTML="<div style=\\"font-size:12px;color:#86868b;padding:4px 0\\">未在其他源找到</div>";return;}';
   html += 'var h="";xsAllItems=[];';
@@ -1369,7 +1374,7 @@ function generateDetailHtml(item) {
   html += 'h+="</div></div>";';
   html += '});h+="</div>";});box.innerHTML=h;}';
   html += 'function playXsItem(idx){var entry=xsAllItems[idx];if(!entry)return;parent.showDetail(entry.item);}';
-  html += 'function refreshXsSearch(){var ld=document.getElementById("xsLoading");var box=document.getElementById("xsResults");if(ld){ld.style.display="";ld.style.color="";ld.textContent="搜索中...";}if(box)box.innerHTML="";try{parent.postMessage({type:"xsSearch",title:detailData.vod_name},"*");}catch(e){}}';
+  html += 'function refreshXsSearch(){if(typeof parent._xsRetryFailed==="function"){parent._xsRetryFailed();}else{var ld=document.getElementById("xsLoading");var box=document.getElementById("xsResults");if(ld){ld.style.display="";ld.style.color="";ld.textContent="搜索中...";}if(box)box.innerHTML="";try{parent.postMessage({type:"xsSearch",title:detailData.vod_name},"*");}catch(e){}}}';
   html += 'try{parent.postMessage({type:"xsSearch",title:detailData.vod_name},"*");}catch(e){}';
   html += '<\/script>';
   html += '</body></html>';
@@ -1399,34 +1404,65 @@ window.addEventListener('message', function(e) {
 function crossSourceSearch(title) {
   var sources = State.settings.sources;
   var results = [];
+  var failedSources = [];
   var done = 0;
   var total = sources.length;
   function sendBack() {
     var iframe = document.getElementById('detailIframe');
     if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({ type: 'xsResults', results: results, total: total }, '*');
+      iframe.contentWindow.postMessage({ type: 'xsResults', results: results, total: total, failedSources: failedSources }, '*');
     }
   }
-  sources.forEach(function(source) {
+  function searchSource(source, idx) {
     var apiUrl = source.url + '?ac=videolist&wd=' + encodeURIComponent(title);
     fetchDirect(apiUrl, function(data) {
       var items = (data && data.list) ? data.list : [];
-      results.push({ name: source.name, url: source.url, items: items });
+      results.push({ name: source.name, url: source.url, items: items, idx: idx });
       done++;
       if (done >= total) sendBack();
     }, function() {
       fetchJson(apiUrl, function(data) {
         var items = (data && data.list) ? data.list : [];
-        results.push({ name: source.name, url: source.url, items: items });
+        results.push({ name: source.name, url: source.url, items: items, idx: idx });
         done++;
         if (done >= total) sendBack();
       }, function() {
-        results.push({ name: source.name, url: source.url, items: [] });
+        failedSources.push(idx);
+        results.push({ name: source.name, url: source.url, items: [], idx: idx });
         done++;
         if (done >= total) sendBack();
-      }, 6000);
-    }, 6000);
-  });
+      }, 10000);
+    }, 8000);
+  }
+  sources.forEach(function(source, idx) { searchSource(source, idx); });
+  window._xsRetryFailed = function() {
+    if (failedSources.length === 0) return;
+    var retryList = failedSources.slice();
+    failedSources = [];
+    var retryDone = 0;
+    var retryTotal = retryList.length;
+    var iframe = document.getElementById('detailIframe');
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({ type: 'xsRetrying', count: retryTotal }, '*');
+    }
+    retryList.forEach(function(idx) {
+      var source = sources[idx];
+      var apiUrl = source.url + '?ac=videolist&wd=' + encodeURIComponent(title);
+      fetchJson(apiUrl, function(data) {
+        var items = (data && data.list) ? data.list : [];
+        var existIdx = -1;
+        results.forEach(function(r, i) { if (r.idx === idx) existIdx = i; });
+        if (existIdx >= 0) results[existIdx].items = items;
+        else results.push({ name: source.name, url: source.url, items: items, idx: idx });
+        retryDone++;
+        if (retryDone >= retryTotal) sendBack();
+      }, function() {
+        failedSources.push(idx);
+        retryDone++;
+        if (retryDone >= retryTotal) sendBack();
+      }, 15000);
+    });
+  };
 }
 
 // ========== 播放器核心（修复版，整合弹幕） ==========
@@ -1988,9 +2024,13 @@ function removeFavoriteByName(name) {
 }
 
 // ========== 搜索 ==========
+var _searchFailedSources = [];
+var _searchKeyword = '';
 function searchVideos(keyword) {
   if (!keyword || !keyword.trim()) return;
   keyword = keyword.trim();
+  _searchKeyword = keyword;
+  _searchFailedSources = [];
   document.getElementById('searchInput').value = keyword;
   if (!State.isSearchView) {
     saveHomeView();
@@ -2001,7 +2041,7 @@ function searchVideos(keyword) {
   view.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:12px">搜索 "' + keyword + '" 中...</p></div>';
   State.searchResults = {};
   var sources = State.settings.sources, completed = 0, total = sources.length;
-  sources.forEach(function(source) {
+  sources.forEach(function(source, idx) {
     var apiUrl = source.url + '?ac=videolist&wd=' + encodeURIComponent(keyword);
     function tryDirect() {
       fetchDirect(apiUrl, function(data) {
@@ -2016,13 +2056,38 @@ function searchVideos(keyword) {
           if (completed >= total) renderSearchResults(keyword);
           else updateSearchProgress(keyword, completed, total);
         }, function(e) {
+          _searchFailedSources.push(idx);
           completed++;
           if (completed >= total) renderSearchResults(keyword);
           else updateSearchProgress(keyword, completed, total);
-        }, 8000);
-      }, 6000);
+        }, 10000);
+      }, 8000);
     }
     tryDirect();
+  });
+}
+function retrySearchFailed() {
+  if (_searchFailedSources.length === 0) return;
+  var retryList = _searchFailedSources.slice();
+  _searchFailedSources = [];
+  var keyword = _searchKeyword;
+  var sources = State.settings.sources;
+  var retryDone = 0, retryTotal = retryList.length;
+  var view = document.getElementById('mainContent');
+  var oldSummary = view.querySelector('.search-summary');
+  if (oldSummary) oldSummary.textContent = '重试中... (' + retryTotal + '个源)';
+  retryList.forEach(function(idx) {
+    var source = sources[idx];
+    var apiUrl = source.url + '?ac=videolist&wd=' + encodeURIComponent(keyword);
+    fetchJson(apiUrl, function(data) {
+      if (data && data.list && data.list.length > 0) State.searchResults[source.name] = { list: data.list, url: source.url };
+      retryDone++;
+      if (retryDone >= retryTotal) renderSearchResults(keyword);
+    }, function() {
+      _searchFailedSources.push(idx);
+      retryDone++;
+      if (retryDone >= retryTotal) renderSearchResults(keyword);
+    }, 12000);
   });
 }
 function updateSearchProgress(keyword, done, total) {
@@ -2033,12 +2098,22 @@ function updateSearchProgress(keyword, done, total) {
 function renderSearchResults(keyword) {
   var view = document.getElementById('mainContent');
   var sourceNames = Object.keys(State.searchResults);
+  var total = State.settings.sources.length;
+  var failCount = _searchFailedSources.length;
+  var html = '<div class="search-back"><button class="search-back-btn" onclick="goBack()">← 返回</button></div>';
+  var summary = '搜索完成：' + sourceNames.length + '/' + total + ' 个源有结果';
+  if (failCount > 0) summary += '，' + failCount + ' 个源超时';
+  html += '<div class="search-summary" style="font-size:12px;color:#86868b;margin-bottom:8px;display:flex;align-items:center;gap:8px">' + summary;
+  if (failCount > 0) html += '<span style="color:#0071e3;cursor:pointer;font-size:12px" onclick="retrySearchFailed()">重试超时源</span>';
+  html += '</div>';
+  html += '<div class="section-title">🔍 搜索结果：' + keyword + '</div>';
   if (sourceNames.length === 0) {
-    view.innerHTML = '<div class="search-back"><button class="search-back-btn" onclick="goBack()">← 返回</button></div><div class="empty"><div class="icon">😢</div><p>未找到 "' + keyword + '" 相关内容</p><p style="font-size:12px;margin-top:8px">试试切换代理或更换关键词</p></div>';
+    html += '<div class="empty"><div class="icon">😢</div><p>未找到 "' + keyword + '" 相关内容</p>';
+    if (failCount > 0) html += '<p style="font-size:12px;margin-top:8px">' + failCount + ' 个源超时，<span style="color:#0071e3;cursor:pointer" onclick="retrySearchFailed()">点击重试</span></p>';
+    html += '</div>';
+    view.innerHTML = html;
     return;
   }
-  var html = '<div class="search-back"><button class="search-back-btn" onclick="goBack()">← 返回</button></div>';
-  html += '<div class="section-title">🔍 搜索结果：' + keyword + '</div>';
   html += '<div class="source-tabs" id="sourceTabs">';
   var firstSource = sourceNames[0];
   sourceNames.forEach(function(name, i) {
