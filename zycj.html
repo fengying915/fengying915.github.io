@@ -130,7 +130,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .sub-cat-panel .cat-tab{display:inline-block;padding:5px 10px;border-radius:14px;border:1px solid var(--border);background:transparent;font-size:11px;color:var(--text-dim);white-space:nowrap;transition:background .12s,color .12s}
 .sub-cat-panel .cat-tab:active{background:var(--card-hover)}
 .sub-cat-panel .cat-tab.active{background:var(--primary);border-color:var(--primary);color:#fff}
-.card-wrap{position:relative;min-width:0;max-width:100%;width:100%;overflow:hidden}
 .card-resume-btn{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;padding:6px 4px;background:rgba(108,92,231,0.1);border:none;border-radius:6px;color:var(--primary);cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-appearance:none;appearance:none}
 .card-resume-btn.no-progress{opacity:0.5}
 .progress-mini{width:100%;height:3px;background:#e0e0e4;border-radius:2px;margin-top:4px;overflow:hidden}
@@ -470,6 +469,11 @@ var IDB = {
     });
   }
 };
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 var Config = {
   defaultSources: [
@@ -1031,18 +1035,17 @@ function renderHomeGrid(videos, isAppend) {
     var title = item.vod_name || '未知';
     var remarks = item.vod_remarks || '';
     var globalIdx = State.homeCache[State.homeCurrentType] ? State.homeCache[State.homeCurrentType].indexOf(item) : -1;
-    if (globalIdx < 0) globalIdx = 0;
-    html += '<div class="video-card" data-action="home" data-idx="' + globalIdx + '">';
+    html += '<div class="video-card" data-action="home" data-idx="' + (globalIdx >= 0 ? globalIdx : '') + '" data-item="' + JSON.stringify(item).replace(/"/g, '&quot;') + '">';
     html += '<div class="cover">';
     if (cover) {
-      html += '<img src="' + cover + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
-      html += '<div class="placeholder" style="display:none">' + title + '</div>';
+      html += '<img src="' + cover.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
+      html += '<div class="placeholder" style="display:none">' + escapeHtml(title) + '</div>';
     } else {
-      html += '<div class="placeholder">' + title + '</div>';
+      html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
     }
-    if (remarks) html += '<div class="remarks">' + remarks + '</div>';
+    if (remarks) html += '<div class="remarks">' + escapeHtml(remarks) + '</div>';
     html += '</div>';
-    html += '<div class="info"><div class="title">' + title + '</div></div>';
+    html += '<div class="info"><div class="title">' + escapeHtml(title) + '</div></div>';
     html += '</div>';
   });
   if (isAppend) {
@@ -1151,7 +1154,7 @@ function showDetailFromHome(item) {
       if (detail.vod_play_url && detail.vod_play_url.trim()) {
         openDetailFrame(detail);
       } else {
-        openDetailFrame(detail.vod_play_url ? detail : item);
+        openDetailFrame(item);
       }
     } else {
       openDetailFrame(item);
@@ -1171,11 +1174,15 @@ function setDetailIframeLoading(msg) {
 
 // ========== 详情 ==========
 function showDetail(item) {
-  if (typeof item === 'string') item = JSON.parse(item);
+  try {
+    if (typeof item === 'string') item = JSON.parse(item);
+  } catch(e) { return; }
   State.currentDetail = item;
-  saveHomeView();
-  document.getElementById('detailOverlay').classList.add('show');
-  document.getElementById('detailOverlay').style.pointerEvents = 'auto';
+  if (!document.getElementById('detailOverlay').classList.contains('show')) {
+    saveHomeView();
+    document.getElementById('detailOverlay').classList.add('show');
+    document.getElementById('detailOverlay').style.pointerEvents = 'auto';
+  }
   if (viewStack[viewStack.length - 1] !== 'detail') pushView('detail');
   setDetailIframeLoading('加载详情...');
   var sources = State.settings.sources;
@@ -1227,7 +1234,7 @@ function generateDetailHtml(item) {
   var cover = item.vod_pic || '', title = item.vod_name || '未知', year = item.vod_year || '', area = item.vod_area || '';
   var type = item.vod_type_name || item.type_name || '', actor = item.vod_actor || '', director = item.vod_director || '';
   var remarks = item.vod_remarks || '', content = (item.vod_content || '').replace(/<[^>]+>/g, '').trim();
-  var dataStr = JSON.stringify(item).replace(/</g, '\\u003c').replace(/<\/script>/g, '<\\/script>');
+  var dataStr = JSON.stringify(item).replace(/</g, '\\u003c');
   var isFav = isFavorited(title);
   var starSvg = isFav
     ? '<svg viewBox="0 0 24 24" fill="#FFD600" stroke="#FFD600" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>'
@@ -1287,25 +1294,25 @@ function generateDetailHtml(item) {
   html += '<div class="container">';
   html += '<a class="detail-back" onclick="parent.closeDetail()">← 返回</a>';
   html += '<div class="detail-info"><div>';
-  if (cover) html += '<img class="detail-cover" src="' + cover + '" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">';
+  if (cover) html += '<img class="detail-cover" src="' + cover.replace(/"/g, '&quot;') + '" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">';
   else html += '<div class="detail-cover" style="display:flex;align-items:center;justify-content:center;color:#888;font-size:12px;">无封面</div>';
   html += '</div><div class="detail-meta">';
-  html += '<div class="detail-title-row"><h1>' + title + '</h1></div>';
-  if (remarks) html += '<div class="remarks-text">' + remarks + '</div>';
+  html += '<div class="detail-title-row"><h1>' + escapeHtml(title) + '</h1></div>';
+  if (remarks) html += '<div class="remarks-text">' + escapeHtml(remarks) + '</div>';
   html += '<div class="tags">';
-  if (year) html += '<span class="tag">' + year + '</span>';
-  if (area) html += '<span class="tag">' + area + '</span>';
-  if (type) html += '<span class="tag">' + type + '</span>';
+  if (year) html += '<span class="tag">' + escapeHtml(year) + '</span>';
+  if (area) html += '<span class="tag">' + escapeHtml(area) + '</span>';
+  if (type) html += '<span class="tag">' + escapeHtml(type) + '</span>';
   html += '</div>';
-  if (director) html += '<div class="meta-line">导演：' + director + '</div>';
+  if (director) html += '<div class="meta-line">导演：' + escapeHtml(director) + '</div>';
   html += '<div class="fav-line" id="detailFavStar" onclick="toggleFav()">' + starSvg + ' ' + favText + '</div>';
   html += '</div></div>';
-  if (actor) html += '<div class="detail-section"><div class="section-label">演员</div><div class="section-text">' + actor + '</div></div>';
-  if (content) html += '<div class="detail-section"><div class="section-label">简介</div><div class="section-text">' + content + '</div></div>';
+  if (actor) html += '<div class="detail-section"><div class="section-label">演员</div><div class="section-text">' + escapeHtml(actor) + '</div></div>';
+  if (content) html += '<div class="detail-section"><div class="section-label">简介</div><div class="section-text">' + escapeHtml(content) + '</div></div>';
   if (playUrl.length > 0 && playUrl[0]) {
     html += '<div class="play-tabs" id="playTabs">';
     playFrom.forEach(function(from, i) {
-      if (playUrl[i]) { var label = from || ('播放源' + (i + 1)); html += '<div class="play-tab' + (i === 0 ? ' active' : '') + '" onclick="switchTab(' + i + ', this)">' + label + '</div>'; }
+      if (playUrl[i]) { var label = escapeHtml(from || ('播放源' + (i + 1))); html += '<div class="play-tab' + (i === 0 ? ' active' : '') + '" onclick="switchTab(' + i + ', this)">' + label + '</div>'; }
     });
     html += '</div><div id="episodeGrid" class="episode-grid"></div>';
   } else html += '<div class="empty"><div class="icon">😢</div><p>暂无播放资源</p></div>';
@@ -1517,7 +1524,7 @@ function closeDetail() { closeViewByButton('detail'); }
 // ========== 生成播放器HTML（集成弹幕功能） ==========
 function generatePlayerHtml(detail, epIdx, resumeTime) {
   resumeTime = resumeTime || 0;
-  var dataStr = JSON.stringify(detail).replace(/</g, '\\u003c').replace(/<\/script>/g, '<\\/script>');
+  var dataStr = JSON.stringify(detail).replace(/</g, '\\u003c');
   var playFrom = (detail.vod_play_from || '').split('$$$');
   var playUrl = (detail.vod_play_url || '').split('$$$');
   var title = detail.vod_name || '未知';
@@ -1660,7 +1667,7 @@ function generatePlayerHtml(detail, epIdx, resumeTime) {
   html += '<div class="danmaku-container" id="danmakuContainer"></div>';
   html += '<div class="top-bar" id="topBar">';
   html += '<button class="tb-btn" onclick="parent.closePlayer()"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>';
-  html += '<span class="tb-title" id="playerTitle">' + title + '</span>';
+  html += '<span class="tb-title" id="playerTitle">' + escapeHtml(title) + '</span>';
   html += '<button class="tb-btn" id="danmakuToggleBtn" onclick="toggleDanmaku()"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg></button>';
   html += '<button class="tb-btn" id="dmSettingsBtn" onclick="toggleDmSettingsPanel()" style="padding:4px 2px"><svg viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg></button>';
   html += '<button class="tb-btn" id="favBtn" onclick="togglePlayerFav()"><svg id="favIcon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></button>';
@@ -2481,8 +2488,6 @@ function openSettings() {
   renderSourceList();
   renderHomeSourceSelect();
   var sel = document.getElementById('proxySelect'); if (sel) sel.value = proxyMode;
-  var homeSel = document.getElementById('homeSourceSelect');
-  if (homeSel && !homeSel._bound) { homeSel.addEventListener('change', applyHomeSource); homeSel._bound = true; }
   initDmConfigUI();
   document.getElementById('settingsModal').classList.add('show');
   pushView('settings');
@@ -2499,7 +2504,6 @@ function renderHomeSourceSelect() {
   });
   sel.innerHTML = html;
 }
-function changeHomeSource() { applyHomeSource(); }
 function applyHomeSource() {
   var sel = document.getElementById('homeSourceSelect');
   if (!sel) return;
@@ -2512,6 +2516,7 @@ function applyHomeSource() {
   State.homeTypes = [];
   _homeTypesLoaded = false;
   State.homeCurrentType = 0;
+  State.homeCurrentParent = 0;
   closeSettings();
   setTimeout(function() { resetAllViews(); goHomeDirect(); }, 100);
 }
@@ -2657,8 +2662,14 @@ function handleGlobalClick(e) {
         showDetail(item);
       }
     } else if (act === 'home') {
-      var videos = State.homeCache[State.homeCurrentType] || [];
-      var hItem = videos[cIdx];
+      var hItem = null;
+      if (cIdx !== '' && cIdx >= 0) {
+        var videos = State.homeCache[State.homeCurrentType] || [];
+        hItem = videos[cIdx];
+      }
+      if (!hItem) {
+        try { hItem = JSON.parse(card.getAttribute('data-item')); } catch(e) {}
+      }
       if (hItem) showDetailFromHome(hItem);
     }
     return;
