@@ -61,8 +61,10 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .art-list-item:last-child{border-bottom:none;border-radius:0 0 var(--radius) var(--radius)}
 .art-list-item:first-child{border-radius:var(--radius) var(--radius) 0 0}
 .art-list-item:only-child{border-radius:var(--radius)}
-.art-list-title{font-size:14px;font-weight:500;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.art-list-meta{font-size:12px;color:var(--text-dim);margin-left:12px;white-space:nowrap;flex-shrink:0}
+.art-list-title{font-size:14px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.art-list-sub{display:flex;align-items:center;gap:8px;margin-top:3px}
+.art-list-tag{font-size:11px;color:var(--primary);background:rgba(108,92,231,0.1);padding:1px 6px;border-radius:8px;white-space:nowrap}
+.art-list-time{font-size:11px;color:var(--text-dim);white-space:nowrap}
 .card-wrap{position:relative;min-width:0;max-width:100%;width:100%;overflow:hidden}
 .del-btn{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;background:rgba(231,76,60,0.9);color:#fff;border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:20;line-height:1;-webkit-tap-highlight-color:transparent;pointer-events:auto;touch-action:manipulation}
 .del-btn:active{background:rgba(231,76,60,1);transform:scale(0.9)}
@@ -1011,13 +1013,21 @@ function loadParentAllVideos(parentId, children) {
   for (var i = 0; i < 9; i++) sk += '<div><div class="sk-poster"></div><div class="sk-line"></div></div>';
   sk += '</div>';
   container.innerHTML = sk;
-  var apiUrl = getHomeSourceUrl();
+  var useArt = isArtType(parentId);
+  var apiUrl = useArt ? getArtSourceUrl() : getHomeSourceUrl();
+  var acType = useArt ? 'list' : 'videolist';
   var allResults = [];
   var done = 0;
   if (children.length === 0) { container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无内容</p></div>'; return; }
   children.forEach(function(c, idx) {
-    fetchJson(apiUrl + '?ac=videolist&t=' + c.type_id + '&pg=1', function(d) {
-      allResults[idx] = (d && d.list) ? d.list : [];
+    fetchJson(apiUrl + '?ac=' + acType + '&t=' + c.type_id + '&pg=1', function(d) {
+      var list = (d && d.list) ? d.list : [];
+      if (useArt) {
+        list = list.map(function(item) {
+          return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
+        });
+      }
+      allResults[idx] = list;
       done++;
       if (done === children.length) mergeAndRender();
     }, function() {
@@ -1036,7 +1046,7 @@ function loadParentAllVideos(parentId, children) {
       });
     });
     merged.sort(function(a, b) {
-      var ta = a.vod_time || '', tb = b.vod_time || '';
+      var ta = a.vod_time || a.art_time || '', tb = b.vod_time || b.art_time || '';
       return tb > ta ? 1 : tb < ta ? -1 : 0;
     });
     State.homeCache[parentId] = merged;
@@ -1125,10 +1135,16 @@ function renderHomeGrid(videos, isAppend) {
     videos.forEach(function(item) {
       var title = item.vod_name || '未知';
       var remarks = item.vod_remarks || '';
+      var typeName = item.type_name || '';
+      var updateTime = (item.vod_time || '').substring(0, 10);
       var globalIdx = State.homeCache[State.homeCurrentType] ? State.homeCache[State.homeCurrentType].indexOf(item) : -1;
       html += '<div class="art-list-item" data-action="home" data-idx="' + (globalIdx >= 0 ? globalIdx : '') + '" data-item="' + JSON.stringify(item).replace(/"/g, '&quot;') + '">';
+      html += '<div style="flex:1;min-width:0">';
       html += '<div class="art-list-title">' + escapeHtml(title) + '</div>';
-      if (remarks) html += '<div class="art-list-meta">' + escapeHtml(remarks) + '</div>';
+      html += '<div class="art-list-sub">';
+      if (typeName) html += '<span class="art-list-tag">' + escapeHtml(typeName) + '</span>';
+      if (updateTime) html += '<span class="art-list-time">' + escapeHtml(updateTime) + '</span>';
+      html += '</div></div>';
       html += '</div>';
     });
   } else {
