@@ -1451,7 +1451,8 @@ function openArtDetailFrame(item) {
   html += '.art-title{font-size:18px;font-weight:700;margin:8px 0 4px;line-height:1.4}';
   html += '.art-meta{font-size:12px;color:#86868b;margin-bottom:12px}';
   html += '.art-cover{width:100%;max-width:200px;aspect-ratio:3/4;border-radius:8px;object-fit:cover;background:#e8e8ec;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}';
-  html += '.art-content{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);white-space:pre-wrap;word-break:break-all;font-size:15px;line-height:1.8;color:#333}';
+  html += '.art-content{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);font-size:15px;line-height:1.8;color:#333}';
+  html += '.art-content p{margin:0 0 16px;text-indent:2em}';
   html += '.art-content img{max-width:100%;border-radius:8px;margin:8px 0}';
   html += '.gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}';
   html += '.gallery img{width:100%;border-radius:8px;background:#e8e8ec;cursor:pointer}';
@@ -1473,7 +1474,10 @@ function openArtDetailFrame(item) {
     html += '</div>';
   } else if (content) {
     var cleanContent = content.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-    html += '<div class="art-content">' + escapeHtml(cleanContent) + '</div>';
+    var paras = cleanContent.split(/\n/).filter(function(s){ return s.trim(); });
+    if (paras.length === 0) paras = [cleanContent];
+    var contentHtml = paras.map(function(p) { return '<p>' + escapeHtml(p.trim()) + '</p>'; }).join('');
+    html += '<div class="art-content">' + contentHtml + '</div>';
   } else {
     html += '<div style="text-align:center;padding:40px;color:#86868b"><p>暂无内容</p></div>';
   }
