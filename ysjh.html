@@ -639,10 +639,9 @@ function getArtSourceUrl() {
   var vodUrl = getHomeSourceUrl();
   return vodUrl.replace('/provide/vod', '/provide/art').replace('/provide/vod/', '/provide/art/');
 }
+var _artTypeIds = {};
 function isArtType(typeId) {
-  return State.homeTypes.some(function(t) {
-    return t.type_id === typeId && (t.type_pid == 4 || t.type_pid == 5 || t.type_id == 4 || t.type_id == 5);
-  });
+  return !!_artTypeIds[typeId];
 }
 function isArtItem(item) {
   return !!(item.art_id || item.art_name);
@@ -917,8 +916,14 @@ function loadHomeTypes() {
     finish();
   }, function() { vodDone = true; finish(); }, 10000);
   fetchJson(artUrl, function(data) {
+    _artTypeIds = {};
     if (data && data.class && data.class.length > 0) {
-      data.class.forEach(function(t) { if (t.type_id !== undefined && t.type_name) artTypes.push(t); });
+      data.class.forEach(function(t) {
+        if (t.type_id !== undefined && t.type_name) {
+          artTypes.push(t);
+          _artTypeIds[t.type_id] = true;
+        }
+      });
     }
     artDone = true;
     finish();
@@ -1149,7 +1154,7 @@ function removeLoadMoreIndicator() {
 function renderHomeGrid(videos, isAppend) {
   var container = document.getElementById('homeList');
   if (!container) return;
-  var useArtList = State.homeTypes.some(function(t) { return t.type_id === State.homeCurrentType && (t.type_pid == 4 || t.type_pid == 5 || t.type_id == 4 || t.type_id == 5); });
+  var useArtList = isArtType(State.homeCurrentType);
   var html = '';
   if (useArtList) {
     videos.forEach(function(item) {
