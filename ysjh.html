@@ -1159,13 +1159,18 @@ function loadHomeVideos(typeId, page, isRefresh) {
         State.homeCache[typeId] = State.homeCache[typeId].concat(newList);
       }
       State.homeCurrentPage = page;
-      State.homeHasMore = data.list.length >= 20 && newList.length > 0;
+      var apiPageCount = data.pagecount || 0;
+      if (apiPageCount > 0) {
+        State.homeHasMore = page < apiPageCount && newList.length > 0;
+      } else {
+        State.homeHasMore = data.list.length >= 20 && newList.length > 0;
+      }
       if (newList.length > 0) {
         renderHomeGrid(newList, !isRefresh);
       } else {
         if (page === 1) {
           container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无内容</p></div>';
-        } else if (State.homeHasMore) {
+        } else if (State.homeHasMore && page < (apiPageCount || 9999)) {
           loadHomeVideos(typeId, page + 1, false);
         } else {
           removeLoadMoreIndicator();
@@ -1183,8 +1188,6 @@ function loadHomeVideos(typeId, page, isRefresh) {
     State.homeLoading = false;
     if (page === 1) {
       container.innerHTML = '<div class="empty"><div class="icon">😢</div><p>加载失败，请检查代理设置</p></div>';
-    } else {
-      removeLoadMoreIndicator();
     }
   }, 12000);
 }
