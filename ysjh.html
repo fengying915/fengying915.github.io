@@ -934,12 +934,14 @@ function renderTypeTabs() {
   var container = document.getElementById('catTabs');
   if (!container) return;
   var parents = [];
-  var childIds = {};
+  var hasHierarchy = State.homeTypes.some(function(t) { return t.type_pid !== undefined && t.type_pid !== 0 && t.type_pid !== '0'; });
   State.homeTypes.forEach(function(t) {
-    if (t.type_pid !== undefined && t.type_pid !== 0 && t.type_pid !== '0') childIds[t.type_pid] = true;
-  });
-  State.homeTypes.forEach(function(t) {
-    if (t.type_id !== 0 && (t.type_pid === 0 || t.type_pid === '0' || t.type_pid === undefined || !childIds[t.type_id])) parents.push(t);
+    if (t.type_id === 0) return;
+    if (hasHierarchy) {
+      if (t.type_pid === 0 || t.type_pid === '0') parents.push(t);
+    } else {
+      parents.push(t);
+    }
   });
   var hasAll = State.homeTypes.some(function(t) { return t.type_id === 0; });
   if (!hasAll) parents.unshift({ type_id: 0, type_name: '全部', type_pid: 0 });
