@@ -2166,13 +2166,27 @@ function updateSearchProgress(keyword, done, total) {
   if (view.querySelector('.loading')) view.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:12px">搜索 "' + keyword + '" 中... (' + done + '/' + total + ', 已找到 ' + found + ' 个源)</p></div>';
 }
 function searchByTag(tag) {
-  var sourceUrl = getHomeSourceUrl();
-  var apiUrl = sourceUrl + '?ac=videolist&wd=' + encodeURIComponent(tag);
-  var view = document.getElementById('mainContent');
   closeDetailFrame();
   viewStack = viewStack.filter(function(v) { return v !== 'detail'; });
   updateBackButton();
   _currentTab = 'home';
+  State.isSearchView = false;
+  var matched = null;
+  State.homeTypes.forEach(function(t) {
+    if (t.type_name === tag) matched = t;
+  });
+  if (matched) {
+    State.homeCurrentType = matched.type_id;
+    State.homeCurrentParent = matched.type_pid || 0;
+    State.homeCurrentPage = 1;
+    State.homeHasMore = true;
+    renderTypeTabs();
+    loadHomeVideos(matched.type_id, 1, false);
+    return;
+  }
+  var sourceUrl = getHomeSourceUrl();
+  var apiUrl = sourceUrl + '?ac=videolist&wd=' + encodeURIComponent(tag);
+  var view = document.getElementById('mainContent');
   State.isSearchView = true;
   view.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:12px">搜索 "' + tag + '" 中...</p></div>';
   var sourceName = getHomeSourceName();
