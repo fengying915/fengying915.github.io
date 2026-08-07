@@ -1474,12 +1474,21 @@ function openArtDetailFrame(item) {
   var artId = item._artId || item.vod_id || item.art_id;
   var imgUrls = [];
   if (content) {
-    var imgMatch = content.match(/\[img\](.*?)\[\/img\]/gi) || content.match(/https?:\/\/[^\s"']+\.(jpg|jpeg|png|gif|webp)/gi);
-    if (imgMatch) {
-      imgMatch.forEach(function(m) {
+    var imgTagMatch = content.match(/<img[^>]+src=["']([^"']+)["']/gi) || [];
+    imgTagMatch.forEach(function(m) {
+      var srcMatch = m.match(/src=["']([^"']+)["']/i);
+      if (srcMatch && srcMatch[1]) imgUrls.push(srcMatch[1]);
+    });
+    if (imgUrls.length === 0) {
+      var bbMatch = content.match(/\[img\](.*?)\[\/img\]/gi) || [];
+      bbMatch.forEach(function(m) {
         var url = m.replace(/\[img\]/gi, '').replace(/\[\/img\]/gi, '').trim();
         if (url) imgUrls.push(url);
       });
+    }
+    if (imgUrls.length === 0) {
+      var urlMatch = content.match(/https?:\/\/[^\s"'>]+\.(jpg|jpeg|png|gif|webp)/gi) || [];
+      urlMatch.forEach(function(url) { if (url) imgUrls.push(url); });
     }
   }
   var isImageType = typeName && (typeName.indexOf('美图') >= 0 || typeName.indexOf('身体') >= 0 || typeName.indexOf('角色') >= 0 || typeName.indexOf('福利') >= 0 || typeName.indexOf('漫画') >= 0);
