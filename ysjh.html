@@ -884,44 +884,6 @@ var _homeTypesLoaded = false;
 var _homeRetryCount = 0;
 
 function fetchWebsiteHierarchy(types, callback) {
-  var PARENT_MAP = {
-    '电影': ['动作片','喜剧片','爱情片','科幻片','恐怖片','剧情片','战争片','纪录片','动画片','犯罪片','奇幻片','冒险片','悬疑片','历史片','武侠片','邵氏','4K','Netflix','院线'],
-    '电视剧': ['国产剧','韩剧','日剧','港剧','台剧','美剧','英剧','泰剧','欧美剧','大陆剧','海外剧','国产','港台','日韩','网剧','微短剧'],
-    '综艺': ['大陆综艺','港台综艺','日韩综艺','欧美综艺','台湾综艺','韩国综艺','日本综艺','演唱会','脱口秀','真人秀','儿歌'],
-    '动漫': ['国产动漫','日韩动漫','欧美动漫','港台动漫','海外动漫','剧场版','OVA','有声动漫'],
-    '纪录片': ['自然','历史','社会','人文','科技','地理'],
-    '短剧': ['爽文短剧','女频恋爱','反转爽剧','古装仙侠','年代穿越','脑洞悬疑','现代都市','漫剧'],
-    '体育': ['篮球','足球','网球','羽毛球','乒乓球','赛车','格斗','电竞','NBA','中超','英超','西甲'],
-    '伦理': ['港台伦理','韩国伦理','日本伦理','西方伦理','国产伦理','两性','写真'],
-    '预告': ['预告片','影视解说'],
-    '科普': ['学习','教育']
-  };
-
-  var assigned = {};
-  types.forEach(function(t) {
-    if (t.type_id === 0 || assigned[t.type_id]) return;
-    var name = t.type_name;
-    for (var parentName in PARENT_MAP) {
-      var keywords = PARENT_MAP[parentName];
-      for (var i = 0; i < keywords.length; i++) {
-        if (name.indexOf(keywords[i]) >= 0 || keywords[i].indexOf(name) >= 0) {
-          var parent = null;
-          types.forEach(function(p) { if (p.type_name === parentName || p.type_name.indexOf(parentName) >= 0) parent = p; });
-          if (parent && parent.type_id !== t.type_id) {
-            t.type_pid = parent.type_id;
-            assigned[t.type_id] = true;
-            break;
-          }
-        }
-      }
-      if (assigned[t.type_id]) break;
-    }
-  });
-
-  types.forEach(function(t) {
-    if (t.type_id !== 0 && t.type_pid === undefined) t.type_pid = 0;
-  });
-
   callback();
 }
 
