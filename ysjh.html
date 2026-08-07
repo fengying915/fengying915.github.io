@@ -55,6 +55,14 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .video-card .info{padding:6px 8px;min-width:0;overflow:hidden}
 .video-card .title{font-size:13px;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all;line-height:1.3;max-height:2.6em}
 .video-card .sub{font-size:11px;color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.art-list{display:flex;flex-direction:column;gap:0}
+.art-list-item{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--card);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.art-list-item:active{background:var(--card-hover)}
+.art-list-item:last-child{border-bottom:none;border-radius:0 0 var(--radius) var(--radius)}
+.art-list-item:first-child{border-radius:var(--radius) var(--radius) 0 0}
+.art-list-item:only-child{border-radius:var(--radius)}
+.art-list-title{font-size:14px;font-weight:500;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.art-list-meta{font-size:12px;color:var(--text-dim);margin-left:12px;white-space:nowrap;flex-shrink:0}
 .card-wrap{position:relative;min-width:0;max-width:100%;width:100%;overflow:hidden}
 .del-btn{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;background:rgba(231,76,60,0.9);color:#fff;border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:20;line-height:1;-webkit-tap-highlight-color:transparent;pointer-events:auto;touch-action:manipulation}
 .del-btn:active{background:rgba(231,76,60,1);transform:scale(0.9)}
@@ -877,15 +885,17 @@ function loadHomeTypes() {
   var apiUrl = getHomeSourceUrl() + '?ac=list';
   var artUrl = getArtSourceUrl() + '?ac=list';
   var vodDone = false, artDone = false;
-  var allTypes = [];
+  var vodTypes = [], artTypes = [];
   function finish() {
     if (!vodDone || !artDone) return;
     var seen = {};
-    var unique = [];
-    allTypes.forEach(function(t) {
-      if (!seen[t.type_id]) { seen[t.type_id] = true; unique.push(t); }
+    var allTypes = [];
+    vodTypes.forEach(function(t) {
+      if (!seen[t.type_id]) { seen[t.type_id] = true; allTypes.push(t); }
     });
-    allTypes = unique;
+    artTypes.forEach(function(t) {
+      if (!seen[t.type_id]) { seen[t.type_id] = true; allTypes.push(t); }
+    });
     var hasAll = allTypes.some(function(t) { return t.type_id === 0 || t.type_name === '全部'; });
     if (!hasAll) allTypes.unshift({ type_id: 0, type_name: '全部', type_pid: 0 });
     State.homeTypes = allTypes;
@@ -899,14 +909,14 @@ function loadHomeTypes() {
   }
   fetchJson(apiUrl, function(data) {
     if (data && data.class && data.class.length > 0) {
-      data.class.forEach(function(t) { if (t.type_id !== undefined && t.type_name) allTypes.push(t); });
+      data.class.forEach(function(t) { if (t.type_id !== undefined && t.type_name) vodTypes.push(t); });
     }
     vodDone = true;
     finish();
   }, function() { vodDone = true; finish(); }, 10000);
   fetchJson(artUrl, function(data) {
     if (data && data.class && data.class.length > 0) {
-      data.class.forEach(function(t) { if (t.type_id !== undefined && t.type_name) allTypes.push(t); });
+      data.class.forEach(function(t) { if (t.type_id !== undefined && t.type_name) artTypes.push(t); });
     }
     artDone = true;
     finish();
@@ -1109,35 +1119,48 @@ function removeLoadMoreIndicator() {
 function renderHomeGrid(videos, isAppend) {
   var container = document.getElementById('homeList');
   if (!container) return;
+  var useArtList = State.homeTypes.some(function(t) { return t.type_id === State.homeCurrentType && (t.type_pid == 4 || t.type_pid == 5 || t.type_id == 4 || t.type_id == 5); });
   var html = '';
-  videos.forEach(function(item) {
-    var cover = item.vod_pic || '';
-    var title = item.vod_name || '未知';
-    var remarks = item.vod_remarks || '';
-    var globalIdx = State.homeCache[State.homeCurrentType] ? State.homeCache[State.homeCurrentType].indexOf(item) : -1;
-    html += '<div class="video-card" data-action="home" data-idx="' + (globalIdx >= 0 ? globalIdx : '') + '" data-item="' + JSON.stringify(item).replace(/"/g, '&quot;') + '">';
-    html += '<div class="cover">';
-    if (cover) {
-      html += '<img src="' + cover.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
-      html += '<div class="placeholder" style="display:none">' + escapeHtml(title) + '</div>';
-    } else {
-      html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
-    }
-    if (remarks) html += '<div class="remarks">' + escapeHtml(remarks) + '</div>';
-    html += '</div>';
-    html += '<div class="info"><div class="title" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</div></div>';
-    html += '</div>';
-  });
+  if (useArtList) {
+    videos.forEach(function(item) {
+      var title = item.vod_name || '未知';
+      var remarks = item.vod_remarks || '';
+      var globalIdx = State.homeCache[State.homeCurrentType] ? State.homeCache[State.homeCurrentType].indexOf(item) : -1;
+      html += '<div class="art-list-item" data-action="home" data-idx="' + (globalIdx >= 0 ? globalIdx : '') + '" data-item="' + JSON.stringify(item).replace(/"/g, '&quot;') + '">';
+      html += '<div class="art-list-title">' + escapeHtml(title) + '</div>';
+      if (remarks) html += '<div class="art-list-meta">' + escapeHtml(remarks) + '</div>';
+      html += '</div>';
+    });
+  } else {
+    videos.forEach(function(item) {
+      var cover = item.vod_pic || '';
+      var title = item.vod_name || '未知';
+      var remarks = item.vod_remarks || '';
+      var globalIdx = State.homeCache[State.homeCurrentType] ? State.homeCache[State.homeCurrentType].indexOf(item) : -1;
+      html += '<div class="video-card" data-action="home" data-idx="' + (globalIdx >= 0 ? globalIdx : '') + '" data-item="' + JSON.stringify(item).replace(/"/g, '&quot;') + '">';
+      html += '<div class="cover">';
+      if (cover) {
+        html += '<img src="' + cover.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
+        html += '<div class="placeholder" style="display:none">' + escapeHtml(title) + '</div>';
+      } else {
+        html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
+      }
+      if (remarks) html += '<div class="remarks">' + escapeHtml(remarks) + '</div>';
+      html += '</div>';
+      html += '<div class="info"><div class="title" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</div></div>';
+      html += '</div>';
+    });
+  }
   if (isAppend) {
     removeLoadMoreIndicator();
-    var grid = container.querySelector('.video-grid');
+    var grid = container.querySelector(useArtList ? '.art-list' : '.video-grid');
     if (grid) {
       grid.insertAdjacentHTML('beforeend', html);
     } else {
-      container.innerHTML = '<div class="video-grid">' + html + '</div>';
+      container.innerHTML = '<div class="' + (useArtList ? 'art-list' : 'video-grid') + '">' + html + '</div>';
     }
   } else {
-    container.innerHTML = '<div class="video-grid">' + html + '</div>';
+    container.innerHTML = '<div class="' + (useArtList ? 'art-list' : 'video-grid') + '">' + html + '</div>';
   }
   if (State.homeHasMore) {
     var indicator = document.createElement('div');
