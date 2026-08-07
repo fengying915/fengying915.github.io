@@ -1472,7 +1472,7 @@ function openArtDetailFrame(item) {
     });
     html += '</div>';
   } else if (content) {
-    var cleanContent = content.replace(/\[img\]/gi, '').replace(/\[\/img\]/gi, '').replace(/<[^>]+>/g, '').trim();
+    var cleanContent = content.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
     html += '<div class="art-content">' + escapeHtml(cleanContent) + '</div>';
   } else {
     html += '<div style="text-align:center;padding:40px;color:#86868b"><p>暂无内容</p></div>';
