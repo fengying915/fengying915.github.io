@@ -55,16 +55,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .video-card .info{padding:6px 8px;min-width:0;overflow:hidden}
 .video-card .title{font-size:13px;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all;line-height:1.3;max-height:2.6em}
 .video-card .sub{font-size:11px;color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.art-list{display:flex;flex-direction:column;gap:0}
-.art-list-item{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--card);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
-.art-list-item:active{background:var(--card-hover)}
-.art-list-item:last-child{border-bottom:none;border-radius:0 0 var(--radius) var(--radius)}
-.art-list-item:first-child{border-radius:var(--radius) var(--radius) 0 0}
-.art-list-item:only-child{border-radius:var(--radius)}
-.art-list-title{font-size:14px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.art-list-sub{display:flex;align-items:center;gap:8px;margin-top:3px}
-.art-list-tag{font-size:11px;color:var(--primary);background:rgba(108,92,231,0.1);padding:1px 6px;border-radius:8px;white-space:nowrap}
-.art-list-time{font-size:11px;color:var(--text-dim);white-space:nowrap}
 .card-wrap{position:relative;min-width:0;max-width:100%;width:100%;overflow:hidden}
 .del-btn{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;background:rgba(231,76,60,0.9);color:#fff;border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:20;line-height:1;-webkit-tap-highlight-color:transparent;pointer-events:auto;touch-action:manipulation}
 .del-btn:active{background:rgba(231,76,60,1);transform:scale(0.9)}
@@ -138,12 +128,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .search-back-btn{background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:20px;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
 .search-back-btn:active{background:var(--card-hover)}
 .cat-tabs-wrap{position:relative;display:flex;flex-direction:column;gap:0;padding:4px 0 8px}
-.cat-scroll-wrap{display:flex;align-items:center;gap:0}
-.cat-scroll-btn{flex-shrink:0;width:28px;height:28px;border:none;background:var(--card);border:1px solid var(--border);border-radius:50%;cursor:pointer;font-size:14px;color:var(--text-dim);display:none;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.cat-scroll-btn.show{display:flex}
-.cat-scroll-btn:active{background:var(--card-hover)}
-.cat-scroll-btn:disabled{opacity:.3;cursor:default}
-@media(max-width:640px){.cat-scroll-btn{display:none!important}}
 .cat-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0}
 .cat-tabs::-webkit-scrollbar{display:none}
 .cat-tabs:empty{display:none}
@@ -956,12 +940,12 @@ function loadArtTypesAsync() {
       var seen = {};
       State.homeTypes.forEach(function(t) { seen[t.type_id] = true; });
       data.class.forEach(function(t) {
-        if (t.type_id !== undefined && t.type_name && !seen[t.type_id]) {
-          seen[t.type_id] = true;
-          State.homeTypes.push(t);
+        if (t.type_id !== undefined && t.type_name) {
           _artTypeIds[t.type_id] = true;
-        } else if (t.type_id !== undefined && seen[t.type_id]) {
-          _artTypeIds[t.type_id] = true;
+          if (!seen[t.type_id]) {
+            seen[t.type_id] = true;
+            State.homeTypes.push(t);
+          }
         }
       });
       renderTypeTabs();
@@ -979,33 +963,14 @@ function renderTypeTabs() {
   var hasAll = State.homeTypes.some(function(t) { return t.type_id === 0; });
   if (!hasAll) parents.unshift({ type_id: 0, type_name: '全部', type_pid: 0 });
   else parents.unshift(State.homeTypes.filter(function(t) { return t.type_id === 0; })[0]);
-  var html = '<div class="cat-scroll-wrap"><button class="cat-scroll-btn" onclick="scrollCatTabs(-1)">&#8249;</button><div class="cat-tabs" id="catTabsInner">';
+  var html = '<div class="cat-tabs">';
   parents.forEach(function(t) {
     var active = (t.type_id === State.homeCurrentType || (State.homeCurrentParent === t.type_id)) ? ' active' : '';
     html += '<div class="cat-tab' + active + '" data-type-id="' + t.type_id + '" data-is-parent="1">' + t.type_name + '</div>';
   });
-  html += '</div><button class="cat-scroll-btn" onclick="scrollCatTabs(1)">&#8250;</button></div><div class="sub-cat-panel" id="subCatPanel"></div>';
+  html += '</div><div class="sub-cat-panel" id="subCatPanel"></div>';
   container.innerHTML = html;
   if (State.homeCurrentParent > 0) renderSubTabs(State.homeCurrentParent);
-  updateCatScrollBtns();
-  var inner = document.getElementById('catTabsInner');
-  if (inner) inner.addEventListener('scroll', updateCatScrollBtns);
-}
-
-function updateCatScrollBtns() {
-  var el = document.getElementById('catTabsInner');
-  if (!el) return;
-  var needScroll = el.scrollWidth > el.clientWidth + 5;
-  var btns = document.querySelectorAll('.cat-scroll-btn');
-  btns.forEach(function(btn) { btn.classList.toggle('show', needScroll); });
-  if (!needScroll) return;
-  btns[0].disabled = el.scrollLeft <= 0;
-  btns[1].disabled = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
-}
-
-function scrollCatTabs(dir) {
-  var el = document.getElementById('catTabsInner');
-  if (el) el.scrollBy({ left: dir * 200, behavior: 'smooth' });
 }
 
 function renderSubTabs(parentTypeId) {
@@ -1066,52 +1031,32 @@ function switchHomeType(typeId, el) {
   loadHomeVideos(typeId, 1, true);
 }
 
-function loadParentAllVideos(parentId, children, page) {
+function loadParentAllVideos(parentId, children) {
   var container = document.getElementById('homeList');
   if (!container) return;
-  page = page || 1;
-  var isFirstLoad = page === 1;
-  if (isFirstLoad) {
-    State.homeCurrentPage = 1;
-    State.homeHasMore = true;
-    State.homeLoading = false;
-    var sk = '<div class="home-skeleton">';
-    for (var i = 0; i < 9; i++) sk += '<div><div class="sk-poster"></div><div class="sk-line"></div></div>';
-    sk += '</div>';
-    container.innerHTML = sk;
-  }
-  if (State.homeLoading) return;
-  State.homeLoading = true;
-  var useArt = isArtType(parentId);
-  var apiUrl = useArt ? getArtSourceUrl() : getHomeSourceUrl();
-  var acType = useArt ? 'list' : 'videolist';
+  State.homeCurrentPage = 1;
+  State.homeHasMore = false;
+  State.homeLoading = false;
+  var sk = '<div class="home-skeleton">';
+  for (var i = 0; i < 9; i++) sk += '<div><div class="sk-poster"></div><div class="sk-line"></div></div>';
+  sk += '</div>';
+  container.innerHTML = sk;
+  var apiUrl = getHomeSourceUrl();
   var allResults = [];
   var done = 0;
-  var finished = false;
-  if (children.length === 0) { State.homeLoading = false; container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无内容</p></div>'; return; }
+  if (children.length === 0) { container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无内容</p></div>'; return; }
   children.forEach(function(c, idx) {
-    fetchJson(apiUrl + '?ac=' + acType + '&t=' + c.type_id + '&pg=' + page, function(d) {
-      var list = (d && d.list) ? d.list : [];
-      list = list.filter(function(item) { return (item.vod_id || item.art_id) != null; });
-      if (useArt) {
-        list = list.map(function(item) {
-          return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
-        });
-      }
-      allResults[idx] = list;
+    fetchJson(apiUrl + '?ac=videolist&t=' + c.type_id + '&pg=1', function(d) {
+      allResults[idx] = (d && d.list) ? d.list : [];
       done++;
-      if (done === children.length && !finished) { finished = true; mergeAndRender(); }
+      if (done === children.length) mergeAndRender();
     }, function() {
       allResults[idx] = [];
       done++;
-      if (done === children.length && !finished) { finished = true; mergeAndRender(); }
-    }, 8000);
+      if (done === children.length) mergeAndRender();
+    });
   });
-  var _mergeTimer = setTimeout(function() {
-    if (!finished) { finished = true; mergeAndRender(); }
-  }, 15000);
   function mergeAndRender() {
-    clearTimeout(_mergeTimer);
     var seen = {};
     var merged = [];
     allResults.forEach(function(list) {
@@ -1121,25 +1066,11 @@ function loadParentAllVideos(parentId, children, page) {
       });
     });
     merged.sort(function(a, b) {
-      var ta = a.vod_time || a.art_time || '', tb = b.vod_time || b.art_time || '';
+      var ta = a.vod_time || '', tb = b.vod_time || '';
       return tb > ta ? 1 : tb < ta ? -1 : 0;
     });
-    State.homeLoading = false;
-    if (isFirstLoad) {
-      State.homeCache[parentId] = merged;
-      State.homeCurrentPage = page;
-      State.homeHasMore = merged.length >= 10;
-      renderHomeGrid(merged, false);
-    } else {
-      var cached = State.homeCache[parentId] || [];
-      var newItems = merged.filter(function(v) {
-        return !cached.some(function(c) { return c.vod_id === v.vod_id; });
-      });
-      State.homeCache[parentId] = cached.concat(newItems);
-      State.homeCurrentPage = page;
-      State.homeHasMore = newItems.length > 0 && merged.length >= 10;
-      renderHomeGrid(newItems, true);
-    }
+    State.homeCache[parentId] = merged;
+    renderHomeGrid(merged, false);
   }
 }
 
@@ -1161,18 +1092,12 @@ function loadHomeVideos(typeId, page, isRefresh) {
   }
   if (State.homeLoading) return;
   State.homeLoading = true;
-  var useArt = isArtType(typeId);
-  var baseApi = useArt ? getArtSourceUrl() : getHomeSourceUrl();
-  var apiUrl = baseApi + '?ac=' + (useArt ? 'list' : 'videolist') + '&pg=' + page;
+  var apiUrl = getHomeSourceUrl() + '?ac=videolist&pg=' + page;
   if (typeId > 0) apiUrl += '&t=' + typeId;
   fetchJson(apiUrl, function(data) {
     State.homeLoading = false;
     if (data && data.list && data.list.length > 0) {
-      var list = useArt ? data.list.map(function(item) {
-        return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
-      }) : data.list;
-      list = list.filter(function(item) { return item.vod_id != null; });
-      var newList = list.filter(function(item) {
+      var newList = data.list.filter(function(item) {
         var cache = State.homeCache[typeId] || [];
         return !cache.some(function(c) { return c.vod_id === item.vod_id; });
       });
@@ -1187,9 +1112,7 @@ function loadHomeVideos(typeId, page, isRefresh) {
       if (newList.length > 0) {
         renderHomeGrid(newList, !isRefresh);
       } else {
-        if (page === 1) {
-          container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无内容</p></div>';
-        } else if (State.homeHasMore) {
+        if (State.homeHasMore) {
           loadHomeVideos(typeId, page + 1, false);
         } else {
           removeLoadMoreIndicator();
@@ -1221,54 +1144,35 @@ function removeLoadMoreIndicator() {
 function renderHomeGrid(videos, isAppend) {
   var container = document.getElementById('homeList');
   if (!container) return;
-  var useArtList = isArtType(State.homeCurrentType);
   var html = '';
-  if (useArtList) {
-    videos.forEach(function(item) {
-      var title = item.vod_name || '未知';
-      var typeName = item.type_name || '';
-      var updateTime = (item.vod_time || '').substring(0, 10);
-      var globalIdx = State.homeCache[State.homeCurrentType] ? State.homeCache[State.homeCurrentType].indexOf(item) : -1;
-      html += '<div class="art-list-item" data-action="home" data-idx="' + (globalIdx >= 0 ? globalIdx : '') + '" data-item="' + JSON.stringify(item).replace(/"/g, '&quot;') + '">';
-      html += '<div style="flex:1;min-width:0">';
-      html += '<div class="art-list-title">' + escapeHtml(title) + '</div>';
-      html += '<div class="art-list-sub">';
-      if (typeName) html += '<span class="art-list-tag">' + escapeHtml(typeName) + '</span>';
-      if (updateTime) html += '<span class="art-list-time">' + escapeHtml(updateTime) + '</span>';
-      html += '</div></div>';
-      html += '</div>';
-    });
-  } else {
-    videos.forEach(function(item) {
-      var cover = item.vod_pic || '';
-      var title = item.vod_name || '未知';
-      var remarks = item.vod_remarks || '';
-      var globalIdx = State.homeCache[State.homeCurrentType] ? State.homeCache[State.homeCurrentType].indexOf(item) : -1;
-      html += '<div class="video-card" data-action="home" data-idx="' + (globalIdx >= 0 ? globalIdx : '') + '" data-item="' + JSON.stringify(item).replace(/"/g, '&quot;') + '">';
-      html += '<div class="cover">';
-      if (cover) {
-        html += '<img src="' + cover.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
-        html += '<div class="placeholder" style="display:none">' + escapeHtml(title) + '</div>';
-      } else {
-        html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
-      }
-      if (item.type_name) html += '<div class="cat-badge">' + escapeHtml(item.type_name) + '</div>';
-      if (remarks) html += '<div class="remarks">' + escapeHtml(remarks) + '</div>';
-      html += '</div>';
-      html += '<div class="info"><div class="title" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</div></div>';
-      html += '</div>';
-    });
-  }
+  videos.forEach(function(item) {
+    var cover = item.vod_pic || '';
+    var title = item.vod_name || '未知';
+    var remarks = item.vod_remarks || '';
+    var globalIdx = State.homeCache[State.homeCurrentType] ? State.homeCache[State.homeCurrentType].indexOf(item) : -1;
+    html += '<div class="video-card" data-action="home" data-idx="' + (globalIdx >= 0 ? globalIdx : '') + '" data-item="' + JSON.stringify(item).replace(/"/g, '&quot;') + '">';
+    html += '<div class="cover">';
+    if (cover) {
+      html += '<img src="' + cover.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
+      html += '<div class="placeholder" style="display:none">' + escapeHtml(title) + '</div>';
+    } else {
+      html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
+    }
+    if (remarks) html += '<div class="remarks">' + escapeHtml(remarks) + '</div>';
+    html += '</div>';
+    html += '<div class="info"><div class="title" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</div></div>';
+    html += '</div>';
+  });
   if (isAppend) {
     removeLoadMoreIndicator();
-    var grid = container.querySelector(useArtList ? '.art-list' : '.video-grid');
+    var grid = container.querySelector('.video-grid');
     if (grid) {
       grid.insertAdjacentHTML('beforeend', html);
     } else {
-      container.innerHTML = '<div class="' + (useArtList ? 'art-list' : 'video-grid') + '">' + html + '</div>';
+      container.innerHTML = '<div class="video-grid">' + html + '</div>';
     }
   } else {
-    container.innerHTML = '<div class="' + (useArtList ? 'art-list' : 'video-grid') + '">' + html + '</div>';
+    container.innerHTML = '<div class="video-grid">' + html + '</div>';
   }
   if (State.homeHasMore) {
     var indicator = document.createElement('div');
@@ -1286,16 +1190,7 @@ function checkScrollLoad() {
   if (!indicator) return;
   var rect = indicator.getBoundingClientRect();
   if (rect.top < window.innerHeight + 200) {
-    var typeId = State.homeCurrentType;
-    var isParent = State.homeTypes.some(function(t) {
-      return t.type_id === typeId && (t.type_pid == 0) && t.type_id !== 0;
-    });
-    if (isParent) {
-      var children = State.homeTypes.filter(function(t) { return t.type_pid == typeId; });
-      if (children.length > 0) loadParentAllVideos(typeId, children, State.homeCurrentPage + 1);
-    } else {
-      loadHomeVideos(typeId, State.homeCurrentPage + 1, false);
-    }
+    loadHomeVideos(State.homeCurrentType, State.homeCurrentPage + 1, false);
   }
 }
 window.addEventListener('scroll', checkScrollLoad, {passive: true});
