@@ -27,7 +27,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .header{position:sticky;top:0;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:100;padding:8px 0;border-bottom:1px solid var(--border)}
 @media(min-width:900px){.header .container{max-width:1400px;margin:0 auto}}
 .header .container{display:flex;gap:8px;align-items:center;padding:0 12px}
-.logo{font-size:17px;font-weight:700;white-space:nowrap;flex-shrink:0;background:linear-gradient(135deg,#6c5ce7,#a29bfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo{font-size:17px;font-weight:700;white-space:nowrap;flex-shrink:0;background:linear-gradient(135deg,#6c5ce7,#a29bfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;cursor:pointer;transition:opacity .2s}
+.logo:active{opacity:.7}
 .logo.hide{display:none}
 .search-box{flex:1;display:flex;gap:8px;min-width:0}
 .search-input{flex:1;min-width:0;padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;color:var(--text);font-size:16px;outline:none;transition:border .2s;box-shadow:var(--shadow)}
@@ -149,7 +150,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="header">
 <div class="container">
 <button class="btn btn-icon header-back-btn" id="headerBackBtn" onclick="goBack()" style="display:none">←</button>
-<div class="logo">🎬 影视聚合</div>
+<div class="logo" id="logoText" onclick="randomSwitchSource()" title="点击随机切换数据源">🎬 加载中...</div>
+<button class="btn btn-icon" onclick="randomSwitchSource()" title="随机切换数据源">🔄</button>
 <div class="search-box">
 <input class="search-input" id="searchInput" placeholder="搜索影视..." autocomplete="off">
 <button class="btn btn-icon" id="themeToggle" onclick="toggleTheme()" title="日/夜间模式">☀️</button>
@@ -823,6 +825,38 @@ function toggleTheme() {
   if (btn) btn.textContent = isDark ? '🌙' : '☀️';
 }
 applyTheme();
+
+// ========== 数据源切换 ==========
+function getHomeSourceName() {
+  var url = getHomeSourceUrl();
+  var sources = State.settings.sources;
+  for (var i = 0; i < sources.length; i++) {
+    if (sources[i].url === url) return sources[i].name;
+  }
+  return '未知源';
+}
+function updateLogo() {
+  var el = document.getElementById('logoText');
+  if (el) el.textContent = '🎬 ' + getHomeSourceName();
+}
+function randomSwitchSource() {
+  var sources = State.settings.sources;
+  if (sources.length <= 1) { showToast('只有一个数据源，无法切换'); return; }
+  var currentUrl = getHomeSourceUrl();
+  var candidates = sources.filter(function(s) { return s.url !== currentUrl; });
+  if (candidates.length === 0) { showToast('只有一个数据源，无法切换'); return; }
+  var picked = candidates[Math.floor(Math.random() * candidates.length)];
+  State.settings.homeSourceUrl = picked.url;
+  Config.save(State.settings);
+  showToast('已切换到：' + picked.name);
+  State.homeCache = {};
+  State.homeTypes = [];
+  _homeTypesLoaded = false;
+  State.homeCurrentType = 0;
+  State.homeCurrentParent = 0;
+  updateLogo();
+  goHomeDirect();
+}
 
 // ========== 首页 ==========
 var _homeTypesLoaded = false;
@@ -2288,7 +2322,8 @@ function goHomeDirect() {
     State.homeHasMore = true;
     loadHomeVideos(State.homeCurrentType, 1, true);
   } else {
-    loadHomeTypes();
+updateLogo();
+loadHomeTypes();
   }
 }
 function showHomeDirect() { goHomeDirect(); }
@@ -2540,6 +2575,7 @@ function applyHomeSource() {
   _homeTypesLoaded = false;
   State.homeCurrentType = 0;
   State.homeCurrentParent = 0;
+  updateLogo();
   closeSettings();
   setTimeout(function() { resetAllViews(); goHomeDirect(); }, 100);
 }
@@ -2566,6 +2602,7 @@ function removeSource(idx) {
   if (removed && State.settings.homeSourceUrl === removed.url) {
     State.settings.homeSourceUrl = State.settings.sources[0] ? State.settings.sources[0].url : '';
     Config.save(State.settings);
+    updateLogo();
   }
   showToast('已删除');
 }
