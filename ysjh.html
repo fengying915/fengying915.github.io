@@ -1302,7 +1302,6 @@ function checkScrollLoad() {
   if (!indicator) return;
   var rect = indicator.getBoundingClientRect();
   if (rect.top < window.innerHeight + 200) {
-    State.homeLoading = true;
     var typeId = State.homeCurrentType;
     var isParent = State.homeTypes.some(function(t) {
       return t.type_id === typeId && (t.type_pid == 0) && t.type_id !== 0;
@@ -1310,7 +1309,6 @@ function checkScrollLoad() {
     if (isParent) {
       var children = State.homeTypes.filter(function(t) { return t.type_pid == typeId; });
       if (children.length > 0) loadParentAllVideos(typeId, children, State.homeCurrentPage + 1);
-      else State.homeLoading = false;
     } else {
       loadHomeVideos(typeId, State.homeCurrentPage + 1, false);
     }
