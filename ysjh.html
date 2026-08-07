@@ -207,6 +207,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <button class="btn btn-sm btn-outline" style="margin-top:8px;width:100%" onclick="batchImport()">批量导入</button>
 </div>
 <div class="form-group">
+<label>分类层级配置（API未返回type_pid时生效）</label>
+<textarea class="form-input" id="hierarchyConfig" rows="4" placeholder='格式：{ "电影id": ["动作片id","喜剧片id"], "电视剧id": ["国产剧id"] }' style="font-family:monospace;font-size:12px;resize:vertical" oninput="saveHierarchy()"></textarea>
+<button class="btn btn-sm btn-outline" style="margin-top:4px;width:100%" onclick="loadHierarchyUI()">自动检测（从当前源官网提取）</button>
+<p style="font-size:11px;color:var(--text-dim);margin-top:4px">填入JSON格式，key为父分类id，值为子分类id数组</p>
+</div>
+<div class="form-group">
 <label>CORS代理（搜索/详情用）</label>
 <select class="form-input" id="proxySelect" onchange="changeProxy()">
 <option value="auto">自动选择（推荐）</option>
@@ -893,93 +899,44 @@ var _homeTypesLoaded = false;
 var _homeRetryCount = 0;
 
 function fetchWebsiteHierarchy(types, callback) {
+  var userHierarchy = State.settings && State.settings.hierarchy;
+  if (userHierarchy && Object.keys(userHierarchy).length > 0) {
+    Object.keys(userHierarchy).forEach(function(parentId) {
+      var children = userHierarchy[parentId];
+      if (!Array.isArray(children)) return;
+      children.forEach(function(childId) {
+        types.forEach(function(t) { if (t.type_id == childId) t.type_pid = parseInt(parentId); });
+      });
+    });
+    callback();
+    return;
+  }
+
   var source = getHomeSource();
   if (!source || !source.url) { callback(); return; }
   var m = source.url.match(/^(https?:\/\/[^\/]+)/);
   if (!m) { callback(); return; }
-  var siteUrl = m[1];
-  function tryFetch(idx) {
-    if (idx >= CORS_PROXIES.length) {
-      _fetchCompat(siteUrl, 8000, function(html) { parseMenu(html); callback(); }, function() { callback(); });
-      return;
-    }
-    var pu = CORS_PROXIES[idx](siteUrl);
-    _fetchCompat(pu, 8000, function(html) { parseMenu(html); callback(); }, function() { tryFetch(idx + 1); });
+  var domain = m[1].replace('https://', '').replace('http://', '');
+  var typeMap = {};
+  types.forEach(function(t) { if (t.type_id) typeMap[t.type_name] = t; });
+
+  var KNOWN_HIERARCHY = {
+    'suoniapi.com': { 1:[6,7,8,9,10,11,12,20,39,62,70,71], 2:[13,14,15,16,17,18,19,23,72], 3:[25,26,27,28,47,77], 4:[29,30,31,44,45], 48:[49,50], 54:[63,64,65,66,67,68,69,73,76], 55:[56,57,58,59,60,61], 74:[51,53] },
+    'zuidapi.com': { 1:[6,7,8,9,10,11,12,20,39,62,70,71], 2:[13,14,15,16,17,18,19,23,72], 3:[25,26,27,28,47,77], 4:[29,30,31,44,45], 48:[49,50], 54:[63,64,65,66,67,68,69,73,76], 55:[56,57,58,59,60,61], 74:[51,53] }
+  };
+
+  if (KNOWN_HIERARCHY[domain]) {
+    var mapping = KNOWN_HIERARCHY[domain];
+    Object.keys(mapping).forEach(function(parentId) {
+      mapping[parentId].forEach(function(childId) {
+        types.forEach(function(t) { if (t.type_id == childId) t.type_pid = parseInt(parentId); });
+      });
+    });
+    callback();
+    return;
   }
-  function parseMenu(html) {
-    var typeMap = {};
-    types.forEach(function(t) { if (t.type_id) typeMap[t.type_name] = t; });
-    // Pattern 1: suonizy.com style - menu-item with dropdown-item
-    var itemRegex = /<div class="menu-item">([\s\S]*?)(?=<div class="menu-item">|$)/g;
-    var block;
-    while ((block = itemRegex.exec(html)) !== null) {
-      var content = block[1];
-      var parentMatch = content.match(/<a href="[^"]*?\/vodtype\/(\d+)\.html">([^<]+)<\/a>/);
-      if (!parentMatch) continue;
-      var parentId = parseInt(parentMatch[1]);
-      var childRegex = /<div class="dropdown-item">[\s\S]*?<a href="[^"]*?\/vodtype\/(\d+)\.html">([^<]+)<\/a>/g;
-      var cm;
-      while ((cm = childRegex.exec(content)) !== null) {
-        var childId = parseInt(cm[1]);
-        var childName = cm[2].trim();
-        if (typeMap[childName]) typeMap[childName].type_pid = parentId;
-        else types.forEach(function(t) { if (t.type_id === childId) t.type_pid = parentId; });
-      }
-    }
-    // Pattern 2: li.nav-item with ul.dropdown-menu
-    if (Object.keys(typeMap).every(function(k) { return !typeMap[k].type_pid; })) {
-      var liRegex = /<li[^>]*class="[^"]*nav-item[^"]*"[\s\S]*?<\/li>/g;
-      while ((block = liRegex.exec(html)) !== null) {
-        var content = block[0];
-        var parentMatch = content.match(/<a href="[^"]*?\/vodtype\/(\d+)\.html">([^<]+)<\/a>/);
-        if (!parentMatch) continue;
-        var parentId = parseInt(parentMatch[1]);
-        var childRegex2 = /<li[^>]*>[\s\S]*?<a href="[^"]*?\/vodtype\/(\d+)\.html">([^<]+)<\/a>/g;
-        var cm2;
-        while ((cm2 = childRegex2.exec(content)) !== null) {
-          if (parseInt(cm2[1]) === parentId) continue;
-          var childId = parseInt(cm2[1]);
-          var childName = cm2[2].trim();
-          if (typeMap[childName]) typeMap[childName].type_pid = parentId;
-          else types.forEach(function(t) { if (t.type_id === childId) t.type_pid = parentId; });
-        }
-      }
-    }
-    // Pattern 3: generic - find all vodtype links, group by nesting level
-    if (Object.keys(typeMap).every(function(k) { return !typeMap[k].type_pid; })) {
-      var allLinks = [];
-      var linkRegex = /<a[^>]*href="[^"]*?\/vodtype\/(\d+)\.html"[^>]*>([^<]+)<\/a>/g;
-      var lm;
-      while ((lm = linkRegex.exec(html)) !== null) {
-        allLinks.push({ id: parseInt(lm[1]), name: lm[2].trim(), pos: lm.index });
-      }
-      // Find parent-child: a link followed by another link at deeper nesting is a child
-      // Simple heuristic: first appearance of a type_id is parent, later appearances at same level are ignored
-      // Use depth heuristic: count nesting of tags around each link
-      for (var i = 0; i < allLinks.length; i++) {
-        var before = html.substring(0, allLinks[i].pos);
-        var depth = 0;
-        for (var j = before.length - 1; j >= Math.max(0, before.length - 500); j--) {
-          if (before[j] === '>') depth++;
-          if (before[j] === '<') depth--;
-        }
-        allLinks[i].depth = depth;
-      }
-      // Links with higher depth are children of the nearest previous lower-depth link
-      var parentStack = [];
-      for (var i = 0; i < allLinks.length; i++) {
-        var link = allLinks[i];
-        while (parentStack.length > 0 && parentStack[parentStack.length - 1].depth >= link.depth) parentStack.pop();
-        if (parentStack.length > 0 && link.depth > parentStack[parentStack.length - 1].depth) {
-          var parentId = parentStack[parentStack.length - 1].id;
-          if (typeMap[link.name]) typeMap[link.name].type_pid = parentId;
-          else types.forEach(function(t) { if (t.type_id === link.id) t.type_pid = parentId; });
-        }
-        parentStack.push(link);
-      }
-    }
-  }
-  tryFetch(0);
+
+  callback();
 }
 
 function loadHomeTypes() {
@@ -2878,6 +2835,7 @@ function openSettings() {
   renderHomeSourceSelect();
   var sel = document.getElementById('proxySelect'); if (sel) sel.value = proxyMode;
   initDmConfigUI();
+  initHierarchyConfig();
   document.getElementById('settingsModal').classList.add('show');
   pushView('settings');
 }
@@ -2948,6 +2906,56 @@ function batchImport() {
   });
   if (count > 0) { Config.save(State.settings); renderSourceList(); renderHomeSourceSelect(); document.getElementById('batchImport').value = ''; showToast('已导入 ' + count + ' 个源'); }
   else showToast('未识别到有效内容');
+}
+
+function saveHierarchy() {
+  var text = document.getElementById('hierarchyConfig').value.trim();
+  if (!text) { delete State.settings.hierarchy; Config.save(State.settings); return; }
+  try {
+    var obj = JSON.parse(text);
+    State.settings.hierarchy = obj;
+    Config.save(State.settings);
+    showToast('层级已保存');
+  } catch(e) {
+    showToast('JSON格式错误');
+  }
+}
+
+function loadHierarchyUI() {
+  var types = State.homeTypes.filter(function(t) { return t.type_id !== 0; });
+  if (types.length === 0) { showToast('请先加载分类'); return; }
+  var lines = [];
+  lines.push('当前分类（复制id填入上方）：');
+  lines.push('');
+  types.forEach(function(t) {
+    lines.push('id=' + t.type_id + (t.type_pid ? ' (父:' + t.type_pid + ')' : '') + '  ' + t.type_name);
+  });
+  lines.push('');
+  lines.push('示例：');
+  var sample = {};
+  types.forEach(function(t) {
+    if (t.type_pid && t.type_pid !== 0) {
+      var parentName = '';
+      types.forEach(function(p) { if (p.type_id === t.type_pid) parentName = p.type_name; });
+      if (!sample[t.type_pid]) sample[t.type_pid] = [];
+      sample[t.type_pid].push(t.type_id);
+    }
+  });
+  if (Object.keys(sample).length > 0) {
+    lines.push(JSON.stringify(sample));
+  } else {
+    lines.push('{ "父分类id": ["子分类id1", "子分类id2"] }');
+  }
+  var textarea = document.getElementById('hierarchyConfig');
+  textarea.value = lines.join('\n');
+  textarea.rows = 12;
+}
+
+function initHierarchyConfig() {
+  var el = document.getElementById('hierarchyConfig');
+  if (el && State.settings.hierarchy) {
+    el.value = JSON.stringify(State.settings.hierarchy, null, 2);
+  }
 }
 
 // ========== 导出/导入 ==========
