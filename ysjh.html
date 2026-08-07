@@ -890,6 +890,28 @@ function randomSwitchSource() {
 var _homeTypesLoaded = false;
 var _homeRetryCount = 0;
 
+function fetchWebsiteHierarchy(types, callback) {
+  var hasHierarchy = types.some(function(t) { return t.type_pid !== undefined && t.type_pid !== 0 && t.type_pid !== '0'; });
+  console.log('fetchWebsiteHierarchy: hasHierarchy=' + hasHierarchy + ' types=' + types.length);
+  if (hasHierarchy) {
+    var existIds = {};
+    types.forEach(function(t) { existIds[t.type_id] = true; });
+    console.log('existIds:', Object.keys(existIds).join(','));
+    var missingParents = {};
+    types.forEach(function(t) {
+      if (t.type_pid && t.type_pid !== 0 && t.type_pid !== '0' && !existIds[t.type_pid]) {
+        missingParents[t.type_pid] = true;
+      }
+    });
+    console.log('missingParents:', Object.keys(missingParents).join(','));
+    Object.keys(missingParents).forEach(function(pid) {
+      types.push({ type_id: parseInt(pid), type_name: '分类' + pid, type_pid: 0 });
+    });
+  }
+  console.log('fetchWebsiteHierarchy result:', types.map(function(t){ return t.type_id+':'+t.type_name+'(pid='+t.type_pid+')'; }).join(' | '));
+  callback();
+}
+
 function loadHomeTypes() {
   var apiUrl = getHomeSourceUrl() + '?ac=list';
   fetchJson(apiUrl, function(data) {
