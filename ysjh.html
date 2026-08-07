@@ -1272,6 +1272,7 @@ function checkScrollLoad() {
     if (isParent) {
       var children = State.homeTypes.filter(function(t) { return t.type_pid == typeId; });
       if (children.length > 0) loadParentAllVideos(typeId, children);
+      else loadHomeVideos(typeId, State.homeCurrentPage + 1, false);
     } else {
       loadHomeVideos(typeId, State.homeCurrentPage + 1, false);
     }
