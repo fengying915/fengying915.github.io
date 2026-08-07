@@ -635,6 +635,15 @@ function getHomeSourceUrl() {
   }
   return sources[0] ? sources[0].url : 'https://caiji.dyttzyapi.com/api.php/provide/vod';
 }
+function getHomeSource() {
+  var sources = State.settings.sources;
+  if (State.settings.homeSourceUrl) {
+    for (var i = 0; i < sources.length; i++) {
+      if (sources[i].url === State.settings.homeSourceUrl) return sources[i];
+    }
+  }
+  return sources[0] || { name: '电影天堂', url: 'https://caiji.dyttzyapi.com/api.php/provide/vod' };
+}
 function getArtSourceUrl() {
   var vodUrl = getHomeSourceUrl();
   return vodUrl.replace('/provide/vod', '/provide/art').replace('/provide/vod/', '/provide/art/');
@@ -882,6 +891,40 @@ function randomSwitchSource() {
 // ========== 首页 ==========
 var _homeTypesLoaded = false;
 var _homeRetryCount = 0;
+
+function fetchWebsiteHierarchy(types, callback) {
+  var source = getHomeSource();
+  if (!source || !source.url) { callback(); return; }
+  var m = source.url.match(/^(https?:\/\/[^\/]+)/);
+  if (!m) { callback(); return; }
+  var siteUrl = m[1];
+  fetchDirect(siteUrl, function(html) {
+    var typeMap = {};
+    types.forEach(function(t) { if (t.type_id) typeMap[t.type_name] = t; });
+    var itemRegex = /<div class="menu-item">([\s\S]*?)(?=<div class="menu-item">|$)/g;
+    var block;
+    while ((block = itemRegex.exec(html)) !== null) {
+      var content = block[1];
+      var parentMatch = content.match(/<a href="[^"]*?\/vodtype\/(\d+)\.html">([^<]+)<\/a>/);
+      if (!parentMatch) continue;
+      var parentId = parseInt(parentMatch[1]);
+      var childRegex = /<div class="dropdown-item">[\s\S]*?<a href="[^"]*?\/vodtype\/(\d+)\.html">([^<]+)<\/a>/g;
+      var cm;
+      while ((cm = childRegex.exec(content)) !== null) {
+        var childId = parseInt(cm[1]);
+        var childName = cm[2].trim();
+        if (typeMap[childName]) typeMap[childName].type_pid = parentId;
+        else {
+          types.forEach(function(t) {
+            if (t.type_id === childId) t.type_pid = parentId;
+          });
+        }
+      }
+    }
+    callback();
+  }, function() { callback(); }, 8000);
+}
+
 function loadHomeTypes() {
   var apiUrl = getHomeSourceUrl() + '?ac=list';
   var artUrl = getArtSourceUrl() + '?ac=list';
@@ -903,7 +946,14 @@ function loadHomeTypes() {
     _homeTypesLoaded = true;
     _homeRetryCount = 0;
     updateLogo();
-    renderTypeTabs();
+    var hasHierarchy = allTypes.some(function(t) { return t.type_pid !== undefined && t.type_pid !== 0 && t.type_pid !== '0'; });
+    if (!hasHierarchy) {
+      fetchWebsiteHierarchy(allTypes, function() {
+        renderTypeTabs();
+      });
+    } else {
+      renderTypeTabs();
+    }
     State.homeCurrentPage = 1;
     State.homeHasMore = true;
     loadHomeVideos(0, 1, true);
