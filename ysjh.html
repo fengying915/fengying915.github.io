@@ -1315,8 +1315,10 @@ function generateDetailHtml(item) {
   html += '.fav-line:active svg{transform:scale(0.85)}';
   html += '.remarks-text{font-size:12px;color:#86868b}';
   html += '.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}';
-  html += '.tag{background:#fff;padding:2px 8px;border-radius:10px;font-size:11px;color:#86868b;box-shadow:0 1px 4px rgba(0,0,0,0.06)}';
-  html += '.meta-line{font-size:12px;color:#86868b;margin-top:2px}';
+  html += '.tag{background:#fff;padding:2px 8px;border-radius:10px;font-size:11px;color:#86868b;box-shadow:0 1px 4px rgba(0,0,0,0.06);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s,color .15s}';
+  html += '.tag:active{background:#0071e3;color:#fff}';
+  html += '.meta-line{font-size:12px;color:#86868b;margin-top:2px;cursor:pointer;-webkit-tap-highlight-color:transparent}';
+  html += '.meta-line:active{color:#0071e3}';
   html += '.detail-section{padding:0 0 12px;min-width:0}';
   html += '.section-label{font-size:13px;font-weight:600;color:#1d1d1f;margin-bottom:4px}';
   html += '.section-text{font-size:13px;color:#86868b;line-height:1.7;word-break:break-all}';
@@ -1358,11 +1360,11 @@ function generateDetailHtml(item) {
   html += '<div class="detail-title-row"><h1>' + escapeHtml(title) + '</h1></div>';
   if (remarks) html += '<div class="remarks-text">' + escapeHtml(remarks) + '</div>';
   html += '<div class="tags">';
-  if (year) html += '<span class="tag">' + escapeHtml(year) + '</span>';
-  if (area) html += '<span class="tag">' + escapeHtml(area) + '</span>';
-  if (type) html += '<span class="tag">' + escapeHtml(type) + '</span>';
+  if (year) html += '<span class="tag" onclick="parent.postMessage({type:\'tagSearch\',tag:\'' + escapeHtml(year) + '\'},\'*\')">' + escapeHtml(year) + '</span>';
+  if (area) html += '<span class="tag" onclick="parent.postMessage({type:\'tagSearch\',tag:\'' + escapeHtml(area) + '\'},\'*\')">' + escapeHtml(area) + '</span>';
+  if (type) html += '<span class="tag" onclick="parent.postMessage({type:\'tagSearch\',tag:\'' + escapeHtml(type) + '\'},\'*\')">' + escapeHtml(type) + '</span>';
   html += '</div>';
-  if (director) html += '<div class="meta-line">导演：' + escapeHtml(director) + '</div>';
+  if (director) html += '<div class="meta-line" onclick="parent.postMessage({type:\'tagSearch\',tag:\'' + escapeHtml(director) + '\'},\'*\')">导演：' + escapeHtml(director) + '</div>';
   html += '<div class="fav-line" id="detailFavStar" onclick="toggleFav()">' + starSvg + ' ' + favText + '</div>';
   html += '</div></div>';
   if (actor) html += '<div class="detail-section"><div class="section-label">演员</div><div class="section-text">' + escapeHtml(actor) + '</div></div>';
@@ -1463,6 +1465,9 @@ window.addEventListener('message', function(e) {
   }
   if (e.data && e.data.type === 'xsSearch' && e.data.title) {
     crossSourceSearch(e.data.title);
+  }
+  if (e.data && e.data.type === 'tagSearch' && e.data.tag) {
+    searchByTag(e.data.tag);
   }
 });
 
@@ -2159,6 +2164,61 @@ function updateSearchProgress(keyword, done, total) {
   var found = Object.keys(State.searchResults).length;
   var view = document.getElementById('mainContent');
   if (view.querySelector('.loading')) view.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:12px">搜索 "' + keyword + '" 中... (' + done + '/' + total + ', 已找到 ' + found + ' 个源)</p></div>';
+}
+function searchByTag(tag) {
+  var sourceUrl = getHomeSourceUrl();
+  var apiUrl = sourceUrl + '?ac=videolist&wd=' + encodeURIComponent(tag);
+  var view = document.getElementById('mainContent');
+  closeDetailFrame();
+  viewStack = viewStack.filter(function(v) { return v !== 'detail'; });
+  updateBackButton();
+  _currentTab = 'home';
+  State.isSearchView = true;
+  view.innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:12px">搜索 "' + tag + '" 中...</p></div>';
+  var sourceName = getHomeSourceName();
+  fetchJson(apiUrl, function(data) {
+    if (data && data.list && data.list.length > 0) {
+      State.searchResults = {};
+      State.searchResults[sourceName] = { list: data.list, url: sourceUrl };
+      renderTagResults(tag);
+    } else {
+      view.innerHTML = '<div class="empty"><div class="icon">🔍</div><p>未找到与 "' + tag + '" 相关的内容</p><button class="btn btn-sm" style="margin-top:12px" onclick="goHome()">返回首页</button></div>';
+    }
+  }, function() {
+    view.innerHTML = '<div class="empty"><div class="icon">😢</div><p>搜索失败，请检查网络</p><button class="btn btn-sm" style="margin-top:12px" onclick="searchByTag(\'' + tag.replace(/'/g, "\\'") + '\')">重试</button><button class="btn btn-sm btn-outline" style="margin-top:8px" onclick="goHome()">返回首页</button></div>';
+  }, 10000);
+}
+function renderTagResults(tag) {
+  var view = document.getElementById('mainContent');
+  var html = '';
+  var keys = Object.keys(State.searchResults);
+  html += '<div class="section-title">🔍 "' + escapeHtml(tag) + '" 的搜索结果 <span class="badge">' + keys.length + '个源</span></div>';
+  html += '<button class="btn btn-sm btn-outline" style="margin-bottom:12px" onclick="goHome()">← 返回首页</button>';
+  keys.forEach(function(name) {
+    var r = State.searchResults[name];
+    if (!r || !r.list || r.list.length === 0) return;
+    html += '<div class="section-title" style="font-size:14px">' + escapeHtml(name) + ' <span class="badge">' + r.list.length + '</span></div>';
+    html += '<div class="video-grid">';
+    r.list.forEach(function(item) {
+      var cover = item.vod_pic || '';
+      var title = item.vod_name || '未知';
+      var remarks = item.vod_remarks || '';
+      html += '<div class="video-card" data-action="search" data-source="' + escapeHtml(name) + '" data-idx="' + r.list.indexOf(item) + '">';
+      html += '<div class="cover">';
+      if (cover) {
+        html += '<img src="' + cover.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
+        html += '<div class="placeholder" style="display:none">' + escapeHtml(title) + '</div>';
+      } else {
+        html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
+      }
+      if (remarks) html += '<div class="remarks">' + escapeHtml(remarks) + '</div>';
+      html += '</div>';
+      html += '<div class="info"><div class="title" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</div></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  view.innerHTML = html;
 }
 function renderSearchResults(keyword) {
   var view = document.getElementById('mainContent');
