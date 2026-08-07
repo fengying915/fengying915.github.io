@@ -1134,6 +1134,7 @@ function loadHomeVideos(typeId, page, isRefresh) {
   if (isRefresh) {
     State.homeCurrentPage = 1;
     State.homeHasMore = true;
+    State.homeLoading = false;
     var sk = '<div class="home-skeleton">';
     for (var i = 0; i < 9; i++) sk += '<div><div class="sk-poster"></div><div class="sk-line"></div></div>';
     sk += '</div>';
