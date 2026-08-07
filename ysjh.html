@@ -26,19 +26,19 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 @media(min-width:900px){.container{max-width:1400px;padding:16px 24px}}
 .header{position:sticky;top:0;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:100;padding:8px 0;border-bottom:1px solid var(--border)}
 @media(min-width:900px){.header .container{max-width:1400px;margin:0 auto}}
-.header .container{display:flex;gap:8px;align-items:center;padding:0 12px}
-.logo{font-size:17px;font-weight:700;white-space:nowrap;flex-shrink:0;background:linear-gradient(135deg,#6c5ce7,#a29bfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;cursor:pointer;transition:opacity .2s}
+.header .container{display:flex;gap:6px;align-items:center;padding:0 10px}
+.logo{font-size:15px;font-weight:700;white-space:nowrap;flex-shrink:0;background:linear-gradient(135deg,#6c5ce7,#a29bfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;cursor:pointer;transition:opacity .2s}
 .logo:active{opacity:.7}
 .logo.hide{display:none}
-.search-box{flex:1;display:flex;gap:8px;min-width:0}
-.search-input{flex:1;min-width:0;padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;color:var(--text);font-size:16px;outline:none;transition:border .2s;box-shadow:var(--shadow)}
+.search-box{flex:1;display:flex;gap:6px;min-width:0}
+.search-input{flex:1;min-width:0;padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:20px;color:var(--text);font-size:14px;outline:none;transition:border .2s;box-shadow:var(--shadow)}
 .search-input:focus{border-color:var(--primary)}
 .btn{padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:24px;cursor:pointer;font-size:14px;white-space:nowrap;transition:background .2s}
 .btn:active{background:var(--primary-hover)}
 .btn-sm{padding:6px 14px;font-size:12px;border-radius:16px}
 .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-dim)}
 .btn-outline:active{border-color:var(--primary);color:var(--text)}
-.btn-icon{padding:8px 12px;font-size:18px;background:var(--card);border:1px solid var(--border)}
+.btn-icon{padding:4px 6px;font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:6px}
 .header-back-btn{background:var(--primary);color:#fff;border:none;font-size:18px;font-weight:700;width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;box-shadow:var(--shadow);animation:backBtnPulse .4s ease}
 .header-back-btn:active{background:var(--primary-hover);transform:scale(0.92)}
 @keyframes backBtnPulse{0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -877,6 +877,7 @@ function loadHomeTypes() {
       if (!hasAll) types.unshift({ type_id: 0, type_name: '全部', type_pid: 0 });
       State.homeTypes = types;
       _homeTypesLoaded = true;
+      updateLogo();
       renderTypeTabs();
       State.homeCurrentPage = 1;
       State.homeHasMore = true;
@@ -2829,6 +2830,7 @@ Config.loadAsync(function(idbSettings) {
   } else {
     Config.save(State.settings);
   }
+  updateLogo();
 });
 </script>
 </body>
