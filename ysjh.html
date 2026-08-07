@@ -1003,16 +1003,22 @@ function switchHomeType(typeId, el) {
   loadHomeVideos(typeId, 1, true);
 }
 
-function loadParentAllVideos(parentId, children) {
+function loadParentAllVideos(parentId, children, page) {
   var container = document.getElementById('homeList');
   if (!container) return;
-  State.homeCurrentPage = 1;
-  State.homeHasMore = false;
-  State.homeLoading = false;
-  var sk = '<div class="home-skeleton">';
-  for (var i = 0; i < 9; i++) sk += '<div><div class="sk-poster"></div><div class="sk-line"></div></div>';
-  sk += '</div>';
-  container.innerHTML = sk;
+  page = page || 1;
+  var isFirstLoad = page === 1;
+  if (isFirstLoad) {
+    State.homeCurrentPage = 1;
+    State.homeHasMore = true;
+    State.homeLoading = false;
+    var sk = '<div class="home-skeleton">';
+    for (var i = 0; i < 9; i++) sk += '<div><div class="sk-poster"></div><div class="sk-line"></div></div>';
+    sk += '</div>';
+    container.innerHTML = sk;
+  }
+  if (State.homeLoading) return;
+  State.homeLoading = true;
   var useArt = isArtType(parentId);
   var apiUrl = useArt ? getArtSourceUrl() : getHomeSourceUrl();
   var acType = useArt ? 'list' : 'videolist';
@@ -1020,7 +1026,7 @@ function loadParentAllVideos(parentId, children) {
   var done = 0;
   if (children.length === 0) { container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无内容</p></div>'; return; }
   children.forEach(function(c, idx) {
-    fetchJson(apiUrl + '?ac=' + acType + '&t=' + c.type_id + '&pg=1', function(d) {
+    fetchJson(apiUrl + '?ac=' + acType + '&t=' + c.type_id + '&pg=' + page, function(d) {
       var list = (d && d.list) ? d.list : [];
       if (useArt) {
         list = list.map(function(item) {
@@ -1049,8 +1055,22 @@ function loadParentAllVideos(parentId, children) {
       var ta = a.vod_time || a.art_time || '', tb = b.vod_time || b.art_time || '';
       return tb > ta ? 1 : tb < ta ? -1 : 0;
     });
-    State.homeCache[parentId] = merged;
-    renderHomeGrid(merged, false);
+    State.homeLoading = false;
+    if (isFirstLoad) {
+      State.homeCache[parentId] = merged;
+      State.homeCurrentPage = page;
+      State.homeHasMore = merged.length >= 10;
+      renderHomeGrid(merged, false);
+    } else {
+      var cached = State.homeCache[parentId] || [];
+      var newItems = merged.filter(function(v) {
+        return !cached.some(function(c) { return c.vod_id === v.vod_id; });
+      });
+      State.homeCache[parentId] = cached.concat(newItems);
+      State.homeCurrentPage = page;
+      State.homeHasMore = newItems.length > 0 && merged.length >= 10;
+      renderHomeGrid(newItems, true);
+    }
   }
 }
 
@@ -1194,7 +1214,16 @@ function checkScrollLoad() {
   if (!indicator) return;
   var rect = indicator.getBoundingClientRect();
   if (rect.top < window.innerHeight + 200) {
-    loadHomeVideos(State.homeCurrentType, State.homeCurrentPage + 1, false);
+    var typeId = State.homeCurrentType;
+    var isParent = State.homeTypes.some(function(t) {
+      return t.type_id === typeId && (t.type_pid == 0) && t.type_id !== 0;
+    });
+    if (isParent) {
+      var children = State.homeTypes.filter(function(t) { return t.type_pid == typeId; });
+      if (children.length > 0) loadParentAllVideos(typeId, children, State.homeCurrentPage + 1);
+    } else {
+      loadHomeVideos(typeId, State.homeCurrentPage + 1, false);
+    }
   }
 }
 window.addEventListener('scroll', checkScrollLoad, {passive: true});
