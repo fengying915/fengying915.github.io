@@ -55,16 +55,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .video-card .info{padding:6px 8px;min-width:0;overflow:hidden}
 .video-card .title{font-size:13px;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all;line-height:1.3;max-height:2.6em}
 .video-card .sub{font-size:11px;color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.art-list{display:flex;flex-direction:column;gap:0}
-.art-list-item{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--card);border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
-.art-list-item:active{background:var(--card-hover)}
-.art-list-item:last-child{border-bottom:none;border-radius:0 0 var(--radius) var(--radius)}
-.art-list-item:first-child{border-radius:var(--radius) var(--radius) 0 0}
-.art-list-item:only-child{border-radius:var(--radius)}
-.art-list-title{font-size:14px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.art-list-sub{display:flex;align-items:center;gap:8px;margin-top:3px}
-.art-list-tag{font-size:11px;color:var(--primary);background:rgba(108,92,231,0.1);padding:1px 6px;border-radius:8px;white-space:nowrap}
-.art-list-time{font-size:11px;color:var(--text-dim);white-space:nowrap}
 .card-wrap{position:relative;min-width:0;max-width:100%;width:100%;overflow:hidden}
 .del-btn{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;background:rgba(231,76,60,0.9);color:#fff;border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:20;line-height:1;-webkit-tap-highlight-color:transparent;pointer-events:auto;touch-action:manipulation}
 .del-btn:active{background:rgba(231,76,60,1);transform:scale(0.9)}
@@ -138,12 +128,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .search-back-btn{background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:20px;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
 .search-back-btn:active{background:var(--card-hover)}
 .cat-tabs-wrap{position:relative;display:flex;flex-direction:column;gap:0;padding:4px 0 8px}
-.cat-scroll-wrap{display:flex;align-items:center;gap:0}
-.cat-scroll-btn{flex-shrink:0;width:28px;height:28px;border:none;background:var(--card);border:1px solid var(--border);border-radius:50%;cursor:pointer;font-size:14px;color:var(--text-dim);display:none;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.cat-scroll-btn.show{display:flex}
-.cat-scroll-btn:active{background:var(--card-hover)}
-.cat-scroll-btn:disabled{opacity:.3;cursor:default}
-@media(max-width:640px){.cat-scroll-btn{display:none!important}}
 .cat-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0}
 .cat-tabs::-webkit-scrollbar{display:none}
 .cat-tabs:empty{display:none}
@@ -890,137 +874,59 @@ function randomSwitchSource() {
 var _homeTypesLoaded = false;
 var _homeRetryCount = 0;
 
-function fetchWebsiteHierarchy(types, callback) {
-  var hasHierarchy = types.some(function(t) { return t.type_pid !== undefined && t.type_pid !== 0 && t.type_pid !== '0'; });
-  console.log('fetchWebsiteHierarchy: hasHierarchy=' + hasHierarchy + ' types=' + types.length);
-  if (hasHierarchy) {
-    var existIds = {};
-    types.forEach(function(t) { existIds[t.type_id] = true; });
-    console.log('existIds:', Object.keys(existIds).join(','));
-    var missingParents = {};
-    types.forEach(function(t) {
-      if (t.type_pid && t.type_pid !== 0 && t.type_pid !== '0' && !existIds[t.type_pid]) {
-        missingParents[t.type_pid] = true;
-      }
-    });
-    console.log('missingParents:', Object.keys(missingParents).join(','));
-    Object.keys(missingParents).forEach(function(pid) {
-      types.push({ type_id: parseInt(pid), type_name: '分类' + pid, type_pid: 0 });
-    });
-  }
-  console.log('fetchWebsiteHierarchy result:', types.map(function(t){ return t.type_id+':'+t.type_name+'(pid='+t.type_pid+')'; }).join(' | '));
-  callback();
-}
-
 function loadHomeTypes() {
   var apiUrl = getHomeSourceUrl() + '?ac=list';
-  var artUrl = getArtSourceUrl() + '?ac=list';
-  var vodDone = false, artDone = false;
-  var vodTypes = [], artTypes = [];
-  function finish() {
-    if (!vodDone || !artDone) return;
-    var seen = {};
-    var allTypes = [];
-    vodTypes.forEach(function(t) {
-      if (!seen[t.type_id]) { seen[t.type_id] = true; allTypes.push(t); }
-    });
-    artTypes.forEach(function(t) {
-      if (!seen[t.type_id]) { seen[t.type_id] = true; allTypes.push(t); }
-    });
-    var hasAll = allTypes.some(function(t) { return t.type_id === 0 || t.type_name === '全部'; });
-    if (!hasAll) allTypes.unshift({ type_id: 0, type_name: '全部', type_pid: 0 });
-    State.homeTypes = allTypes;
-    _homeTypesLoaded = true;
-    _homeRetryCount = 0;
-    updateLogo();
-    var hasHierarchy = allTypes.some(function(t) { return t.type_pid !== undefined && t.type_pid !== 0 && t.type_pid !== '0'; });
-    if (hasHierarchy) {
-      var existIds = {};
-      allTypes.forEach(function(t) { existIds[t.type_id] = true; });
-      var missingParents = {};
-      allTypes.forEach(function(t) {
-        if (t.type_pid && t.type_pid !== 0 && t.type_pid !== '0' && !existIds[t.type_pid]) {
-          missingParents[t.type_pid] = true;
-        }
-      });
-      var CN_NUMS = ['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十'];
-      var idx = 0;
-      Object.keys(missingParents).forEach(function(pid) {
-        var name = idx < CN_NUMS.length ? '视频' + CN_NUMS[idx] + '区' : '视频' + (idx + 1) + '区';
-        allTypes.push({ type_id: parseInt(pid), type_name: name, type_pid: 0 });
-        idx++;
-      });
-    }
-    renderTypeTabs();
-    State.homeCurrentPage = 1;
-    State.homeHasMore = true;
-    loadHomeVideos(0, 1, true);
-  }
   fetchJson(apiUrl, function(data) {
     if (data && data.class && data.class.length > 0) {
-      data.class.forEach(function(t) { if (t.type_id !== undefined && t.type_name) vodTypes.push(t); });
-    }
-    vodDone = true;
-    finish();
-  }, function() { vodDone = true; finish(); }, 10000);
-  fetchJson(artUrl, function(data) {
-    _artTypeIds = {};
-    if (data && data.class && data.class.length > 0) {
-      data.class.forEach(function(t) {
-        if (t.type_id !== undefined && t.type_name) {
-          artTypes.push(t);
-          _artTypeIds[t.type_id] = true;
-        }
+      _homeRetryCount = 0;
+      var types = data.class.filter(function(t) { return t.type_id !== undefined && t.type_name; });
+      var seen = {};
+      var unique = [];
+      types.forEach(function(t) {
+        if (!seen[t.type_id]) { seen[t.type_id] = true; unique.push(t); }
       });
+      types = unique;
+      var hasAll = types.some(function(t) { return t.type_id === 0 || t.type_name === '全部'; });
+      if (!hasAll) types.unshift({ type_id: 0, type_name: '全部', type_pid: 0 });
+      State.homeTypes = types;
+      _homeTypesLoaded = true;
+      updateLogo();
+      renderTypeTabs();
+      State.homeCurrentPage = 1;
+      State.homeHasMore = true;
+      loadHomeVideos(0, 1, true);
+    } else {
+      document.getElementById('homeList').innerHTML = '<div class="empty"><div class="icon">😢</div><p>加载分类失败</p><button class="btn btn-sm" style="margin-top:12px" onclick="_homeRetryCount=0;loadHomeTypes()">重试</button></div>';
     }
-    artDone = true;
-    finish();
-  }, function() { artDone = true; finish(); }, 10000);
+  }, function(e) {
+    _homeRetryCount++;
+    if (_homeRetryCount <= 2) {
+      document.getElementById('homeList').innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:12px">正在重试... (' + _homeRetryCount + '/2)</p></div>';
+      setTimeout(function() { loadHomeTypes(); }, 1500);
+    } else {
+      document.getElementById('homeList').innerHTML = '<div class="empty"><div class="icon">😢</div><p>加载失败，请检查网络或代理</p><button class="btn btn-sm" style="margin-top:12px" onclick="_homeRetryCount=0;loadHomeTypes()">重试</button></div>';
+    }
+  }, 10000);
 }
 
 function renderTypeTabs() {
   var container = document.getElementById('catTabs');
   if (!container) return;
   var parents = [];
-  var hasHierarchy = State.homeTypes.some(function(t) { return t.type_pid !== undefined && t.type_pid !== 0 && t.type_pid !== '0'; });
   State.homeTypes.forEach(function(t) {
-    if (t.type_id === 0) return;
-    if (hasHierarchy) {
-      if (t.type_pid === 0 || t.type_pid === '0') parents.push(t);
-    } else {
-      parents.push(t);
-    }
+    if ((t.type_pid === 0 || t.type_pid === '0') && t.type_id !== 0) parents.push(t);
   });
   var hasAll = State.homeTypes.some(function(t) { return t.type_id === 0; });
   if (!hasAll) parents.unshift({ type_id: 0, type_name: '全部', type_pid: 0 });
   else parents.unshift(State.homeTypes.filter(function(t) { return t.type_id === 0; })[0]);
-  var html = '<div class="cat-scroll-wrap"><button class="cat-scroll-btn" onclick="scrollCatTabs(-1)">‹</button><div class="cat-tabs" id="catTabsInner">';
+  var html = '<div class="cat-tabs">';
   parents.forEach(function(t) {
     var active = (t.type_id === State.homeCurrentType || (State.homeCurrentParent === t.type_id)) ? ' active' : '';
     html += '<div class="cat-tab' + active + '" data-type-id="' + t.type_id + '" data-is-parent="1">' + t.type_name + '</div>';
   });
-  html += '</div><button class="cat-scroll-btn" onclick="scrollCatTabs(1)">›</button></div><div class="sub-cat-panel" id="subCatPanel"></div>';
+  html += '</div><div class="sub-cat-panel" id="subCatPanel"></div>';
   container.innerHTML = html;
   if (State.homeCurrentParent > 0) renderSubTabs(State.homeCurrentParent);
-  updateCatScrollBtns();
-  var inner = document.getElementById('catTabsInner');
-  if (inner) inner.addEventListener('scroll', updateCatScrollBtns);
-}
-
-function updateCatScrollBtns() {
-  var el = document.getElementById('catTabsInner');
-  if (!el) return;
-  var needScroll = el.scrollWidth > el.clientWidth + 5;
-  var btns = document.querySelectorAll('.cat-scroll-btn');
-  btns.forEach(function(btn) { btn.classList.toggle('show', needScroll); });
-  if (!needScroll) return;
-  btns[0].disabled = el.scrollLeft <= 0;
-  btns[1].disabled = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
-}
-
-function scrollCatTabs(dir) {
-  var el = document.getElementById('catTabsInner');
-  if (el) el.scrollBy({ left: dir * 200, behavior: 'smooth' });
 }
 
 function renderSubTabs(parentTypeId) {
@@ -1052,7 +958,7 @@ function switchHomeType(typeId, el) {
         document.querySelectorAll('.cat-tab').forEach(function(t) { t.classList.remove('active'); });
         el.classList.add('active');
         if (panel) panel.classList.remove('show');
-        loadParentAllVideos(typeId, children);
+        loadHomeVideos(typeId, 1, true);
         return;
       }
       State.homeCurrentParent = typeId;
@@ -1060,7 +966,7 @@ function switchHomeType(typeId, el) {
       document.querySelectorAll('.cat-tab').forEach(function(t) { t.classList.remove('active'); });
       el.classList.add('active');
       renderSubTabs(typeId);
-      loadParentAllVideos(typeId, children);
+      loadHomeVideos(typeId, 1, true);
       return;
     }
   }
@@ -1081,78 +987,6 @@ function switchHomeType(typeId, el) {
   loadHomeVideos(typeId, 1, true);
 }
 
-function loadParentAllVideos(parentId, children, page) {
-  var container = document.getElementById('homeList');
-  if (!container) return;
-  page = page || 1;
-  var isFirstLoad = page === 1;
-  if (isFirstLoad) {
-    State.homeCurrentPage = 1;
-    State.homeHasMore = true;
-    State.homeLoading = false;
-    var sk = '<div class="home-skeleton">';
-    for (var i = 0; i < 9; i++) sk += '<div><div class="sk-poster"></div><div class="sk-line"></div></div>';
-    sk += '</div>';
-    container.innerHTML = sk;
-  }
-  if (State.homeLoading) return;
-  State.homeLoading = true;
-  var useArt = isArtType(parentId);
-  var apiUrl = useArt ? getArtSourceUrl() : getHomeSourceUrl();
-  var acType = useArt ? 'list' : 'videolist';
-  var allResults = [];
-  var done = 0;
-  if (children.length === 0) { container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无内容</p></div>'; return; }
-  children.forEach(function(c, idx) {
-    fetchJson(apiUrl + '?ac=' + acType + '&t=' + c.type_id + '&pg=' + page, function(d) {
-      var list = (d && d.list) ? d.list : [];
-      list = list.filter(function(item) { return (item.vod_id || item.art_id) != null; });
-      if (useArt) {
-        list = list.map(function(item) {
-          return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
-        });
-      }
-      allResults[idx] = list;
-      done++;
-      if (done === children.length) mergeAndRender();
-    }, function() {
-      allResults[idx] = [];
-      done++;
-      if (done === children.length) mergeAndRender();
-    });
-  });
-  function mergeAndRender() {
-    var seen = {};
-    var merged = [];
-    allResults.forEach(function(list) {
-      (list || []).forEach(function(v) {
-        var key = v.vod_id;
-        if (!seen[key]) { seen[key] = 1; merged.push(v); }
-      });
-    });
-    merged.sort(function(a, b) {
-      var ta = a.vod_time || a.art_time || '', tb = b.vod_time || b.art_time || '';
-      return tb > ta ? 1 : tb < ta ? -1 : 0;
-    });
-    State.homeLoading = false;
-    if (isFirstLoad) {
-      State.homeCache[parentId] = merged;
-      State.homeCurrentPage = page;
-      State.homeHasMore = merged.length >= 10;
-      renderHomeGrid(merged, false);
-    } else {
-      var cached = State.homeCache[parentId] || [];
-      var newItems = merged.filter(function(v) {
-        return !cached.some(function(c) { return c.vod_id === v.vod_id; });
-      });
-      State.homeCache[parentId] = cached.concat(newItems);
-      State.homeCurrentPage = page;
-      State.homeHasMore = newItems.length > 0 && merged.length >= 10;
-      renderHomeGrid(newItems, true);
-    }
-  }
-}
-
 function loadHomeVideos(typeId, page, isRefresh) {
   var container = document.getElementById('homeList');
   if (!container) return;
@@ -1160,8 +994,6 @@ function loadHomeVideos(typeId, page, isRefresh) {
   if (isRefresh) {
     State.homeCurrentPage = 1;
     State.homeHasMore = true;
-    State.homeLoading = false;
-    State._emptyRetryCount = 0;
     var sk = '<div class="home-skeleton">';
     for (var i = 0; i < 9; i++) sk += '<div><div class="sk-poster"></div><div class="sk-line"></div></div>';
     sk += '</div>';
@@ -1173,18 +1005,12 @@ function loadHomeVideos(typeId, page, isRefresh) {
   }
   if (State.homeLoading) return;
   State.homeLoading = true;
-  var useArt = isArtType(typeId);
-  var baseApi = useArt ? getArtSourceUrl() : getHomeSourceUrl();
-  var apiUrl = baseApi + '?ac=' + (useArt ? 'list' : 'videolist') + '&pg=' + page;
+  var apiUrl = getHomeSourceUrl() + '?ac=videolist&pg=' + page;
   if (typeId > 0) apiUrl += '&t=' + typeId;
   fetchJson(apiUrl, function(data) {
     State.homeLoading = false;
     if (data && data.list && data.list.length > 0) {
-      var list = useArt ? data.list.map(function(item) {
-        return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
-      }) : data.list;
-      list = list.filter(function(item) { return item.vod_id != null; });
-      var newList = list.filter(function(item) {
+      var newList = data.list.filter(function(item) {
         var cache = State.homeCache[typeId] || [];
         return !cache.some(function(c) { return c.vod_id === item.vod_id; });
       });
@@ -1197,16 +1023,11 @@ function loadHomeVideos(typeId, page, isRefresh) {
       State.homeCurrentPage = page;
       State.homeHasMore = data.list.length >= 20 && newList.length > 0;
       if (newList.length > 0) {
-        State._emptyRetryCount = 0;
         renderHomeGrid(newList, !isRefresh);
       } else {
-        State._emptyRetryCount = (State._emptyRetryCount || 0) + 1;
-        if (page === 1) {
-          container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无内容</p></div>';
-        } else if (State._emptyRetryCount < 3 && State.homeHasMore) {
+        if (State.homeHasMore) {
           loadHomeVideos(typeId, page + 1, false);
         } else {
-          State.homeHasMore = false;
           removeLoadMoreIndicator();
         }
       }
@@ -1236,55 +1057,35 @@ function removeLoadMoreIndicator() {
 function renderHomeGrid(videos, isAppend) {
   var container = document.getElementById('homeList');
   if (!container) return;
-  var useArtList = isArtType(State.homeCurrentType);
   var html = '';
-  if (useArtList) {
-    videos.forEach(function(item) {
-      var title = item.vod_name || '未知';
-      var remarks = item.vod_remarks || '';
-      var typeName = item.type_name || '';
-      var updateTime = (item.vod_time || '').substring(0, 10);
-      var globalIdx = State.homeCache[State.homeCurrentType] ? State.homeCache[State.homeCurrentType].indexOf(item) : -1;
-      html += '<div class="art-list-item" data-action="home" data-idx="' + (globalIdx >= 0 ? globalIdx : '') + '" data-item="' + JSON.stringify(item).replace(/"/g, '&quot;') + '">';
-      html += '<div style="flex:1;min-width:0">';
-      html += '<div class="art-list-title">' + escapeHtml(title) + '</div>';
-      html += '<div class="art-list-sub">';
-      if (typeName) html += '<span class="art-list-tag">' + escapeHtml(typeName) + '</span>';
-      if (updateTime) html += '<span class="art-list-time">' + escapeHtml(updateTime) + '</span>';
-      html += '</div></div>';
-      html += '</div>';
-    });
-  } else {
-    videos.forEach(function(item) {
-      var cover = item.vod_pic || '';
-      var title = item.vod_name || '未知';
-      var remarks = item.vod_remarks || '';
-      var globalIdx = State.homeCache[State.homeCurrentType] ? State.homeCache[State.homeCurrentType].indexOf(item) : -1;
-      html += '<div class="video-card" data-action="home" data-idx="' + (globalIdx >= 0 ? globalIdx : '') + '" data-item="' + JSON.stringify(item).replace(/"/g, '&quot;') + '">';
-      html += '<div class="cover">';
-      if (cover) {
-        html += '<img src="' + cover.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
-        html += '<div class="placeholder" style="display:none">' + escapeHtml(title) + '</div>';
-      } else {
-        html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
-      }
-      if (item.type_name) html += '<div class="cat-badge">' + escapeHtml(item.type_name) + '</div>';
-      if (remarks) html += '<div class="remarks">' + escapeHtml(remarks) + '</div>';
-      html += '</div>';
-      html += '<div class="info"><div class="title" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</div></div>';
-      html += '</div>';
-    });
-  }
+  videos.forEach(function(item) {
+    var cover = item.vod_pic || '';
+    var title = item.vod_name || '未知';
+    var remarks = item.vod_remarks || '';
+    var globalIdx = State.homeCache[State.homeCurrentType] ? State.homeCache[State.homeCurrentType].indexOf(item) : -1;
+    html += '<div class="video-card" data-action="home" data-idx="' + (globalIdx >= 0 ? globalIdx : '') + '" data-item="' + JSON.stringify(item).replace(/"/g, '&quot;') + '">';
+    html += '<div class="cover">';
+    if (cover) {
+      html += '<img src="' + cover.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
+      html += '<div class="placeholder" style="display:none">' + escapeHtml(title) + '</div>';
+    } else {
+      html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
+    }
+    if (remarks) html += '<div class="remarks">' + escapeHtml(remarks) + '</div>';
+    html += '</div>';
+    html += '<div class="info"><div class="title" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</div></div>';
+    html += '</div>';
+  });
   if (isAppend) {
     removeLoadMoreIndicator();
-    var grid = container.querySelector(useArtList ? '.art-list' : '.video-grid');
+    var grid = container.querySelector('.video-grid');
     if (grid) {
       grid.insertAdjacentHTML('beforeend', html);
     } else {
-      container.innerHTML = '<div class="' + (useArtList ? 'art-list' : 'video-grid') + '">' + html + '</div>';
+      container.innerHTML = '<div class="video-grid">' + html + '</div>';
     }
   } else {
-    container.innerHTML = '<div class="' + (useArtList ? 'art-list' : 'video-grid') + '">' + html + '</div>';
+    container.innerHTML = '<div class="video-grid">' + html + '</div>';
   }
   if (State.homeHasMore) {
     var indicator = document.createElement('div');
@@ -1302,16 +1103,7 @@ function checkScrollLoad() {
   if (!indicator) return;
   var rect = indicator.getBoundingClientRect();
   if (rect.top < window.innerHeight + 200) {
-    var typeId = State.homeCurrentType;
-    var isParent = State.homeTypes.some(function(t) {
-      return t.type_id === typeId && (t.type_pid == 0) && t.type_id !== 0;
-    });
-    if (isParent) {
-      var children = State.homeTypes.filter(function(t) { return t.type_pid == typeId; });
-      if (children.length > 0) loadParentAllVideos(typeId, children, State.homeCurrentPage + 1);
-    } else {
-      loadHomeVideos(typeId, State.homeCurrentPage + 1, false);
-    }
+    loadHomeVideos(State.homeCurrentType, State.homeCurrentPage + 1, false);
   }
 }
 window.addEventListener('scroll', checkScrollLoad, {passive: true});
