@@ -138,7 +138,11 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .search-back-btn{background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:20px;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
 .search-back-btn:active{background:var(--card-hover)}
 .cat-tabs-wrap{position:relative;display:flex;flex-direction:column;gap:0;padding:4px 0 8px}
-.cat-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cat-scroll-wrap{display:flex;align-items:center;gap:0}
+.cat-scroll-btn{flex-shrink:0;width:28px;height:28px;border:none;background:var(--card);border:1px solid var(--border);border-radius:50%;cursor:pointer;font-size:14px;color:var(--text-dim);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cat-scroll-btn:active{background:var(--card-hover)}
+.cat-scroll-btn:disabled{opacity:.3;cursor:default}
+.cat-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0}
 .cat-tabs::-webkit-scrollbar{display:none}
 .cat-tabs:empty{display:none}
 .cat-tab{padding:6px 14px;background:var(--card);border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;white-space:nowrap;color:var(--text-dim);transition:background-color .15s,color .15s,border-color .15s;touch-action:pan-x}
@@ -988,14 +992,19 @@ function renderTypeTabs() {
   var hasAll = State.homeTypes.some(function(t) { return t.type_id === 0; });
   if (!hasAll) parents.unshift({ type_id: 0, type_name: '全部', type_pid: 0 });
   else parents.unshift(State.homeTypes.filter(function(t) { return t.type_id === 0; })[0]);
-  var html = '<div class="cat-tabs">';
+  var html = '<div class="cat-scroll-wrap"><button class="cat-scroll-btn" onclick="scrollCatTabs(-1)">‹</button><div class="cat-tabs" id="catTabsInner">';
   parents.forEach(function(t) {
     var active = (t.type_id === State.homeCurrentType || (State.homeCurrentParent === t.type_id)) ? ' active' : '';
     html += '<div class="cat-tab' + active + '" data-type-id="' + t.type_id + '" data-is-parent="1">' + t.type_name + '</div>';
   });
-  html += '</div><div class="sub-cat-panel" id="subCatPanel"></div>';
+  html += '</div><button class="cat-scroll-btn" onclick="scrollCatTabs(1)">›</button></div><div class="sub-cat-panel" id="subCatPanel"></div>';
   container.innerHTML = html;
   if (State.homeCurrentParent > 0) renderSubTabs(State.homeCurrentParent);
+}
+
+function scrollCatTabs(dir) {
+  var el = document.getElementById('catTabsInner');
+  if (el) el.scrollBy({ left: dir * 200, behavior: 'smooth' });
 }
 
 function renderSubTabs(parentTypeId) {
