@@ -635,15 +635,6 @@ function getHomeSourceUrl() {
   }
   return sources[0] ? sources[0].url : 'https://caiji.dyttzyapi.com/api.php/provide/vod';
 }
-function getHomeSource() {
-  var sources = State.settings.sources;
-  if (State.settings.homeSourceUrl) {
-    for (var i = 0; i < sources.length; i++) {
-      if (sources[i].url === State.settings.homeSourceUrl) return sources[i];
-    }
-  }
-  return sources[0] || { name: '电影天堂', url: 'https://caiji.dyttzyapi.com/api.php/provide/vod' };
-}
 function getArtSourceUrl() {
   var vodUrl = getHomeSourceUrl();
   return vodUrl.replace('/provide/vod', '/provide/art').replace('/provide/vod/', '/provide/art/');
@@ -925,6 +916,10 @@ function fetchWebsiteHierarchy(types, callback) {
       }
       if (assigned[t.type_id]) break;
     }
+  });
+
+  types.forEach(function(t) {
+    if (t.type_id !== 0 && t.type_pid === undefined) t.type_pid = 0;
   });
 
   callback();
