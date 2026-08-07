@@ -138,11 +138,15 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .search-back-btn{background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:20px;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
 .search-back-btn:active{background:var(--card-hover)}
 .cat-tabs-wrap{position:relative;display:flex;flex-direction:column;gap:0;padding:4px 0 8px}
-.cat-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cat-tabs{display:flex;flex-wrap:wrap;gap:8px;padding:2px 0}
 .cat-tabs::-webkit-scrollbar{display:none}
 .cat-tabs:empty{display:none}
 .cat-tab{padding:6px 14px;background:var(--card);border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;white-space:nowrap;color:var(--text-dim);transition:background-color .15s,color .15s,border-color .15s;touch-action:pan-x}
 .cat-tab.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.breadcrumb{font-size:12px;color:var(--text-dim);padding:2px 0 6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.breadcrumb span{cursor:pointer;color:var(--primary)}
+.breadcrumb span:last-child{color:var(--text);cursor:default}
+.cat-badge{position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.6);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;z-index:2}
 .sub-cat-panel{display:none;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);padding:4px;margin-top:2px;width:fit-content}
 .sub-cat-panel.show{display:flex;flex-wrap:wrap;gap:4px}
 .sub-cat-panel .cat-tab{display:inline-block;padding:5px 10px;border-radius:14px;border:1px solid var(--border);background:transparent;font-size:11px;color:var(--text-dim);white-space:nowrap;transition:background .12s,color .12s}
@@ -174,6 +178,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="container" id="mainContent">
 <div id="homeView">
 <div class="cat-tabs-wrap" id="catTabs"></div>
+<div class="breadcrumb" id="breadcrumb"></div>
 <div id="homeList"><div class="loading"><div class="spinner"></div><p style="margin-top:12px">加载中...</p></div></div>
 </div>
 </div>
@@ -995,6 +1000,46 @@ function renderTypeTabs() {
   html += '</div><div class="sub-cat-panel" id="subCatPanel"></div>';
   container.innerHTML = html;
   if (State.homeCurrentParent > 0) renderSubTabs(State.homeCurrentParent);
+  renderBreadcrumb();
+}
+
+function renderBreadcrumb() {
+  var el = document.getElementById('breadcrumb');
+  if (!el) return;
+  var parts = ['<span onclick="clickBreadcrumb(0)">首页</span>'];
+  if (State.homeCurrentParent > 0) {
+    var parent = null;
+    State.homeTypes.forEach(function(t) { if (t.type_id === State.homeCurrentParent) parent = t; });
+    if (parent) parts.push('<span onclick="clickBreadcrumb(' + parent.type_id + ')">' + parent.type_name + '</span>');
+  }
+  if (State.homeCurrentType > 0 && State.homeCurrentType !== State.homeCurrentParent) {
+    var child = null;
+    State.homeTypes.forEach(function(t) { if (t.type_id === State.homeCurrentType) child = t; });
+    if (child) parts.push(child.type_name);
+  } else if (State.homeCurrentParent > 0) {
+    var parent2 = null;
+    State.homeTypes.forEach(function(t) { if (t.type_id === State.homeCurrentParent) parent2 = t; });
+    if (parent2) parts[parts.length - 1] = parent2.type_name;
+  }
+  if (parts.length <= 1) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = parts.join(' / ');
+}
+
+function clickBreadcrumb(typeId) {
+  if (typeId === 0) {
+    State.homeCurrentType = 0;
+    State.homeCurrentParent = 0;
+  } else {
+    State.homeCurrentType = typeId;
+    State.homeCurrentParent = typeId;
+    var hasChildren = State.homeTypes.some(function(t) { return t.type_pid == typeId; });
+    if (!hasChildren) State.homeCurrentParent = 0;
+  }
+  renderTypeTabs();
+  State.homeCurrentPage = 1;
+  State.homeHasMore = true;
+  loadHomeVideos(State.homeCurrentType, 1, true);
 }
 
 function renderSubTabs(parentTypeId) {
@@ -1233,6 +1278,7 @@ function renderHomeGrid(videos, isAppend) {
       } else {
         html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
       }
+      if (item.type_name) html += '<div class="cat-badge">' + escapeHtml(item.type_name) + '</div>';
       if (remarks) html += '<div class="remarks">' + escapeHtml(remarks) + '</div>';
       html += '</div>';
       html += '<div class="info"><div class="title" title="' + escapeHtml(title) + '">' + escapeHtml(title) + '</div></div>';
@@ -2471,6 +2517,7 @@ function renderVideoGrid(sourceName) {
     html += '<div class="cover">';
     if (cover) { html += '<img src="' + cover + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="placeholder" style="display:none">' + title + '</div>'; }
     else html += '<div class="placeholder">' + title + '</div>';
+    if (item.type_name) html += '<div class="cat-badge">' + escapeHtml(item.type_name) + '</div>';
     if (remarks) html += '<div class="remarks">' + remarks + '</div>';
     html += '</div><div class="info"><div class="title">' + title + '</div>';
     if (year) html += '<div class="sub">' + year + '</div>';
