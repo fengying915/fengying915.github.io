@@ -143,6 +143,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .cat-scroll-btn.show{display:flex}
 .cat-scroll-btn:active{background:var(--card-hover)}
 .cat-scroll-btn:disabled{opacity:.3;cursor:default}
+@media(max-width:640px){.cat-scroll-btn{display:none!important}}
 .cat-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0}
 .cat-tabs::-webkit-scrollbar{display:none}
 .cat-tabs:empty{display:none}
@@ -1159,6 +1160,7 @@ function loadHomeVideos(typeId, page, isRefresh) {
     State.homeCurrentPage = 1;
     State.homeHasMore = true;
     State.homeLoading = false;
+    State._emptyRetryCount = 0;
     var sk = '<div class="home-skeleton">';
     for (var i = 0; i < 9; i++) sk += '<div><div class="sk-poster"></div><div class="sk-line"></div></div>';
     sk += '</div>';
@@ -1193,11 +1195,14 @@ function loadHomeVideos(typeId, page, isRefresh) {
       State.homeCurrentPage = page;
       State.homeHasMore = data.list.length >= 20 && newList.length > 0;
       if (newList.length > 0) {
+        State._emptyRetryCount = 0;
         renderHomeGrid(newList, !isRefresh);
       } else {
-        if (State.homeHasMore) {
+        State._emptyRetryCount = (State._emptyRetryCount || 0) + 1;
+        if (State.homeHasMore && State._emptyRetryCount < 3) {
           loadHomeVideos(typeId, page + 1, false);
         } else {
+          State.homeHasMore = false;
           removeLoadMoreIndicator();
         }
       }
