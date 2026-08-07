@@ -992,7 +992,7 @@ function renderTypeTabs() {
   if (!container) return;
   var parents = [];
   State.homeTypes.forEach(function(t) {
-    if ((t.type_pid === 0 || t.type_pid === '0') && t.type_id !== 0) parents.push(t);
+    if ((t.type_pid === undefined || t.type_pid === 0 || t.type_pid === '0' || t.type_pid === null) && t.type_id !== 0) parents.push(t);
   });
   var hasAll = State.homeTypes.some(function(t) { return t.type_id === 0; });
   if (!hasAll) parents.unshift({ type_id: 0, type_name: '全部', type_pid: 0 });
