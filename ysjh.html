@@ -936,8 +936,12 @@ function loadHomeTypes() {
           missingParents[t.type_pid] = true;
         }
       });
+      var CN_NUMS = ['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十'];
+      var idx = 0;
       Object.keys(missingParents).forEach(function(pid) {
-        allTypes.push({ type_id: parseInt(pid), type_name: '分类' + pid, type_pid: 0 });
+        var name = idx < CN_NUMS.length ? '视频' + CN_NUMS[idx] + '区' : '视频' + (idx + 1) + '区';
+        allTypes.push({ type_id: parseInt(pid), type_name: name, type_pid: 0 });
+        idx++;
       });
     }
     renderTypeTabs();
