@@ -934,8 +934,12 @@ function renderTypeTabs() {
   var container = document.getElementById('catTabs');
   if (!container) return;
   var parents = [];
+  var childIds = {};
   State.homeTypes.forEach(function(t) {
-    if ((t.type_pid === 0 || t.type_pid === '0') && t.type_id !== 0) parents.push(t);
+    if (t.type_pid !== undefined && t.type_pid !== 0 && t.type_pid !== '0') childIds[t.type_pid] = true;
+  });
+  State.homeTypes.forEach(function(t) {
+    if (t.type_id !== 0 && (t.type_pid === 0 || t.type_pid === '0' || t.type_pid === undefined || !childIds[t.type_id])) parents.push(t);
   });
   var hasAll = State.homeTypes.some(function(t) { return t.type_id === 0; });
   if (!hasAll) parents.unshift({ type_id: 0, type_name: '全部', type_pid: 0 });
@@ -1105,7 +1109,7 @@ function loadHomeVideos(typeId, page, isRefresh) {
     State.homeLoading = false;
     if (data && data.list && data.list.length > 0) {
       var list = useArt ? data.list.map(function(item) {
-        return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', _artId: item.art_id, _isArt: true };
+        return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
       }) : data.list;
       var newList = list.filter(function(item) {
         var cache = State.homeCache[typeId] || [];
@@ -2322,7 +2326,7 @@ function searchVideos(keyword) {
         if (data && data.list && data.list.length > 0) {
           var artKey = source.name + '(小说/美图)';
           var artList = data.list.map(function(item) {
-            return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', _artId: item.art_id, _isArt: true };
+            return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
           });
           State.searchResults[artKey] = { list: artList, url: source.url };
         }
@@ -2332,7 +2336,7 @@ function searchVideos(keyword) {
           if (data && data.list && data.list.length > 0) {
             var artKey = source.name + '(小说/美图)';
             var artList = data.list.map(function(item) {
-              return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', _artId: item.art_id, _isArt: true };
+        return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
             });
             State.searchResults[artKey] = { list: artList, url: source.url };
           }
