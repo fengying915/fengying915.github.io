@@ -898,9 +898,18 @@ function fetchWebsiteHierarchy(types, callback) {
   var m = source.url.match(/^(https?:\/\/[^\/]+)/);
   if (!m) { callback(); return; }
   var siteUrl = m[1];
-  fetchDirect(siteUrl, function(html) {
+  function tryFetch(idx) {
+    if (idx >= CORS_PROXIES.length) {
+      _fetchCompat(siteUrl, 8000, function(html) { parseMenu(html); callback(); }, function() { callback(); });
+      return;
+    }
+    var pu = CORS_PROXIES[idx](siteUrl);
+    _fetchCompat(pu, 8000, function(html) { parseMenu(html); callback(); }, function() { tryFetch(idx + 1); });
+  }
+  function parseMenu(html) {
     var typeMap = {};
     types.forEach(function(t) { if (t.type_id) typeMap[t.type_name] = t; });
+    // Pattern 1: suonizy.com style - menu-item with dropdown-item
     var itemRegex = /<div class="menu-item">([\s\S]*?)(?=<div class="menu-item">|$)/g;
     var block;
     while ((block = itemRegex.exec(html)) !== null) {
@@ -914,15 +923,63 @@ function fetchWebsiteHierarchy(types, callback) {
         var childId = parseInt(cm[1]);
         var childName = cm[2].trim();
         if (typeMap[childName]) typeMap[childName].type_pid = parentId;
-        else {
-          types.forEach(function(t) {
-            if (t.type_id === childId) t.type_pid = parentId;
-          });
+        else types.forEach(function(t) { if (t.type_id === childId) t.type_pid = parentId; });
+      }
+    }
+    // Pattern 2: li.nav-item with ul.dropdown-menu
+    if (Object.keys(typeMap).every(function(k) { return !typeMap[k].type_pid; })) {
+      var liRegex = /<li[^>]*class="[^"]*nav-item[^"]*"[\s\S]*?<\/li>/g;
+      while ((block = liRegex.exec(html)) !== null) {
+        var content = block[0];
+        var parentMatch = content.match(/<a href="[^"]*?\/vodtype\/(\d+)\.html">([^<]+)<\/a>/);
+        if (!parentMatch) continue;
+        var parentId = parseInt(parentMatch[1]);
+        var childRegex2 = /<li[^>]*>[\s\S]*?<a href="[^"]*?\/vodtype\/(\d+)\.html">([^<]+)<\/a>/g;
+        var cm2;
+        while ((cm2 = childRegex2.exec(content)) !== null) {
+          if (parseInt(cm2[1]) === parentId) continue;
+          var childId = parseInt(cm2[1]);
+          var childName = cm2[2].trim();
+          if (typeMap[childName]) typeMap[childName].type_pid = parentId;
+          else types.forEach(function(t) { if (t.type_id === childId) t.type_pid = parentId; });
         }
       }
     }
-    callback();
-  }, function() { callback(); }, 8000);
+    // Pattern 3: generic - find all vodtype links, group by nesting level
+    if (Object.keys(typeMap).every(function(k) { return !typeMap[k].type_pid; })) {
+      var allLinks = [];
+      var linkRegex = /<a[^>]*href="[^"]*?\/vodtype\/(\d+)\.html"[^>]*>([^<]+)<\/a>/g;
+      var lm;
+      while ((lm = linkRegex.exec(html)) !== null) {
+        allLinks.push({ id: parseInt(lm[1]), name: lm[2].trim(), pos: lm.index });
+      }
+      // Find parent-child: a link followed by another link at deeper nesting is a child
+      // Simple heuristic: first appearance of a type_id is parent, later appearances at same level are ignored
+      // Use depth heuristic: count nesting of tags around each link
+      for (var i = 0; i < allLinks.length; i++) {
+        var before = html.substring(0, allLinks[i].pos);
+        var depth = 0;
+        for (var j = before.length - 1; j >= Math.max(0, before.length - 500); j--) {
+          if (before[j] === '>') depth++;
+          if (before[j] === '<') depth--;
+        }
+        allLinks[i].depth = depth;
+      }
+      // Links with higher depth are children of the nearest previous lower-depth link
+      var parentStack = [];
+      for (var i = 0; i < allLinks.length; i++) {
+        var link = allLinks[i];
+        while (parentStack.length > 0 && parentStack[parentStack.length - 1].depth >= link.depth) parentStack.pop();
+        if (parentStack.length > 0 && link.depth > parentStack[parentStack.length - 1].depth) {
+          var parentId = parentStack[parentStack.length - 1].id;
+          if (typeMap[link.name]) typeMap[link.name].type_pid = parentId;
+          else types.forEach(function(t) { if (t.type_id === link.id) t.type_pid = parentId; });
+        }
+        parentStack.push(link);
+      }
+    }
+  }
+  tryFetch(0);
 }
 
 function loadHomeTypes() {
