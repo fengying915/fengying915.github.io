@@ -139,7 +139,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .search-back-btn:active{background:var(--card-hover)}
 .cat-tabs-wrap{position:relative;display:flex;flex-direction:column;gap:0;padding:4px 0 8px}
 .cat-scroll-wrap{display:flex;align-items:center;gap:0}
-.cat-scroll-btn{flex-shrink:0;width:28px;height:28px;border:none;background:var(--card);border:1px solid var(--border);border-radius:50%;cursor:pointer;font-size:14px;color:var(--text-dim);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cat-scroll-btn{flex-shrink:0;width:28px;height:28px;border:none;background:var(--card);border:1px solid var(--border);border-radius:50%;cursor:pointer;font-size:14px;color:var(--text-dim);display:none;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.cat-scroll-btn.show{display:flex}
 .cat-scroll-btn:active{background:var(--card-hover)}
 .cat-scroll-btn:disabled{opacity:.3;cursor:default}
 .cat-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex:1;min-width:0}
@@ -1000,6 +1001,20 @@ function renderTypeTabs() {
   html += '</div><button class="cat-scroll-btn" onclick="scrollCatTabs(1)">›</button></div><div class="sub-cat-panel" id="subCatPanel"></div>';
   container.innerHTML = html;
   if (State.homeCurrentParent > 0) renderSubTabs(State.homeCurrentParent);
+  updateCatScrollBtns();
+  var inner = document.getElementById('catTabsInner');
+  if (inner) inner.addEventListener('scroll', updateCatScrollBtns);
+}
+
+function updateCatScrollBtns() {
+  var el = document.getElementById('catTabsInner');
+  if (!el) return;
+  var needScroll = el.scrollWidth > el.clientWidth + 5;
+  var btns = document.querySelectorAll('.cat-scroll-btn');
+  btns.forEach(function(btn) { btn.classList.toggle('show', needScroll); });
+  if (!needScroll) return;
+  btns[0].disabled = el.scrollLeft <= 0;
+  btns[1].disabled = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
 }
 
 function scrollCatTabs(dir) {
