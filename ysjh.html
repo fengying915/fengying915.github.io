@@ -1106,6 +1106,7 @@ function loadParentAllVideos(parentId, children, page) {
   children.forEach(function(c, idx) {
     fetchJson(apiUrl + '?ac=' + acType + '&t=' + c.type_id + '&pg=' + page, function(d) {
       var list = (d && d.list) ? d.list : [];
+      list = list.filter(function(item) { return (item.vod_id || item.art_id) != null; });
       if (useArt) {
         list = list.map(function(item) {
           return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
@@ -1182,6 +1183,7 @@ function loadHomeVideos(typeId, page, isRefresh) {
       var list = useArt ? data.list.map(function(item) {
         return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
       }) : data.list;
+      list = list.filter(function(item) { return item.vod_id != null; });
       var newList = list.filter(function(item) {
         var cache = State.homeCache[typeId] || [];
         return !cache.some(function(c) { return c.vod_id === item.vod_id; });
@@ -1199,7 +1201,9 @@ function loadHomeVideos(typeId, page, isRefresh) {
         renderHomeGrid(newList, !isRefresh);
       } else {
         State._emptyRetryCount = (State._emptyRetryCount || 0) + 1;
-        if (State.homeHasMore && State._emptyRetryCount < 3) {
+        if (page === 1) {
+          container.innerHTML = '<div class="empty"><div class="icon">📭</div><p>暂无内容</p></div>';
+        } else if (State._emptyRetryCount < 3 && State.homeHasMore) {
           loadHomeVideos(typeId, page + 1, false);
         } else {
           State.homeHasMore = false;
@@ -1298,6 +1302,7 @@ function checkScrollLoad() {
   if (!indicator) return;
   var rect = indicator.getBoundingClientRect();
   if (rect.top < window.innerHeight + 200) {
+    State.homeLoading = true;
     var typeId = State.homeCurrentType;
     var isParent = State.homeTypes.some(function(t) {
       return t.type_id === typeId && (t.type_pid == 0) && t.type_id !== 0;
@@ -1305,6 +1310,7 @@ function checkScrollLoad() {
     if (isParent) {
       var children = State.homeTypes.filter(function(t) { return t.type_pid == typeId; });
       if (children.length > 0) loadParentAllVideos(typeId, children, State.homeCurrentPage + 1);
+      else State.homeLoading = false;
     } else {
       loadHomeVideos(typeId, State.homeCurrentPage + 1, false);
     }
