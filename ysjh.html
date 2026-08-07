@@ -890,28 +890,6 @@ function randomSwitchSource() {
 var _homeTypesLoaded = false;
 var _homeRetryCount = 0;
 
-function fetchWebsiteHierarchy(types, callback) {
-  var hasHierarchy = types.some(function(t) { return t.type_pid !== undefined && t.type_pid !== 0 && t.type_pid !== '0'; });
-  console.log('fetchWebsiteHierarchy: hasHierarchy=' + hasHierarchy + ' types=' + types.length);
-  if (hasHierarchy) {
-    var existIds = {};
-    types.forEach(function(t) { existIds[t.type_id] = true; });
-    console.log('existIds:', Object.keys(existIds).join(','));
-    var missingParents = {};
-    types.forEach(function(t) {
-      if (t.type_pid && t.type_pid !== 0 && t.type_pid !== '0' && !existIds[t.type_pid]) {
-        missingParents[t.type_pid] = true;
-      }
-    });
-    console.log('missingParents:', Object.keys(missingParents).join(','));
-    Object.keys(missingParents).forEach(function(pid) {
-      types.push({ type_id: parseInt(pid), type_name: '分类' + pid, type_pid: 0 });
-    });
-  }
-  console.log('fetchWebsiteHierarchy result:', types.map(function(t){ return t.type_id+':'+t.type_name+'(pid='+t.type_pid+')'; }).join(' | '));
-  callback();
-}
-
 function loadHomeTypes() {
   var apiUrl = getHomeSourceUrl() + '?ac=list';
   fetchJson(apiUrl, function(data) {
@@ -1753,24 +1731,17 @@ function crossSourceSearch(title) {
   }
   function searchSource(source, idx) {
     var apiUrl = source.url + '?ac=videolist&wd=' + encodeURIComponent(title);
-    fetchDirect(apiUrl, function(data) {
+    fetchJson(apiUrl, function(data) {
       var items = (data && data.list) ? data.list : [];
       results.push({ name: source.name, url: source.url, items: items, idx: idx });
       done++;
       if (done >= total) sendBack();
     }, function() {
-      fetchJson(apiUrl, function(data) {
-        var items = (data && data.list) ? data.list : [];
-        results.push({ name: source.name, url: source.url, items: items, idx: idx });
-        done++;
-        if (done >= total) sendBack();
-      }, function() {
-        failedSources.push(idx);
-        results.push({ name: source.name, url: source.url, items: [], idx: idx });
-        done++;
-        if (done >= total) sendBack();
-      }, 10000);
-    }, 8000);
+      failedSources.push(idx);
+      results.push({ name: source.name, url: source.url, items: [], idx: idx });
+      done++;
+      if (done >= total) sendBack();
+    }, 10000);
   }
   sources.forEach(function(source, idx) { searchSource(source, idx); });
   window._xsRetryFailed = function() {
@@ -2387,45 +2358,23 @@ function searchVideos(keyword) {
   sources.forEach(function(source, idx) {
     var apiUrl = source.url + '?ac=videolist&wd=' + encodeURIComponent(keyword);
     var artApiUrl = source.url.replace('/provide/vod', '/provide/art').replace('/provide/vod/', '/provide/art/') + '?ac=list&wd=' + encodeURIComponent(keyword);
-    function tryDirect() {
-      fetchDirect(apiUrl, function(data) {
-        if (data && data.list && data.list.length > 0) State.searchResults[source.name] = { list: data.list, url: source.url };
-        onDone();
-      }, function() {
-        fetchJson(apiUrl, function(data) {
-          if (data && data.list && data.list.length > 0) State.searchResults[source.name] = { list: data.list, url: source.url };
-          onDone();
-        }, function(e) {
-          _searchFailedSources.push(idx);
-          onDone();
-        }, 10000);
-      }, 8000);
-    }
-    function tryArtDirect() {
-      fetchDirect(artApiUrl, function(data) {
-        if (data && data.list && data.list.length > 0) {
-          var artKey = source.name + '(小说/美图)';
-          var artList = data.list.map(function(item) {
-            return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
-          });
-          State.searchResults[artKey] = { list: artList, url: source.url };
-        }
-        onDone();
-      }, function() {
-        fetchJson(artApiUrl, function(data) {
-          if (data && data.list && data.list.length > 0) {
-            var artKey = source.name + '(小说/美图)';
-            var artList = data.list.map(function(item) {
-        return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
-            });
-            State.searchResults[artKey] = { list: artList, url: source.url };
-          }
-          onDone();
-        }, function() { onDone(); }, 10000);
-      }, 8000);
-    }
-    tryDirect();
-    tryArtDirect();
+    fetchJson(apiUrl, function(data) {
+      if (data && data.list && data.list.length > 0) State.searchResults[source.name] = { list: data.list, url: source.url };
+      onDone();
+    }, function() {
+      _searchFailedSources.push(idx);
+      onDone();
+    }, 10000);
+    fetchJson(artApiUrl, function(data) {
+      if (data && data.list && data.list.length > 0) {
+        var artKey = source.name + '(小说/美图)';
+        var artList = data.list.map(function(item) {
+          return { vod_id: item.art_id, vod_name: item.art_name, vod_pic: (item.art_pic && item.art_pic.indexOf('[db:') < 0) ? item.art_pic : '', vod_remarks: item.art_remarks || item.art_author || '', vod_play_from: item.art_from || '', vod_play_url: '', vod_time: item.art_time || '', type_name: item.type_name || '', _artId: item.art_id, _isArt: true };
+        });
+        State.searchResults[artKey] = { list: artList, url: source.url };
+      }
+      onDone();
+    }, function() { onDone(); }, 10000);
   });
 }
 function retrySearchFailed() {
@@ -3098,7 +3047,7 @@ window.addEventListener('unload', _flushData);
 document.addEventListener('visibilitychange', function() {
   if (document.hidden || document.webkitHidden) _flushData();
 });
-setInterval(_flushData, 30000);
+setInterval(_flushData, 60000);
 
 var _proxySel = document.getElementById('proxySelect');
 if (_proxySel) _proxySel.value = proxyMode;
