@@ -90,7 +90,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .modal-body{padding:20px}
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-size:13px;color:var(--text-dim);margin-bottom:6px}
-.form-group label span{transition:transform .2s;display:inline-block;font-size:14px}
+.form-group label span{transition:transform .2s;display:inline-block;font-size:16px}
 .form-group label.open span{transform:rotate(90deg)}
 .form-input{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none}
 .dm-cfg-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:13px;gap:8px}
@@ -207,7 +207,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <button class="btn btn-sm" style="margin-top:8px;width:100%" onclick="addSource()">+ 添加源</button>
 </div>
 <div class="form-group">
-<label onclick="this.classList.toggle('open');var sl=document.getElementById('sourceList');sl.style.display=this.classList.contains('open')?'block':'none'" style="cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px">已配置视频源 <span style="font-size:14px;color:var(--text-dim)">▸</span></label>
+<label onclick="this.classList.toggle('open');var sl=document.getElementById('sourceList');sl.style.display=this.classList.contains('open')?'block':'none'" style="cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px">已配置视频源 <span style="font-size:16px;color:var(--text-dim)">▸</span></label>
 <div id="sourceList" style="display:none;margin-top:8px"></div>
 </div>
 <div class="form-group">
@@ -231,7 +231,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 </div>
 <div class="form-group">
 <label>弹幕设置（播放页弹幕默认参数）</label>
-<div class="dm-cfg-row"><span>默认开启</span><div class="dm-cfg-toggle" id="cfgDmEnabled" onclick="cfgDmToggle(this)"><div class="knob"></div></div></div>
+<div class="dm-cfg-row"><span>默认关闭</span><div class="dm-cfg-toggle" id="cfgDmEnabled" onclick="cfgDmToggle(this)"><div class="knob"></div></div></div>
 <div class="dm-cfg-row"><span>不透明度</span><input type="range" class="dm-cfg-slider" id="cfgDmOpacity" min="10" max="100" value="80" oninput="cfgDmSave()"></div>
 <div class="dm-cfg-row"><span>字体大小</span><input type="range" class="dm-cfg-slider" id="cfgDmFontSize" min="14" max="48" value="20" oninput="cfgDmSave()"></div>
 <div class="dm-cfg-row"><span>显示区域</span><div class="dm-cfg-area-btns">
