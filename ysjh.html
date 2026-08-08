@@ -851,6 +851,10 @@ function toggleTheme() {
   localStorage.setItem('vplayer_theme', isDark ? 'dark' : 'light');
   var btn = document.getElementById('themeToggle');
   if (btn) btn.textContent = isDark ? '🌙' : '☀️';
+  try {
+    var iframe = document.getElementById('detailIframe');
+    if (iframe && iframe.contentWindow) iframe.contentWindow.postMessage({type:'themeToggle', dark:isDark}, '*');
+  } catch(e) {}
 }
 applyTheme();
 
@@ -1511,6 +1515,12 @@ function openArtDetailFrame(item) {
   html += '.lightbox{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:9999;justify-content:center;align-items:center;cursor:pointer}';
   html += '.lightbox.show{display:flex}';
   html += '.lightbox img{max-width:100%;max-height:100%;object-fit:contain}';
+  html += 'body.dark-detail{background:#1a1a2e;color:#e8e8ec}';
+  html += 'body.dark-detail .back{background:#16213e;border-color:#2a2a4a;color:#e8e8ec}';
+  html += 'body.dark-detail .back:active{background:#1e2d50}';
+  html += 'body.dark-detail .art-meta{color:#b0b0b0}';
+  html += 'body.dark-detail .art-content{background:#16213e;color:#b0b0b0}';
+  html += 'body.dark-detail .gallery img{background:#16213e}';
   html += '</style></head><body>';
   html += '<div class="container">';
   html += '<a class="back" onclick="parent.closeDetail()">← 返回</a>';
@@ -1537,6 +1547,11 @@ function openArtDetailFrame(item) {
   }
   html += '<div class="lightbox" id="lightbox" onclick="this.classList.remove(\'show\')"><img id="lightboxImg"></div>';
   html += '<script>function showLightbox(src){var lb=document.getElementById("lightbox");var img=document.getElementById("lightboxImg");img.src=src;lb.classList.add("show");}<\/script>';
+  html += '<script>';
+  html += 'function applyDarkMode(dark){document.body.classList.toggle("dark-detail",dark);}';
+  html += 'try{applyDarkMode(parent.document.body.classList.contains("dark"));}catch(e){}';
+  html += 'window.addEventListener("message",function(e){if(e.data&&e.data.type==="themeToggle")applyDarkMode(e.data.dark);});';
+  html += '<\/script>';
   html += '</div></body></html>';
   document.getElementById('detailIframe').srcdoc = html;
 }
@@ -1603,6 +1618,19 @@ function generateDetailHtml(item) {
   html += '.xs-item .xs-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}';
   html += '.xs-item .xs-remark{font-size:11px;color:#86868b;margin-top:2px}';
   html += '.xs-item .xs-eps{font-size:11px;color:#0071e3;margin-top:2px}';
+  html += 'body.dark-detail{background:#1a1a2e;color:#e8e8ec}';
+  html += 'body.dark-detail .detail-back{background:#16213e;border-color:#2a2a4a;color:#e8e8ec}';
+  html += 'body.dark-detail .tag{background:#16213e;color:#b0b0b0}';
+  html += 'body.dark-detail .section-label{color:#e8e8ec}';
+  html += 'body.dark-detail .section-text{color:#b0b0b0}';
+  html += 'body.dark-detail .play-tab{background:#16213e;border-color:#2a2a4a;color:#b0b0b0}';
+  html += 'body.dark-detail .episode-btn{background:#16213e;border-color:#2a2a4a;color:#b0b0b0}';
+  html += 'body.dark-detail .detail-cover{background:#16213e}';
+  html += 'body.dark-detail .xs-item{background:#16213e}';
+  html += 'body.dark-detail .xs-item .xs-name{color:#e8e8ec}';
+  html += 'body.dark-detail .xs-item:active{background:#1e2d50}';
+  html += 'body.dark-detail .fav-line{color:#a29bfe}';
+  html += 'body.dark-detail .remarks-text{color:#8e8e93}';
   html += '</style></head><body>';
   html += '<div class="container">';
   html += '<a class="detail-back" onclick="parent.closeDetail()">← 返回</a>';
@@ -1696,6 +1724,11 @@ function generateDetailHtml(item) {
   html += 'function playXsItem(idx){var entry=xsAllItems[idx];if(!entry)return;parent.showDetail(entry.item);}';
   html += 'function refreshXsSearch(){if(typeof parent._xsRetryFailed==="function"){parent._xsRetryFailed();}else{var ld=document.getElementById("xsLoading");var box=document.getElementById("xsResults");if(ld){ld.style.display="";ld.style.color="";ld.textContent="搜索中...";}if(box)box.innerHTML="";try{parent.postMessage({type:"xsSearch",title:detailData.vod_name},"*");}catch(e){}}}';
   html += 'try{parent.postMessage({type:"xsSearch",title:detailData.vod_name},"*");}catch(e){}';
+  html += '<\/script>';
+  html += '<script>';
+  html += 'function applyDarkMode(dark){document.body.classList.toggle("dark-detail",dark);}';
+  html += 'try{applyDarkMode(parent.document.body.classList.contains("dark"));}catch(e){}';
+  html += 'window.addEventListener("message",function(e){if(e.data&&e.data.type==="themeToggle")applyDarkMode(e.data.dark);});';
   html += '<\/script>';
   html += '</body></html>';
   return html;
