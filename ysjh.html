@@ -65,7 +65,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .art-list-sub{display:flex;align-items:center;gap:8px;margin-top:3px}
 .art-list-tag{font-size:11px;color:var(--primary);background:rgba(108,92,231,0.1);padding:1px 6px;border-radius:8px;white-space:nowrap}
 .art-list-time{font-size:11px;color:var(--text-dim);white-space:nowrap}
-.card-wrap{position:relative;min-width:0;max-width:100%;width:100%;overflow:hidden}
+.card-wrap{position:relative;min-width:0;max-width:100%;width:100%;overflow:hidden;display:flex;flex-direction:column}
+.card-wrap .video-card{flex:1}
 .del-btn{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;background:rgba(231,76,60,0.9);color:#fff;border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:20;line-height:1;-webkit-tap-highlight-color:transparent;pointer-events:auto;touch-action:manipulation}
 .del-btn:active{background:rgba(231,76,60,1);transform:scale(0.9)}
 .loading{text-align:center;padding:40px;color:var(--text-dim)}
