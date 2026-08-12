@@ -2594,6 +2594,14 @@ function addHistory(item, epName, epIdx) {
 }
 function removeHistory(idx) {
   if (idx >= 0 && idx < State.settings.history.length) {
+    var h = State.settings.history[idx];
+    var vodId = h.vod_id || h.vod_name;
+    try {
+      localStorage.removeItem('vp_progress_' + vodId);
+      var all = JSON.parse(_lsGet('vp_all_progress') || '{}');
+      delete all['vp_progress_' + vodId];
+      _lsSet('vp_all_progress', JSON.stringify(all));
+    } catch(e) {}
     State.settings.history.splice(idx, 1);
     Config.save(State.settings);
     renderHistory();
@@ -2956,7 +2964,7 @@ function importData() {
 }
 
 function clearAllCache() {
-  if (!confirm('清除缓存？\n\n将清除：首页缓存、搜索缓存、弹幕数据\n\n不会清除：数据源、收藏、历史')) return;
+  if (!confirm('清除缓存？\n\n将清除：首页缓存、搜索缓存、弹幕数据、播放进度\n\n不会清除：数据源、收藏、历史')) return;
   State.homeCache = {};
   State.searchCache = {};
   State.artCache = {};
@@ -2964,7 +2972,7 @@ function clearAllCache() {
     var keys = Object.keys(localStorage);
     for (var i = 0; i < keys.length; i++) {
       var k = keys[i];
-      if (k.indexOf('dm_') === 0 || k.indexOf('home_cache_') >= 0 || k.indexOf('search_') >= 0) {
+      if (k.indexOf('dm_') === 0 || k.indexOf('home_cache_') >= 0 || k.indexOf('search_') >= 0 || k.indexOf('vp_') === 0) {
         localStorage.removeItem(k);
       }
     }
@@ -2973,14 +2981,9 @@ function clearAllCache() {
 }
 
 function resetAllData() {
-  if (!confirm('⚠️ 重置全部？\n\n将清除所有数据，包括：数据源、收藏、历史、设置、缓存\n\n此操作不可恢复！')) return;
+  if (!confirm('⚠️ 重置全部？\n\n将清除所有数据，包括：数据源、收藏、历史、设置、缓存、播放进度\n\n此操作不可恢复！')) return;
   if (!confirm('再次确认：真的要重置所有数据吗？')) return;
-  try {
-    var keys = Object.keys(localStorage);
-    for (var i = 0; i < keys.length; i++) {
-      if (keys[i].indexOf('vplayer_') === 0) localStorage.removeItem(keys[i]);
-    }
-  } catch(e) {}
+  try { localStorage.clear(); } catch(e) {}
   State.settings = { sources: [], favorites: [], history: [], proxyMode: 'auto' };
   State.homeCache = {};
   State.searchCache = {};
