@@ -2921,7 +2921,18 @@ function batchImport() {
 // ========== 导出/导入 ==========
 function exportData() {
   try {
-    var json = JSON.stringify(State.settings, null, 2);
+    var data = JSON.parse(JSON.stringify(State.settings));
+    var progress = {};
+    try {
+      var keys = Object.keys(localStorage);
+      for (var i = 0; i < keys.length; i++) {
+        if (keys[i].indexOf('vp_') === 0) {
+          progress[keys[i]] = localStorage.getItem(keys[i]);
+        }
+      }
+    } catch(e) {}
+    data._playbackProgress = progress;
+    var json = JSON.stringify(data, null, 2);
     var blob = new Blob([json], {type: 'application/json'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -2943,10 +2954,18 @@ function importData(event) {
       var data = JSON.parse(e.target.result);
       if (!data.sources || data.sources.length === 0) { showToast('数据格式错误'); return; }
       if (!confirm('导入将覆盖当前所有设置，确定继续？')) return;
+      var progress = data._playbackProgress || {};
+      delete data._playbackProgress;
       State.settings = data;
       if (!State.settings.favorites) State.settings.favorites = [];
       if (!State.settings.history) State.settings.history = [];
       if (!State.settings.proxyMode) State.settings.proxyMode = 'auto';
+      try {
+        var pkeys = Object.keys(progress);
+        for (var i = 0; i < pkeys.length; i++) {
+          localStorage.setItem(pkeys[i], progress[pkeys[i]]);
+        }
+      } catch(e) {}
       Config.save(State.settings);
       proxyMode = State.settings.proxyMode;
       var sel = document.getElementById('proxySelect'); if (sel) sel.value = proxyMode;
