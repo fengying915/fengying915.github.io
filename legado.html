@@ -462,6 +462,96 @@ for(let i=0;i<20;i++){
     particleBox.appendChild(p);
 }
 
+// ========== localStorage 缓存工具 ==========
+const CACHE_TTL = 10 * 60 * 1000; // 缓存有效时间 10 分钟
+
+function getCachedData(key) {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    try {
+        const data = JSON.parse(raw);
+        if (Date.now() - data.timestamp < CACHE_TTL) {
+            return data.value;  // 返回缓存的 release 对象
+        }
+    } catch (_) {}
+    return null;
+}
+
+function setCachedData(key, value) {
+    const data = {
+        timestamp: Date.now(),
+        value: value
+    };
+    localStorage.setItem(key, JSON.stringify(data));
+}
+
+// ========== 数据获取函数（带缓存） ==========
+
+// 1. 获取正式版（用于非 dual 仓库，以及 dual 的“正式版”）
+async function fetchRelease(owner, repo) {
+    const cacheKey = `gh_cache_${owner}_${repo}_release`;
+    const cached = getCachedData(cacheKey);
+    if (cached) return cached;
+
+    try {
+        const apiLatest = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+        const resp = await fetch(apiLatest);
+        if (resp.ok) {
+            const data = await resp.json();
+            setCachedData(cacheKey, data);
+            return data;
+        }
+        // 如果 latest 不存在（404），则从列表获取第一个有效的 release
+        if (resp.status === 404) {
+            const listResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`);
+            if (!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
+            const arr = await listResp.json();
+            const valid = arr.filter(x => !x.draft);
+            if (!valid.length) throw new Error("无公开release");
+            const data = valid[0];
+            setCachedData(cacheKey, data);
+            return data;
+        }
+        throw new Error(`HTTP ${resp.status}`);
+    } catch (err) {
+        // 如果请求失败但缓存中存在过期数据，可选择降级（这里直接抛出）
+        throw err;
+    }
+}
+
+// 2. 获取正式版（仅用于 dual 的“正式版”展示，与 fetchRelease 类似但独立缓存）
+async function fetchLatestSoft(owner, repo) {
+    const cacheKey = `gh_cache_${owner}_${repo}_latestsoft`;
+    const cached = getCachedData(cacheKey);
+    if (cached) return cached;
+
+    try {
+        const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
+        if (resp.ok) {
+            const data = await resp.json();
+            setCachedData(cacheKey, data);
+            return data;
+        }
+    } catch (_) {}
+    return null;  // 获取不到返回 null，调用方会 fallback 到 newest
+}
+
+// 3. 获取最新（含预发布）版本，用于 dual 的“最新(含预发布)”
+async function fetchNewestFromList(owner, repo) {
+    const cacheKey = `gh_cache_${owner}_${repo}_newest`;
+    const cached = getCachedData(cacheKey);
+    if (cached) return cached;
+
+    const listResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`);
+    if (!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
+    const arr = await listResp.json();
+    const valid = arr.filter(x => !x.draft);
+    if (!valid.length) throw new Error("无公开release");
+    const data = valid[0];
+    setCachedData(cacheKey, data);
+    return data;
+}
+
 function toggleVersion(idx){
     const content = document.getElementById('versionContent-'+idx);
     const icon = document.getElementById('expandIcon-'+idx);
@@ -532,40 +622,6 @@ const repoConfigList = [
 //直接原始下载地址，代理逻辑已移除
 function getDownloadUrl(originUrl){
     return originUrl;
-}
-
-async function fetchRelease(owner, repo){
-    const apiLatest = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
-    const resp = await fetch(apiLatest);
-    if(resp.ok){
-        return await resp.json();
-    }
-    if(resp.status === 404){
-        const listResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`);
-        if(!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
-        const arr = await listResp.json();
-        const valid = arr.filter(x=>!x.draft);
-        if(!valid.length) throw new Error("无公开release");
-        return valid[0];
-    }
-    throw new Error(`HTTP ${resp.status}`);
-}
-
-async function fetchNewestFromList(owner, repo){
-    const listResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`);
-    if(!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
-    const arr = await listResp.json();
-    const valid = arr.filter(x=>!x.draft);
-    if(!valid.length) throw new Error("无公开release");
-    return valid[0];
-}
-
-async function fetchLatestSoft(owner, repo){
-    try{
-        const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
-        if(resp.ok) return await resp.json();
-    }catch(e){}
-    return null;
 }
 
 function formatLocalDate(d){
@@ -656,7 +712,7 @@ function renderCard(cfg, release, idx, titleSuffix=""){
 }
 
 window.onload = function(){
-    // JS动态移除【启用GitHub下载加速】按钮DOM
+    // 移除之前的“启用GitHub下载加速”按钮（如果存在）
     const boostBtn = document.querySelector('.toggle-label');
     if(boostBtn) boostBtn.remove();
 
