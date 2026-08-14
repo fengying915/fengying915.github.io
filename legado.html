@@ -1,143 +1,329 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Github Release 卡片</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Legado Release Index</title>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    :root {
+      --bg-main:#0b101b;
+      --bg-card:#141b29;
+      --bg-sidebar:#101622;
+      --text-primary:#e6edf7;
+      --text-secondary:#a1b2cc;
+      --accent:#409eff;
+      --border:#242e42;
+      --hover:#1a2438;
     }
-    body {
-      background-color: #0d1117;
-      color: #c9d1d9;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      padding: 24px;
+    [data-theme="light"] {
+      --bg-main:#f0f4fa;
+      --bg-card:#ffffff;
+      --bg-sidebar:#e8edf6;
+      --text-primary:#1e293b;
+      --text-secondary:#475569;
+      --accent:#2563eb;
+      --border:#cbd5e1;
+      --hover:#e2e8f0;
     }
-    .card-wrap {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 16px;
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--text-primary);background:var(--bg-main);transition:background 0.3s,color 0.3s;}
+
+    /* 粒子画布背景 */
+    #particles-canvas{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0;pointer-events:none;}
+
+    /* 整体布局 双栏 */
+    .app-wrap{position:relative;z-index:1;display:flex;height:100%;}
+
+    /* 侧边栏 */
+    .sidebar{
+      width:260px;
+      flex-shrink:0;
+      background:var(--bg-sidebar);
+      border-right:1px solid var(--border);
+      display:flex;
+      flex-direction:column;
+      padding:20px 16px;
+      transition:transform 0.3s ease;
+      overflow-y:auto;
     }
-    /* 目标卡片样式，复刻github项目卡片视觉 */
-    .repo-card {
-      background-color: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 8px;
-      padding: 16px;
-      transition: border-color 0.2s;
+    .sidebar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+    .sidebar-title{font-size:18px;font-weight:600;}
+    .theme-btn{background:none;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;padding:4px;}
+    .sidebar-menu{display:flex;flex-direction:column;gap:6px;}
+    .menu-item{padding:10px 12px;border-radius:6px;cursor:pointer;font-size:14px;color:var(--text-secondary);display:flex;align-items:center;gap:10px;transition:background 0.2s;color 0.2s;}
+    .menu-item:hover{background:var(--hover);color:var(--text-primary);}
+    .menu-item.active{background:var(--hover);color:var(--accent);}
+
+    /* 主内容区 */
+    .main-content{
+      flex:1;
+      overflow-y:auto;
+      padding:24px;
     }
-    .repo-card:hover {
-      border-color: #58a6ff;
+    .page-title{font-size:22px;margin-bottom:20px;font-weight:600;}
+
+    /* 卡片网格 */
+    .card-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+      gap:16px;
     }
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
+
+    /* 仓库卡片，支持折叠 */
+    .repo-card{
+      background:var(--bg-card);
+      border:1px solid var(--border);
+      border-radius:10px;
+      overflow:hidden;
+      transition:border-color 0.2s;
     }
-    .repo-name {
-      font-size: 16px;
-      font-weight: 600;
-      color: #58a6ff;
+    .repo-card:hover{border-color:var(--accent);}
+    .card-head{
+      padding:14px 16px;
+      display:flex;justify-content:space-between;align-items:center;
+      cursor:pointer;
     }
-    .repo-desc {
-      font-size: 13px;
-      color: #8b949e;
-      min-height: 36px;
-      margin-bottom: 12px;
+    .card-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;}
+    .card-toggle-icon{transition:transform 0.2s;}
+    .card-toggle-icon.collapsed{transform:rotate(-90deg);}
+    .card-body{
+      padding:0 16px 16px 16px;
+      max-height:800px;
+      overflow:hidden;
+      transition:max-height 0.3s ease,padding 0.3s ease;
     }
-    .release-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-      padding-top: 10px;
-      border-top: 1px solid #30363d;
+    .card-body.collapsed{
+      max-height:0;
+      padding:0 16px;
     }
-    .tag-text {
-      color: #3fb950;
-      font-weight: 500;
+    .card-desc{font-size:13px;color:var(--text-secondary);margin:8px 0 12px;line-height:1.5;}
+    .release-row{
+      display:flex;justify-content:space-between;align-items:center;
+      padding-top:10px;border-top:1px solid var(--border);
+      font-size:13px;
     }
-    .time-text {
-      color: #8b949e;
+    .tag-name{color:#4ade80;font-weight:500;}
+    [data-theme="light"] .tag-name{color:#16a34a;}
+    .pub-time{color:var(--text-secondary);}
+    .loading-txt,.err-txt{font-size:13px;padding:6px 0;}
+    .err-txt{color:#f87171;}
+
+    /* 移动端 */
+    .sidebar-mask{
+      position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:2;display:none;
     }
-    .loading,.error-text {
-      font-size:13px;color:#8b949e;padding:8px 0;
+    .mobile-menu-btn{
+      display:none;
+      position:absolute;top:14px;left:14px;z-index:3;background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);
+      width:36px;height:36px;border-radius:6px;font-size:18px;cursor:pointer;
     }
-    .error-text{color:#f85149;}
+
+    @media(max-width:768px){
+      .sidebar{
+        position:absolute;
+        height:100%;
+        z-index:3;
+        transform:translateX(-100%);
+      }
+      .sidebar.open{transform:translateX(0);}
+      .sidebar-mask.show{display:block;}
+      .mobile-menu-btn{display:block;}
+      .main-content{padding:20px 14px;padding-top:60px;}
+      .card-grid{grid-template-columns:1fr;}
+    }
   </style>
 </head>
 <body>
-<div class="card-wrap" id="container"></div>
+<!-- 粒子极光背景画布 -->
+<canvas id="particles-canvas"></canvas>
+
+<div class="app-wrap">
+  <div class="sidebar-mask" id="sidebarMask"></div>
+  <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa fa-bars"></i></button>
+
+  <!-- 侧边栏 -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Legado Index</div>
+      <button class="theme-btn" id="themeToggle">
+        <i class="fa fa-moon-o"></i>
+      </button>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-item active"><i class="fa fa-github"></i> Release列表</div>
+      <div class="menu-item"><i class="fa fa-info-circle"></i> 关于</div>
+    </div>
+  </aside>
+
+  <!-- 主内容 -->
+  <main class="main-content">
+    <h2 class="page-title">GitHub Releases</h2>
+    <div class="card-grid" id="cardContainer"></div>
+  </main>
+</div>
 
 <script>
-// 仓库列表
-const repos = [
-  {owner:"xxx",repo:"xxx"},
-  {owner:"xxx",repo:"xxx"}
-];
-const container = document.getElementById('container');
+// ===================== 粒子极光背景 =====================
+const canvas = document.getElementById('particles-canvas');
+const ctx = canvas.getContext('2d');
+let w,h,particles=[];
 
-/**
- * ✅重点：不调用 /releases/latest
- * 请求 /repos/owner/repo/releases 取数组第0项，就是页面最上方真正最新release
- */
-async function fetchRepoRelease(owner, repo){
+function resizeCanvas(){
+  w = canvas.width = window.innerWidth;
+  h = canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize',resizeCanvas);
+
+class Particle{
+  constructor(){
+    this.x=Math.random()*w;
+    this.y=Math.random()*h;
+    this.r=Math.random()*2+0.5;
+    this.vx=(Math.random()-0.5)*0.4;
+    this.vy=(Math.random()-0.5)*0.4;
+    this.a=Math.random()*0.4+0.1;
+  }
+  update(){
+    this.x+=this.vx;
+    this.y+=this.vy;
+    if(this.x<0)this.x=w;
+    if(this.x>w)this.x=0;
+    if(this.y<0)this.y=h;
+    if(this.y>h)this.y=0;
+  }
+  draw(){
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(100,160,255,${this.a})`;
+    ctx.fill();
+  }
+}
+for(let i=0;i<120;i++) particles.push(new Particle());
+
+function animate(){
+  ctx.clearRect(0,0,w,h);
+  for(let p of particles){p.update();p.draw();}
+  requestAnimationFrame(animate);
+}
+animate();
+
+// ===================== 主题切换 持久localStorage =====================
+const themeToggle = document.getElementById('themeToggle');
+const htmlEl = document.documentElement;
+const ICON_DARK = '<i class="fa fa-moon-o"></i>';
+const ICON_LIGHT = '<i class="fa fa-sun-o"></i>';
+
+function applyTheme(theme){
+  if(theme==='light'){
+    htmlEl.setAttribute('data-theme','light');
+    themeToggle.innerHTML = ICON_DARK;
+  }else{
+    htmlEl.removeAttribute('data-theme');
+    themeToggle.innerHTML = ICON_LIGHT;
+  }
+  localStorage.setItem('app-theme',theme);
+}
+const savedTheme = localStorage.getItem('app-theme') || 'dark';
+applyTheme(savedTheme);
+
+themeToggle.onclick = ()=>{
+  const curr = htmlEl.hasAttribute('data-theme') ? 'light' : 'dark';
+  applyTheme(curr==='dark'?'light':'dark');
+};
+
+// ===================== 移动端侧边栏 =====================
+const sidebar = document.getElementById('sidebar');
+const sidebarMask = document.getElementById('sidebarMask');
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+
+function closeSidebar(){
+  sidebar.classList.remove('open');
+  sidebarMask.classList.remove('show');
+}
+mobileMenuBtn.onclick = ()=>{
+  sidebar.classList.toggle('open');
+  sidebarMask.classList.toggle('show');
+};
+sidebarMask.onclick = closeSidebar;
+
+// ===================== Release 逻辑：取releases[0]，不用latest =====================
+const reposList = [
+  {owner:"gedoor",repo:"legado"},
+  {owner:"gedoor",repo:"legado-js"}
+  // 在这里继续添加更多仓库 {owner:"xxx",repo:"xxx"}
+];
+const cardContainer = document.getElementById('cardContainer');
+
+async function getTopRelease(owner,repo){
   const url = `https://api.github.com/repos/${owner}/${repo}/releases`;
   const res = await fetch(url);
-  if(!res.ok) throw new Error(`请求失败 ${res.status}`);
-  const list = await res.json();
-  // 第一条就是页面顶部最新，注意有可能空数组（无release）
-  return list.length ? list[0] : null;
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const arr = await res.json();
+  return arr?.length ? arr[0] : null;
 }
 
-async function renderCard(item){
-  const {owner,repo} = item;
-  // 渲染loading
-  const cardDom = document.createElement('div');
-  cardDom.className = 'repo-card';
-  cardDom.innerHTML = `
-    <div class="card-header">
-      <span class="repo-name">${owner}/${repo}</span>
+async function createCard(repoItem){
+  const {owner,repo} = repoItem;
+  const card = document.createElement('div');
+  card.className = 'repo-card';
+  card.innerHTML = `
+    <div class="card-head">
+      <div class="card-title"><i class="fa fa-github"></i> ${owner}/${repo}</div>
+      <i class="fa fa-chevron-down card-toggle-icon"></i>
     </div>
-    <div class="repo-desc">加载中…</div>
-    <div class="release-info">
-      <span class="loading">正在获取版本</span>
+    <div class="card-body">
+      <div class="card-desc">加载中…</div>
+      <div class="loading-txt">正在获取发布信息</div>
     </div>
   `;
-  container.appendChild(cardDom);
+  cardContainer.appendChild(card);
+
+  // 卡片折叠点击
+  const head = card.querySelector('.card-head');
+  const body = card.querySelector('.card-body');
+  const icon = card.querySelector('.card-toggle-icon');
+  head.onclick = ()=>{
+    body.classList.toggle('collapsed');
+    icon.classList.toggle('collapsed');
+  };
 
   try{
-    const release = await fetchRepoRelease(owner,repo);
-    if(!release){
-      cardDom.querySelector('.repo-desc').textContent = "暂无发布";
-      cardDom.querySelector('.release-info').innerHTML = `<span class="time-text">无Release</span>`;
+    const rel = await getTopRelease(owner,repo);
+    const descEl = card.querySelector('.card-desc');
+    const bodyEl = card.querySelector('.card-body');
+    if(!rel){
+      descEl.textContent = "暂无 Release";
+      bodyEl.innerHTML += `<div class="release-row"><span class="pub-time">无发布版本</span></div>`;
       return;
     }
-    const tagName = release.tag_name;
-    const publishAt = new Date(release.published_at).toLocaleString();
-    const body = release.body ? (release.body.slice(0,80)+"…") : "无描述";
+    const tag = rel.tag_name;
+    const timeStr = new Date(rel.published_at).toLocaleString();
+    const shortBody = rel.body ? rel.body.slice(0,120)+"…" : "无更新日志";
 
-    cardDom.querySelector('.repo-desc').textContent = body;
-    cardDom.querySelector('.release-info').innerHTML = `
-      <span class="tag-text">${tagName}</span>
-      <span class="time-text">${publishAt}</span>
+    descEl.textContent = shortBody;
+    bodyEl.innerHTML += `
+      <div class="release-row">
+        <span class="tag-name">${tag}</span>
+        <span class="pub-time">${timeStr}</span>
+      </div>
     `;
-  }catch(err){
-    cardDom.querySelector('.repo-desc').textContent = "获取信息异常";
-    cardDom.querySelector('.release-info').innerHTML = `<span class="error-text">${err.message}</span>`;
+  }catch(e){
+    const bodyEl = card.querySelector('.card-body');
+    bodyEl.innerHTML = `
+      <div class="card-desc">获取失败</div>
+      <div class="err-txt">${e.message}</div>
+    `;
   }
 }
 
-// 批量渲染
 (async ()=>{
-  for(let r of repos){
-    await renderCard(r);
+  for(let r of reposList){
+    await createCard(r);
   }
-})()
+})();
 </script>
 </body>
 </html>
