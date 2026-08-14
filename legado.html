@@ -463,141 +463,177 @@ input:checked + .slider:before {
 </div>
 
 <script>
+// 生成粒子
 const particleBox = document.getElementById('particles');
 for(let i=0;i<20;i++){
     const p = document.createElement('div');
     p.className = 'particle';
+    p.style.left = Math.random()*100 + '%';
+    p.style.bottom = '-10px';
+    const sz = 1 + Math.random()*3;
+    p.style.width = sz+'px';
+    p.style.height = sz+'px';
+    p.style.animationDelay = Math.random()*15+'s';
+    p.style.animationDuration = 14 + Math.random()*8+'s';
     particleBox.appendChild(p);
 }
 
+// 折叠卡片
 function toggleVersion(idx){
     const content = document.getElementById('versionContent-'+idx);
     const icon = document.getElementById('expandIcon-'+idx);
-    if(!content||!icon) return;
-    if(content.classList.contains('collapsed')){
-        content.classList.remove('collapsed');
-        content.classList.add('expanded');
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-up');
-    }else{
+    if(!content || !icon) return;
+    if(content.classList.contains('expanded')){
         content.classList.remove('expanded');
         content.classList.add('collapsed');
         icon.classList.remove('fa-chevron-up');
         icon.classList.add('fa-chevron-down');
+    }else{
+        content.classList.remove('collapsed');
+        content.classList.add('expanded');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
     }
 }
 
+// 主题切换
 const themeBtn = document.getElementById('themeToggle');
 themeBtn.onclick = function(){
-    document.body.classList.toggle('dark');
+    const body = document.body;
+    body.dataset.theme = body.dataset.theme === 'light' ? 'dark' : 'light';
 };
 
-// 给Sigma、MD3增加 dual:true标记，其余false
+// ========== 仓库配置：仅静态配置元信息，不包含任何release/版本/日志/下载数据 ==========
 const repoConfigList = [
     {
         title:"🚩阅读 R",
         desc:"体验最好！阅读 R 继承自 Rimchars 维护的 阅读Archive，基于 Legado/lyc 分支开发，延续了 Legado 的开源阅读体验，并进一步增强了界面、AI、EPUB、漫画、视频和主题等功能。",
         owner:"refgd", repo:"legado",
-        defaultExpand:false,
-        dual: false
+        defaultExpand:false
     },
     {
         title:"🚩阅读 Sigma",
         desc:"阅读Sigma是gedoor/legado的一个分支版本，在原有基础上增加更多功能，为书源带来更多可能性。",
         owner:"Luoyacheng", repo:"legado",
-        defaultExpand:true,
-        dual: true
+        defaultExpand:true
     },
     {
         title:"🚩阅读 MAX",
         desc:"本项目基于 lyc版 持续开发，在此基础上有更多功能优化 appLegacy版：包名 io.legado.app，与原版相同，可覆盖更新 appMax版：包名 io.legado.app.yuedu，共存包名，不会覆盖原版 appS版：包名 io.legado.app.yuedu.a，另一个共存包名",
         owner:"Suml-1", repo:"Legado_Max",
-        defaultExpand:false,
-        dual: false
+        defaultExpand:false
     },
     {
         title:"🚩阅读 MD3",
         desc:"采用 Material Design 3 风格重新设计的界面版，本项目在对 UI 进行重绘的基础上，加入了多项分支独有功能，并正在逐步从传统 View 迁移至 Jetpack Compose 框架，目标是提供更加现代、流畅且一致的阅读体验。",
         owner:"HapeLee", repo:"legado-with-MD3",
-        defaultExpand:true,
-        dual: true
+        defaultExpand:true
     },
     {
         title:"🚩轻悦时光",
         desc:"轻悦时光全平台都可用,不需要后端服务器支持,不支持阅读书源,有自己的书源",
         owner:"autobcb", repo:"qysg",
-        defaultExpand:true,
-        dual: false
+        defaultExpand:true
     },
     {
         title:"🚩轻阅读",
         desc:"后端，需要自己部署，部署后可以绑定轻悦时光/栖阅，测试地址：https://qyd.gyks.cf",
         owner:"autobcb", repo:"read",
-        defaultExpand:true,
-        dual: false
+        defaultExpand:true
     }
 ];
 
+// 开发跨域代理前缀，生产环境请删除，改用后端转发
 const DEV_CORS_PROXY = "";
+// const DEV_CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
 
+// github下载加速地址前缀
 function getDownloadUrl(originUrl){
-    return originUrl;
+    const proxySwitch = document.getElementById('proxySwitch');
+    if(proxySwitch.checked){
+        return "https://mirror.ghproxy.com/"+originUrl;
+    }else{
+        return originUrl;
+    }
 }
 
-// 原始函数：优先latest，404降级列表
-async function fetchRelease(owner, repo){
+/**
+ * 改用 /releases 列表接口：过滤草稿draft，保留预发布prerelease，解决latest接口遇到pre‑release直接404问题
+ */
+async function fetchLatestRelease(owner,repo){
     const apiLatest = `${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`;
-    const resp = await fetch(apiLatest);
+    let resp = await fetch(apiLatest);
+    // latest成功，直接返回正式版
     if(resp.ok){
         return await resp.json();
     }
+    // latest 404：没有正式版，去拿release列表，取最新公开版本（过滤draft）
     if(resp.status === 404){
-        const listResp = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`);
+        const apiList = `${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`;
+        const listResp = await fetch(apiList);
         if(!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
-        const arr = await listResp.json();
-        const valid = arr.filter(x=>!x.draft);
-        if(!valid.length) throw new Error("无公开release");
+        const releaseList = await listResp.json();
+        if(!Array.isArray(releaseList) || releaseList.length === 0){
+            throw new Error("仓库无任何Release");
+        }
+        // 过滤草稿，按接口原生时间排序，第一条就是时间最新
+        const valid = releaseList.filter(r => !r.draft);
+        if(valid.length === 0){
+            throw new Error("所有Release均为草稿，无公开版本");
+        }
         return valid[0];
     }
+    // 其他错误直接抛出
     throw new Error(`HTTP ${resp.status}`);
 }
 
-// 专门获取列表第一条（允许pre‑release）
-async function fetchNewestFromList(owner, repo){
-    const listResp = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`);
-    if(!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
-    const arr = await listResp.json();
-    const valid = arr.filter(x=>!x.draft);
-    if(!valid.length) throw new Error("无公开release");
-    return valid[0];
-}
-
-// 获取latest正式版，404返回null不抛错
-async function fetchLatestSoft(owner, repo){
-    try{
-        const resp = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`);
-        if(resp.ok) return await resp.json();
-    }catch(e){}
-    return null;
-}
-
+/**
+ * 格式化时间为本地字符串
+ */
 function formatLocalDate(d){
-    const dt=new Date(d);
-    return `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}:${String(dt.getSeconds()).padStart(2,'0')}`;
+    const dt = new Date(d);
+    return dt.getFullYear()+"/"+String(dt.getMonth()+1).padStart(2,'0')+"/"+String(dt.getDate()).padStart(2,'0')+" "+String(dt.getHours()).padStart(2,'0')+":"+String(dt.getMinutes()).padStart(2,'0')+":"+String(dt.getSeconds()).padStart(2,'0');
 }
 
-// ========== 这里完全复用你原来的卡片渲染逻辑，只多一个titleSuffix参数 ==========
-function renderCard(cfg, release, idx, titleSuffix=""){
-    const logMd = release.body||"暂无更新日志";
-    const logHtml = logMd.replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    const publishTimeText = formatLocalDate(release.published_at);
+/**
+ * 渲染全部卡片，数据来自github api返回结果
+ */
+function renderAll(repoFetchResultList){
+    const container = document.getElementById('versions-container');
+    let html = '';
 
-    let assetHtml='';
-    if(release.assets&&release.assets.length>0){
-        for(const ast of release.assets){
-            const dlUrl = getDownloadUrl(ast.browser_download_url);
-            const sizeMb=(ast.size/1024/1024).toFixed(1)+" MB";
-            assetHtml+=`
+    repoFetchResultList.forEach((item,idx)=>{
+        // 处理异常情况
+        if(item.error){
+            html += `
+            <div class="version-card error-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${idx*0.1}s;">
+                <div class="version-header">
+                    <div>
+                        <h2 class="version-name">${item.config.title}</h2>
+                        <p class="version-description">${item.config.desc}</p>
+                    </div>
+                </div>
+                <div style="padding:16px 22px;">
+                    <i class="fa fa-exclamation-triangle"></i> 获取GitHub Release失败：${item.errorMsg}
+                    <div style="font-size:12px;margin-top:6px;">可能：无公开release / api限流 /网络跨域</div>
+                </div>
+            </div>`;
+            return;
+        }
+
+        const release = item.release;
+        const cfg = item.config;
+        const logMd = release.body || "暂无更新日志";
+        const logHtml = marked.parse(logMd);
+        const publishTimeText = formatLocalDate(release.published_at);
+
+        // 渲染资产列表
+        let assetHtml = '';
+        if(release.assets && release.assets.length>0){
+            release.assets.forEach(ast=>{
+                const dlUrl = getDownloadUrl(ast.browser_download_url);
+                const sizeMb = (ast.size / 1024 /1024).toFixed(1)+" MB";
+                assetHtml += `
 <div class="asset-item">
     <div class="asset-info">
         <span class="asset-name">${ast.name}</span>
@@ -607,20 +643,20 @@ function renderCard(cfg, release, idx, titleSuffix=""){
         <i class="fa fa-download"></i> 下载
     </a>
 </div>`;
+            })
+        }else{
+            assetHtml = `<div style="padding:8px 0;color:var(--text-secondary);">该版本没有附件资产</div>`
         }
-    }else{
-        assetHtml=`<div style="padding:8px 0;color:#888;">该版本没有附件资产</div>`;
-    }
 
-    const expandCls = cfg.defaultExpand ? 'expanded':'collapsed';
-    const iconCls = cfg.defaultExpand ? 'fa-chevron-up':'fa-chevron-down';
+        const expandCls = cfg.defaultExpand ? 'expanded' : 'collapsed';
+        const iconCls = cfg.defaultExpand ? 'fa-chevron-up' : 'fa-chevron-down';
 
-    return `
-<div class="version-card">
+        html += `
+<div class="version-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${idx*0.1}s;">
     <div class="version-header" onclick="toggleVersion(${idx})">
-        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
             <div>
-                <h2 class="version-name">${cfg.title} ${titleSuffix}</h2>
+                <h2 class="version-name">${cfg.title}</h2>
                 <p class="version-description">${cfg.desc}</p>
             </div>
             <i class="fa expand-icon ${iconCls}" id="expandIcon-${idx}"></i>
@@ -632,90 +668,46 @@ function renderCard(cfg, release, idx, titleSuffix=""){
                 <span class="info-label">版本标签</span>
                 <span class="version-number">
                     ${release.tag_name}
-                    ${release.prerelease ? '<span style="color:#ffb042;font-size:12px;margin-left:8px;">⚠️预发布</span>':''}
+                    ${release.prerelease ? '<span style="color:#ffb042;font-size:12px;margin-left:8px;">⚠️预发布</span>' : ''}
                 </span>
             </div>
             <div class="info-item">
                 <span class="info-label">发布时间</span>
-                <span style="font-size:13px;">${publishTimeText}</span>
+                <span style="color: var(--cream-2); font-size: 13px;">${publishTimeText}</span>
             </div>
             <div class="info-item">
                 <span class="info-label">仓库</span>
-                <span style="font-size:13px;">${cfg.owner}/${cfg.repo}</span>
+                <span style="color: var(--cream-2); font-size: 13px;">${cfg.owner}/${cfg.repo}</span>
             </div>
             <div class="info-item">
                 <span class="info-label">发布页</span>
-                <a href="${release.html_url}" target="_blank" style="font-size:13px;">查看GitHub Release</a>
+                <a href="${release.html_url}" target="_blank" style="color:var(--accent-teal);font-size:13px;">查看GitHub Release</a>
             </div>
         </div>
         <div class="changelog-section">
             <h3 class="changelog-title"><i class="fa fa-file-text-o"></i> 更新日志</h3>
-            <div class="changelog-content"><pre style="white-space:pre-wrap;">${logHtml}</pre></div>
+            <div class="changelog-content">${logHtml}</div>
         </div>
         <div class="assets-section">${assetHtml}</div>
     </div>
 </div>`;
+    })
+    container.innerHTML = html;
 }
 
-window.onload = function(){
-    (async ()=>{
-        const container = document.getElementById('versions-container');
-        let html = '';
-        let idx = 0;
-
-        for(const cfg of repoConfigList){
-            // 双版本模式 Sigma MD3
-            if(cfg.dual === true){
-                try{
-                    // 1.拿正式版 latest，失败得到null
-                    const latestRel = await fetchLatestSoft(cfg.owner, cfg.repo);
-                    // 2.拿列表最新（允许pre）
-                    const newestRel = await fetchNewestFromList(cfg.owner, cfg.repo);
-
-                    if(latestRel){
-                        html += renderCard(cfg, latestRel, idx++, "【正式版】");
-                    }
-                    html += renderCard(cfg, newestRel, idx++, "【最新(含预发布)】");
-                }catch(err){
-                    html += `
-                    <div class="version-card error-card">
-                        <div class="version-header">
-                            <div>
-                                <h2 class="version-name">${cfg.title}</h2>
-                                <p class="version-description">${cfg.desc}</p>
-                            </div>
-                        </div>
-                        <div style="padding:16px 22px;">
-                            <i class="fa fa-exclamation-triangle"></i> 获取失败：${err.message}
-                        </div>
-                    </div>`;
-                    idx++;
-                }
-            }else{
-                //普通仓库，老逻辑不变
-                try{
-                    const rel = await fetchRelease(cfg.owner, cfg.repo);
-                    html += renderCard(cfg, rel, idx++, "");
-                }catch(err){
-                    html += `
-                    <div class="version-card error-card">
-                        <div class="version-header">
-                            <div>
-                                <h2 class="version-name">${cfg.title}</h2>
-                                <p class="version-description">${cfg.desc}</p>
-                            </div>
-                        </div>
-                        <div style="padding:16px 22px;">
-                            <i class="fa fa-exclamation-triangle"></i> 获取失败：${err.message}
-                        </div>
-                    </div>`;
-                    idx++;
-                }
-            }
+// 页面加载完成，批量拉取所有仓库release
+window.onload = async function(){
+    const resultList = [];
+    for(const cfg of repoConfigList){
+        try{
+            const rel = await fetchLatestRelease(cfg.owner, cfg.repo);
+            resultList.push({config:cfg, error:false, release:rel});
+        }catch(err){
+            resultList.push({config:cfg, error:true, errorMsg:err.message});
         }
-        container.innerHTML = html;
-        document.getElementById('lastUpdate').innerText = formatLocalDate(new Date());
-    })();
+    }
+    renderAll(resultList);
+    document.getElementById('lastUpdate').innerText = formatLocalDate(new Date());
 };
 </script>
 </body>
