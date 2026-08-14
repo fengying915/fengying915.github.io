@@ -463,13 +463,6 @@ input:checked + .slider:before {
 </div>
 
 <script>
-const particleBox = document.getElementById('particles');
-for(let i=0;i<20;i++){
-    const p = document.createElement('div');
-    p.className = 'particle';
-    particleBox.appendChild(p);
-}
-
 function toggleVersion(idx){
     const content = document.getElementById('versionContent-'+idx);
     const icon = document.getElementById('expandIcon-'+idx);
@@ -487,12 +480,6 @@ function toggleVersion(idx){
     }
 }
 
-const themeBtn = document.getElementById('themeToggle');
-themeBtn.onclick = function(){
-    document.body.classList.toggle('dark');
-};
-
-// 给Sigma、MD3增加 dual:true标记，其余false
 const repoConfigList = [
     {
         title:"🚩阅读 R",
@@ -538,21 +525,20 @@ const repoConfigList = [
     }
 ];
 
-const DEV_CORS_PROXY = "";
-
+// 无代理，直接原始下载地址
 function getDownloadUrl(originUrl){
     return originUrl;
 }
 
-// 原始函数：优先latest，404降级列表
+//优先latest，404降级列表
 async function fetchRelease(owner, repo){
-    const apiLatest = `${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+    const apiLatest = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
     const resp = await fetch(apiLatest);
     if(resp.ok){
         return await resp.json();
     }
     if(resp.status === 404){
-        const listResp = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`);
+        const listResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`);
         if(!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
         const arr = await listResp.json();
         const valid = arr.filter(x=>!x.draft);
@@ -562,9 +548,9 @@ async function fetchRelease(owner, repo){
     throw new Error(`HTTP ${resp.status}`);
 }
 
-// 专门获取列表第一条（允许pre‑release）
+// 获取列表第一条（允许pre‑release）
 async function fetchNewestFromList(owner, repo){
-    const listResp = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`);
+    const listResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`);
     if(!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
     const arr = await listResp.json();
     const valid = arr.filter(x=>!x.draft);
@@ -572,10 +558,10 @@ async function fetchNewestFromList(owner, repo){
     return valid[0];
 }
 
-// 获取latest正式版，404返回null不抛错
+// 获取latest正式版，404/异常返回null
 async function fetchLatestSoft(owner, repo){
     try{
-        const resp = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`);
+        const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
         if(resp.ok) return await resp.json();
     }catch(e){}
     return null;
@@ -586,15 +572,34 @@ function formatLocalDate(d){
     return `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}:${String(dt.getSeconds()).padStart(2,'0')}`;
 }
 
-// ========== 这里完全复用你原来的卡片渲染逻辑，只多一个titleSuffix参数 ==========
+/**
+ * 渲染卡片
+ * @param {Object} cfg 配置
+ * @param {Object} release release对象
+ * @param {number} idx 卡片索引
+ * @param {string} titleSuffix 标题后缀
+ */
 function renderCard(cfg, release, idx, titleSuffix=""){
     const logMd = release.body||"暂无更新日志";
     const logHtml = logMd.replace(/</g,"&lt;").replace(/>/g,"&gt;");
     const publishTimeText = formatLocalDate(release.published_at);
 
     let assetHtml='';
+
+    // 判断：是否是【阅读Sigma 正式版】卡片
+    const isSigmaFormalCard = cfg.title === "🚩阅读 Sigma" && titleSuffix === "【正式版】";
+
     if(release.assets&&release.assets.length>0){
         for(const ast of release.assets){
+            const fileName = ast.name;
+            // 只保留apk文件
+            if(!fileName.toLowerCase().endsWith(".apk")) continue;
+
+            // Sigma正式版：只保留文件名包含 legado_plus 的apk
+            if(isSigmaFormalCard){
+                if(!fileName.includes("legado_plus")) continue;
+            }
+
             const dlUrl = getDownloadUrl(ast.browser_download_url);
             const sizeMb=(ast.size/1024/1024).toFixed(1)+" MB";
             assetHtml+=`
@@ -608,8 +613,10 @@ function renderCard(cfg, release, idx, titleSuffix=""){
     </a>
 </div>`;
         }
-    }else{
-        assetHtml=`<div style="padding:8px 0;color:#888;">该版本没有附件资产</div>`;
+    }
+
+    if(assetHtml === ""){
+        assetHtml=`<div style="padding:8px 0;color:#888;">暂无可用APK下载</div>`;
     }
 
     const expandCls = cfg.defaultExpand ? 'expanded':'collapsed';
@@ -664,12 +671,9 @@ window.onload = function(){
         let idx = 0;
 
         for(const cfg of repoConfigList){
-            // 双版本模式 Sigma MD3
             if(cfg.dual === true){
                 try{
-                    // 1.拿正式版 latest，失败得到null
                     const latestRel = await fetchLatestSoft(cfg.owner, cfg.repo);
-                    // 2.拿列表最新（允许pre）
                     const newestRel = await fetchNewestFromList(cfg.owner, cfg.repo);
 
                     if(latestRel){
@@ -692,7 +696,6 @@ window.onload = function(){
                     idx++;
                 }
             }else{
-                //普通仓库，老逻辑不变
                 try{
                     const rel = await fetchRelease(cfg.owner, cfg.repo);
                     html += renderCard(cfg, rel, idx++, "");
@@ -714,7 +717,9 @@ window.onload = function(){
             }
         }
         container.innerHTML = html;
-        document.getElementById('lastUpdate').innerText = formatLocalDate(new Date());
+        if(document.getElementById('lastUpdate')){
+            document.getElementById('lastUpdate').innerText = formatLocalDate(new Date());
+        }
     })();
 };
 </script>
