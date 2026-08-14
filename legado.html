@@ -438,14 +438,6 @@ input:checked + .slider:before {
                 <span style="font-family:'Noto Serif SC',serif;font-size:17px;font-weight:600;letter-spacing:0.1em;color:var(--cream);">开源阅读</span>
             </div>
 
-            <div class="proxy-toggle">
-                <label class="switch">
-                    <input type="checkbox" id="proxySwitch" checked>
-                    <span class="slider"></span>
-                </label>
-                <span class="toggle-label"><i class="fa fa-bolt"></i> 启用 GitHub 下载加速</span>
-            </div>
-
             <div id="versions-container" class="versions-grid">
                 <div class="loading-card">
                     <i class="fa fa-spinner fa-spin fa-2x"></i>
@@ -463,6 +455,13 @@ input:checked + .slider:before {
 </div>
 
 <script>
+const particleBox = document.getElementById('particles');
+for(let i=0;i<20;i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    particleBox.appendChild(p);
+}
+
 function toggleVersion(idx){
     const content = document.getElementById('versionContent-'+idx);
     const icon = document.getElementById('expandIcon-'+idx);
@@ -479,6 +478,11 @@ function toggleVersion(idx){
         icon.classList.add('fa-chevron-down');
     }
 }
+
+const themeBtn = document.getElementById('themeToggle');
+themeBtn.onclick = function(){
+    document.body.classList.toggle('dark');
+};
 
 const repoConfigList = [
     {
@@ -525,12 +529,11 @@ const repoConfigList = [
     }
 ];
 
-// 无代理，直接原始下载地址
+//直接原始下载地址，代理逻辑已移除
 function getDownloadUrl(originUrl){
     return originUrl;
 }
 
-//优先latest，404降级列表
 async function fetchRelease(owner, repo){
     const apiLatest = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
     const resp = await fetch(apiLatest);
@@ -548,7 +551,6 @@ async function fetchRelease(owner, repo){
     throw new Error(`HTTP ${resp.status}`);
 }
 
-// 获取列表第一条（允许pre‑release）
 async function fetchNewestFromList(owner, repo){
     const listResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`);
     if(!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
@@ -558,7 +560,6 @@ async function fetchNewestFromList(owner, repo){
     return valid[0];
 }
 
-// 获取latest正式版，404/异常返回null
 async function fetchLatestSoft(owner, repo){
     try{
         const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
@@ -572,30 +573,20 @@ function formatLocalDate(d){
     return `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}:${String(dt.getSeconds()).padStart(2,'0')}`;
 }
 
-/**
- * 渲染卡片
- * @param {Object} cfg 配置
- * @param {Object} release release对象
- * @param {number} idx 卡片索引
- * @param {string} titleSuffix 标题后缀
- */
 function renderCard(cfg, release, idx, titleSuffix=""){
     const logMd = release.body||"暂无更新日志";
     const logHtml = logMd.replace(/</g,"&lt;").replace(/>/g,"&gt;");
     const publishTimeText = formatLocalDate(release.published_at);
 
     let assetHtml='';
-
-    // 判断：是否是【阅读Sigma 正式版】卡片
     const isSigmaFormalCard = cfg.title === "🚩阅读 Sigma" && titleSuffix === "【正式版】";
 
     if(release.assets&&release.assets.length>0){
         for(const ast of release.assets){
             const fileName = ast.name;
-            // 只保留apk文件
+            //只保留apk
             if(!fileName.toLowerCase().endsWith(".apk")) continue;
-
-            // Sigma正式版：只保留文件名包含 legado_plus 的apk
+            //Sigma正式版只保留legado_plus
             if(isSigmaFormalCard){
                 if(!fileName.includes("legado_plus")) continue;
             }
@@ -665,6 +656,10 @@ function renderCard(cfg, release, idx, titleSuffix=""){
 }
 
 window.onload = function(){
+    // JS动态移除【启用GitHub下载加速】按钮DOM
+    const boostBtn = document.querySelector('.toggle-label');
+    if(boostBtn) boostBtn.remove();
+
     (async ()=>{
         const container = document.getElementById('versions-container');
         let html = '';
