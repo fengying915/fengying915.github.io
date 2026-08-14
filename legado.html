@@ -284,7 +284,7 @@ input:checked + .slider:before {
 }
 .version-info {
     display:grid;
-    grid-template-columns: repeat(auto-fit,minmax(140px,1fr));
+    grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
     gap:12px;
     margin:16px 0 22px;
 }
@@ -362,6 +362,13 @@ input:checked + .slider:before {
 .disclaimer {
     margin-top:8px;opacity:0.7;
 }
+.loading-card{
+    padding:32px 22px;text-align:center;color:var(--text-secondary);
+    background:var(--bg-card);border:1px solid var(--border);border-radius:14px;
+}
+.error-card{
+    padding:24px 22px;background:rgba(220,40,40,0.12);border:1px solid rgba(220,80,80,0.25);border-radius:14px;color:#ffb8b8;
+}
 /* 移动端 */
 @media (max-width: 960px) {
     .layout {flex-direction:column;}
@@ -396,7 +403,7 @@ input:checked + .slider:before {
     <div class="left-panel">
         <div class="brand-badge">
             <div class="brand-icon">
-                <i class="fa fa-book-open" style="color:#2DD4C0;font-size:26px;"></i>
+                <i class="fa fa-book" style="color:#2DD4C0;font-size:26px;"></i>
             </div>
             <div class="brand-name">开源阅读<span>Legado Reader</span></div>
         </div>
@@ -407,7 +414,7 @@ input:checked + .slider:before {
         </p>
         <div class="feature-list">
             <div class="feature-item">
-                <div class="feature-dot"><i class="fa fa-code-branch"></i></div>
+                <div class="feature-dot"><i class="fa fa-git"></i></div>
                 <span class="feature-text">多版本聚合，官方版、Sigma、MD3、Plus 等</span>
             </div>
             <div class="feature-item">
@@ -415,7 +422,7 @@ input:checked + .slider:before {
                 <span class="feature-text">GitHub 加速代理，极速下载体验</span>
             </div>
             <div class="feature-item">
-                <div class="feature-dot"><i class="fa fa-sync-alt"></i></div>
+                <div class="feature-dot"><i class="fa fa-refresh"></i></div>
                 <span class="feature-text">实时同步，自动获取最新版本</span>
             </div>
         </div>
@@ -426,7 +433,7 @@ input:checked + .slider:before {
         <div class="content-wrapper">
             <div class="mobile-brand">
                 <div class="brand-icon" style="width:42px;height:42px;border-radius:11px;">
-                    <i class="fa fa-book-open" style="color:#2DD4C0;font-size:20px;"></i>
+                    <i class="fa fa-book" style="color:#2DD4C0;font-size:20px;"></i>
                 </div>
                 <span style="font-family:'Noto Serif SC',serif;font-size:17px;font-weight:600;letter-spacing:0.1em;color:var(--cream);">开源阅读</span>
             </div>
@@ -439,10 +446,15 @@ input:checked + .slider:before {
                 <span class="toggle-label"><i class="fa fa-bolt"></i> 启用 GitHub 下载加速</span>
             </div>
 
-            <div id="versions-container" class="versions-grid"></div>
+            <div id="versions-container" class="versions-grid">
+                <div class="loading-card">
+                    <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    <div style="margin-top:12px;">正在从GitHub拉取最新Release数据...</div>
+                </div>
+            </div>
 
             <footer class="footer">
-                <p>最后更新: <span id="lastUpdate">2026/08/14 10:39:23</span></p>
+                <p>最后更新: <span id="lastUpdate">--</span></p>
                 <p>数据来源: GitHub Release API</p>
                 <p class="disclaimer">本项目仅为聚合下载页面，应用版权归原作者所有</p>
             </footer>
@@ -470,6 +482,7 @@ for(let i=0;i<20;i++){
 function toggleVersion(idx){
     const content = document.getElementById('versionContent-'+idx);
     const icon = document.getElementById('expandIcon-'+idx);
+    if(!content || !icon) return;
     if(content.classList.contains('expanded')){
         content.classList.remove('expanded');
         content.classList.add('collapsed');
@@ -487,227 +500,147 @@ function toggleVersion(idx){
 const themeBtn = document.getElementById('themeToggle');
 themeBtn.onclick = function(){
     const body = document.body;
-    if(body.dataset.theme === 'light'){
-        body.dataset.theme = 'dark';
-    }else{
-        body.dataset.theme = 'light';
-    }
+    body.dataset.theme = body.dataset.theme === 'light' ? 'dark' : 'light';
 };
 
-// 静态数据，和原站保持一致
-const staticReleaseData = [
+// ========== 仓库配置：仅静态配置元信息，不包含任何release/版本/日志/下载数据 ==========
+const repoConfigList = [
     {
         title:"🚩阅读 R",
         desc:"体验最好！阅读 R 继承自 Rimchars 维护的 阅读Archive，基于 Legado/lyc 分支开发，延续了 Legado 的开源阅读体验，并进一步增强了界面、AI、EPUB、漫画、视频和主题等功能。",
-        version:"3.26.062203",
-        publishText:"1 个月前",
-        downloadCount:28555,
-        repo:"refgd/legado",
-        mdLog:`- 修复 TTS 回原位时定位异常的问题
-- 修复切换主题后 TTS 浮窗消失的问题
-- 优化书籍首次加载速度
-- 修复其它BUG`,
-        assets:[
-            {name:"legado_app_3.26.062203_10489.apk",size:"30.5 MB",count:28555,url:"#"}
-        ],
-        expanded:false
+        owner:"refgd", repo:"legado",
+        defaultExpand:false
     },
     {
         title:"🚩阅读 Sigma",
         desc:"阅读Sigma是gedoor/legado的一个分支版本，在原有基础上增加更多功能，为书源带来更多可能性。",
-        version:"beta",
-        publishText:"1 周前",
-        downloadCount:6570,
-        repo:"Luoyacheng/legado",
-        mdLog:`### 更新内容
-- 优化工作流文件`,
-        assets:[
-            {name:"legado_beta_3.26.08011308_release.apk",size:"19.4 MB",count:6570,url:"#"}
-        ],
-        expanded:true
+        owner:"Luoyacheng", repo:"legado",
+        defaultExpand:true
     },
     {
         title:"🚩阅读 MAX",
         desc:"本项目基于 lyc版 持续开发，在此基础上有更多功能优化 appLegacy版：包名 io.legado.app，与原版相同，可覆盖更新 appMax版：包名 io.legado.app.yuedu，共存包名，不会覆盖原版 appS版：包名 io.legado.app.yuedu.a，另一个共存包名",
-        version:"beta-3.26.081400",
-        publishText:"10 小时前",
-        downloadCount:440,
-        repo:"Suml-1/Legado_Max",
-        mdLog:`⚠️ **重要提醒：安装前请务必备份您的数据！**
-
-📦 **APK版本说明：**
-
-| 版本类型 | 文件名标识 | 说明 |
-|---|---|---|
-| 测试版 | beta | 测试版，包含新功能，专属于max版的安装包 |
-| 兼容版 | compact | 可覆盖原版和lyc版 |
-| 共存版 | plus | 独立安装，与主版本共存 |
-| 调试包 | debug | 独立安装，与其他共存，适用于调试用，无代码混淆，函数名完整，方便抓取崩溃、报错日志定位问题。此版本能正常抓包 |
-
-四个包名都不同，在安卓系统中不同包名视为不同软件，都可以独立存在。
-
-### 更新内容
-- 修复摘录分享功能在release包无法使用的问题
-- fix(视频播放): 修复部分m3u8视频无法播放的问题
-- fix(摘录分享): 模板管理界面补充添加模板入口
-- 更新日志`,
-        assets:[
-            {name:"legado_beta_3.26.081400_release.apk",size:"23.6 MB",count:305,url:"#"},
-            {name:"legado_compat_3.26.081400_legacy.apk",size:"23.6 MB",count:76,url:"#"},
-            {name:"legado_plus_3.26.081400_releaseS.apk",size:"23.6 MB",count:48,url:"#"},
-            {name:"legado_z_debug_3.26.081400.apk",size:"57.6 MB",count:11,url:"#"},
-        ],
-        expanded:false
+        owner:"Suml-1", repo:"Legado_Max",
+        defaultExpand:false
     },
     {
         title:"🚩阅读 MD3",
         desc:"采用 Material Design 3 风格重新设计的界面版，本项目在对 UI 进行重绘的基础上，加入了多项分支独有功能，并正在逐步从传统 View 迁移至 Jetpack Compose 框架，目标是提供更加现代、流畅且一致的阅读体验。",
-        version:"3.26.15",
-        publishText:"3 周前",
-        downloadCount:17413,
-        repo:"HapeLee/legado-with-MD3",
-        mdLog:`### 更新内容
-- fix: Miuix亮暗色问题
-- fix: 优化了一下阅读菜单
-- fix: 同步窗口背景色与 Compose 主题背景色，优化背景色更新逻辑
-- fix: 提供旧主题迁移，保存书架卡片日间、夜间背景色
-- fix: sigma的一些特性 @luoyacheng
-- fix: 同步窗口背景色与 Compose 主题背景色
-- 修复: 优化动态配色逻辑，确保缺失图片时回退到种子色
-- 修复: 切换主题时支持无重启更新，优化配置管理
-- [修复] 切换自定义主题不再需要重启
-- fix: 漫画刷新问题
-- Fix accessibility issues and synchronize reading progress (#1790)
-- 修复朗读错误重置，朗读进度强调与实际不同步的问题 (#1787)`,
-        assets:[
-            {name:"legado-3.26.15-arm64-v8a.apk",size:"17.5 MB",count:14754,url:"#"},
-            {name:"legado-3.26.15-armeabi-v7a.apk",size:"17.0 MB",count:319,url:"#"},
-            {name:"legado-3.26.15.apk",size:"23.7 MB",count:1955,url:"#"},
-            {name:"mapping.txt",size:"223.3 MB",count:385,url:"#"},
-        ],
-        expanded:true
-    },
-    {
-        title:"🚩阅读 MD3测试版",
-        desc:"采用 Material Design 3 风格重新设计的界面版，此版本为测试版，会存在不稳定问题。",
-        version:"3.26.16-beta.15",
-        publishText:"4 天前",
-        downloadCount:4817,
-        repo:"HapeLee/legado-with-MD3",
-        mdLog:`**此版本为测试版，会存在不稳定问题。**
-
-[发布页](https://t.me/materado)
-[反馈群组](https://t.me/+Yn1_v5PZqddmMjQ1)
-
-### 更新内容
-- feat: 神秘优化
-- feat: 顶栏按钮液态玻璃效果
-- feat: 优化一些AI功能
-- feat: 优化快速滚动条`,
-        assets:[
-            {name:"legado-3.26.16-beta.15-arm64-v8a.apk",size:"18.5 MB",count:4165,url:"#"},
-            {name:"legado-3.26.16-beta.15-armeabi-v7a.apk",size:"18.1 MB",count:137,url:"#"},
-            {name:"legado-3.26.16-beta.15.apk",size:"24.8 MB",count:377,url:"#"},
-            {name:"mapping.txt",size:"247.4 MB",count:138,url:"#"},
-        ],
-        expanded:true
-    },
-    {
-        title:"🚩阅读 Plus",
-        desc:"Sigma 的稳定版,使用不同的签名",
-        version:"3.26.030717",
-        publishText:"5 个月前",
-        downloadCount:18367,
-        repo:"Luoyacheng/legado",
-        mdLog:`### 更新内容
-**2026/03/07**
-- 优化代码，修复问题`,
-        assets:[
-            {name:"legado_beta_3.26.03071721_release.apk",size:"19.5 MB",count:9089,url:"#"},
-            {name:"legado_plus_3.26.03071721_releaseS.apk",size:"19.5 MB",count:9278,url:"#"},
-        ],
-        expanded:true
+        owner:"HapeLee", repo:"legado-with-MD3",
+        defaultExpand:true
     },
     {
         title:"🚩轻悦时光",
         desc:"轻悦时光全平台都可用,不需要后端服务器支持,不支持阅读书源,有自己的书源",
-        version:"2.2.0808",
-        publishText:"5 天前",
-        downloadCount:2939,
-        repo:"autobcb/qysg",
-        mdLog:`轻悦时光  0808
-修改主题规则 并允许单独设置每个界面的背景等
-新增删除字体时 如果字体被主题应用则会提醒
-增加翻页速度的刻度
-优化登录ui 适配阅读宽度函数
-修复上下滚动滚动到下一章时因为一些原因无法长按选择
-兼容层和原生书源适配事件监听 和 定制按钮
-详情页简介 html增加按钮支持
-修复多角色引擎选择引擎时会显示其他多角色引擎
-兼容层webview 适配java.ajax 函数
-打开菜单时禁止翻页
-主题新增启动图 打开启动图后会增加启动屏时间（以免启动太快看不到启动图）
-鸿蒙webview 更新至最新版
-朗读引擎新增性别参数（多角色朗读时会给引擎传入）
-新增主题广场主题更新检测(需要重新在主题广场下载后支持, 之前下载的主题不支持)
-尝试修复span 中包裹span 时出现的解析错误问题
-替换进化样式选择 允许单独设置 白天颜色 和夜间颜色  不填写夜间颜色 则全按照白天颜色
-尝试修复仿真翻页偶尔会丢失动画
-兼容层书源可以在登录界面查看loginheader`,
-        assets:[
-            {name:"android_0808_32.apk",size:"71.3 MB",count:424,url:"#"},
-            {name:"android_0808_64.apk",size:"73.6 MB",count:1387,url:"#"},
-            {name:"android_0808_all.apk",size:"154.1 MB",count:212,url:"#"},
-            {name:"android_0808_x86.apk",size:"76.2 MB",count:55,url:"#"},
-            {name:"ios0808.ipa",size:"31.3 MB",count:467,url:"#"},
-            {name:"mac0808.dmg",size:"49.0 MB",count:51,url:"#"},
-            {name:"win0808.msix",size:"88.6 MB",count:127,url:"#"},
-            {name:"win0808.zip",size:"42.4 MB",count:216,url:"#"},
-        ],
-        expanded:true
+        owner:"autobcb", repo:"qysg",
+        defaultExpand:true
     },
     {
         title:"🚩轻阅读",
         desc:"后端，需要自己部署，部署后可以绑定轻悦时光/栖阅，测试地址：https://qyd.gyks.cf",
-        version:"3.4.6b3",
-        publishText:"3 个月前",
-        downloadCount:8389,
-        repo:"autobcb/read",
-        mdLog:`修复一个 独立书源保存订阅源失败的bug`,
-        assets:[
-            {name:"web3.4.6b3.zip",size:"103.6 MB",count:8389,url:"#"}
-        ],
-        expanded:true
+        owner:"autobcb", repo:"read",
+        defaultExpand:true
     }
 ];
 
-function renderAll(data){
+// 开发跨域代理前缀，生产环境请删除，改用后端转发
+const DEV_CORS_PROXY = "";
+// const DEV_CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
+
+// github下载加速地址前缀
+function getDownloadUrl(originUrl){
+    const proxySwitch = document.getElementById('proxySwitch');
+    if(proxySwitch.checked){
+        return "https://mirror.ghproxy.com/"+originUrl;
+    }else{
+        return originUrl;
+    }
+}
+
+/**
+ * 请求单个仓库latest release
+ * @param {string} owner
+ * @param {string} repo
+ */
+async function fetchLatestRelease(owner,repo){
+    const apiUrl = `${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+    const resp = await fetch(apiUrl);
+    if(!resp.ok){
+        throw new Error(`HTTP ${resp.status}`);
+    }
+    return await resp.json();
+}
+
+/**
+ * 格式化时间为本地字符串
+ */
+function formatLocalDate(d){
+    const dt = new Date(d);
+    return dt.getFullYear()+"/"+String(dt.getMonth()+1).padStart(2,'0')+"/"+String(dt.getDate()).padStart(2,'0')+" "+String(dt.getHours()).padStart(2,'0')+":"+String(dt.getMinutes()).padStart(2,'0')+":"+String(dt.getSeconds()).padStart(2,'0');
+}
+
+/**
+ * 渲染全部卡片，数据来自github api返回结果
+ */
+function renderAll(repoFetchResultList){
     const container = document.getElementById('versions-container');
     let html = '';
-    data.forEach((item,idx)=>{
-        const logHtml = marked.parse(item.mdLog);
+
+    repoFetchResultList.forEach((item,idx)=>{
+        // 处理异常情况
+        if(item.error){
+            html += `
+            <div class="version-card error-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${idx*0.1}s;">
+                <div class="version-header">
+                    <div>
+                        <h2 class="version-name">${item.config.title}</h2>
+                        <p class="version-description">${item.config.desc}</p>
+                    </div>
+                </div>
+                <div style="padding:16px 22px;">
+                    <i class="fa fa-exclamation-triangle"></i> 获取GitHub Release失败：${item.errorMsg}
+                    <div style="font-size:12px;margin-top:6px;">可能：无最新release / api限流 /网络跨域</div>
+                </div>
+            </div>`;
+            return;
+        }
+
+        const release = item.release;
+        const cfg = item.config;
+        const logMd = release.body || "暂无更新日志";
+        const logHtml = marked.parse(logMd);
+
+        // 渲染资产列表
         let assetHtml = '';
-        item.assets.forEach(ast=>{
-            assetHtml += `
+        if(release.assets && release.assets.length>0){
+            release.assets.forEach(ast=>{
+                const dlUrl = getDownloadUrl(ast.browser_download_url);
+                const sizeMb = (ast.size / 1024 /1024).toFixed(1)+" MB";
+                assetHtml += `
 <div class="asset-item">
     <div class="asset-info">
         <span class="asset-name">${ast.name}</span>
-        <span class="asset-size">${ast.size}</span>
+        <span class="asset-size">${sizeMb} · 下载次数: ${ast.download_count}</span>
     </div>
-    <a href="${ast.url}" class="download-btn" target="_blank">
-        <i class="fa fa-download"></i> 下载 (${ast.count} 次)
+    <a href="${dlUrl}" class="download-btn" target="_blank">
+        <i class="fa fa-download"></i> 下载
     </a>
 </div>`;
-        });
-        const expandCls = item.expanded ? 'expanded' : 'collapsed';
-        const iconCls = item.expanded ? 'fa-chevron-up' : 'fa-chevron-down';
+            })
+        }else{
+            assetHtml = `<div style="padding:8px 0;color:var(--text-secondary);">该版本没有附件资产</div>`
+        }
+
+        const expandCls = cfg.defaultExpand ? 'expanded' : 'collapsed';
+        const iconCls = cfg.defaultExpand ? 'fa-chevron-up' : 'fa-chevron-down';
+
         html += `
 <div class="version-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${idx*0.1}s;">
     <div class="version-header" onclick="toggleVersion(${idx})">
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
             <div>
-                <h2 class="version-name">${item.title}</h2>
-                <p class="version-description">${item.desc}</p>
+                <h2 class="version-name">${cfg.title}</h2>
+                <p class="version-description">${cfg.desc}</p>
             </div>
             <i class="fa expand-icon ${iconCls}" id="expandIcon-${idx}"></i>
         </div>
@@ -715,35 +648,46 @@ function renderAll(data){
     <div class="version-content ${expandCls}" id="versionContent-${idx}">
         <div class="version-info">
             <div class="info-item">
-                <span class="info-label">版本</span>
-                <span class="version-number">${item.version}</span>
+                <span class="info-label">版本标签</span>
+                <span class="version-number">${release.tag_name}</span>
             </div>
             <div class="info-item">
-                <span class="info-label">发布</span>
-                <span style="color: var(--cream-2); font-size: 13px;">${item.publishText}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">下载</span>
-                <span class="download-count"><i class="fa fa-download"></i> ${item.downloadCount}</span>
+                <span class="info-label">发布时间</span>
+                <span style="color: var(--cream-2); font-size: 13px;">${release.published_at}</span>
             </div>
             <div class="info-item">
                 <span class="info-label">仓库</span>
-                <span style="color: var(--cream-2); font-size: 13px;">${item.repo}</span>
+                <span style="color: var(--cream-2); font-size: 13px;">${cfg.owner}/${cfg.repo}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">发布页</span>
+                <a href="${release.html_url}" target="_blank" style="color:var(--accent-teal);font-size:13px;">查看GitHub Release</a>
             </div>
         </div>
         <div class="changelog-section">
-            <h3 class="changelog-title"><i class="fa fa-file-alt"></i> 更新日志</h3>
+            <h3 class="changelog-title"><i class="fa fa-file-text-o"></i> 更新日志</h3>
             <div class="changelog-content">${logHtml}</div>
         </div>
         <div class="assets-section">${assetHtml}</div>
     </div>
 </div>`;
-    });
+    })
     container.innerHTML = html;
 }
 
-window.onload = function(){
-    renderAll(staticReleaseData);
+// 页面加载完成，批量拉取所有仓库release
+window.onload = async function(){
+    const resultList = [];
+    for(const cfg of repoConfigList){
+        try{
+            const rel = await fetchLatestRelease(cfg.owner, cfg.repo);
+            resultList.push({config:cfg, error:false, release:rel});
+        }catch(err){
+            resultList.push({config:cfg, error:true, errorMsg:err.message});
+        }
+    }
+    renderAll(resultList);
+    document.getElementById('lastUpdate').innerText = formatLocalDate(new Date());
 };
 </script>
 </body>
