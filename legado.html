@@ -769,7 +769,7 @@
     }
 
     // ========== 获取 Release 数据（通过 Worker 代理，带降级） ==========
-    const PROXY_BASE = 'https://legado-proxy.fengying915.workers.dev/api/repos';
+    const PROXY_BASE = 'https://api.facg.top/api/repos';
 
     async function fetchLatestSoft(owner, repo) {
         const cacheKey = `gh_cache_latest_${owner}_${repo}`;
