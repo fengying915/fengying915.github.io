@@ -836,77 +836,88 @@
         return years + ' 年前';
     }
 
-    // ========== 渲染卡片（不过滤资产类型） ==========
-    function renderCard(cfg, release, idx, titleSuffix = '') {
-        const logHtml = marked.parse(release.body || '暂无更新日志');
-        const publishTime = new Date(release.published_at);
-        const timeStr = timeAgo(publishTime);
+// ========== 渲染卡片（支持特定版本过滤） ==========
+function renderCard(cfg, release, idx, titleSuffix = '') {
+    const logHtml = marked.parse(release.body || '暂无更新日志');
+    const publishTime = new Date(release.published_at);
+    const timeStr = timeAgo(publishTime);
 
-        let totalDownloads = 0;
-        let assetsHtml = '';
-        if (release.assets && release.assets.length > 0) {
-            for (const ast of release.assets) {
-                totalDownloads += ast.download_count;
-                const sizeMb = (ast.size / 1024 / 1024).toFixed(1) + ' MB';
-                assetsHtml += `
-                    <div class="asset-item">
-                        <div class="asset-info">
-                            <span class="asset-name">${ast.name}</span>
-                            <span class="asset-size">${sizeMb}</span>
-                        </div>
-                        <a href="${ast.browser_download_url}" class="download-btn" target="_blank">
-                            <i class="fas fa-download"></i> 下载 (${ast.download_count} 次)
-                        </a>
+    // ----- 资产过滤逻辑 -----
+    let assetsToRender = release.assets || [];
+
+    // 特殊规则：阅读 Sigma 稳定版只显示 plus 版本
+    if (cfg.title === '🚩阅读 Sigma' && titleSuffix === '【稳定版】') {
+        assetsToRender = assetsToRender.filter(ast => {
+            const name = ast.name.toLowerCase();
+            return name.includes('plus');
+        });
+    }
+
+    let totalDownloads = 0;
+    let assetsHtml = '';
+    if (assetsToRender.length > 0) {
+        for (const ast of assetsToRender) {
+            totalDownloads += ast.download_count;
+            const sizeMb = (ast.size / 1024 / 1024).toFixed(1) + ' MB';
+            assetsHtml += `
+                <div class="asset-item">
+                    <div class="asset-info">
+                        <span class="asset-name">${ast.name}</span>
+                        <span class="asset-size">${sizeMb}</span>
                     </div>
-                `;
-            }
-        }
-        if (!assetsHtml) {
-            assetsHtml = `<div style="padding:8px 0;color:var(--cream-3);">暂无可用文件下载</div>`;
-        }
-
-        const expandCls = 'collapsed';
-        const iconCls = 'fa-chevron-down';
-
-        return `
-            <div class="version-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${idx * 0.1}s;">
-                <div class="version-header" onclick="toggleVersion(${idx})">
-                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                        <div>
-                            <h2 class="version-name">${cfg.title} ${titleSuffix}</h2>
-                            <p class="version-description">${cfg.desc}</p>
-                        </div>
-                        <i class="fas expand-icon ${iconCls}" id="expandIcon-${idx}"></i>
-                    </div>
+                    <a href="${ast.browser_download_url}" class="download-btn" target="_blank">
+                        <i class="fas fa-download"></i> 下载 (${ast.download_count} 次)
+                    </a>
                 </div>
-                <div class="version-content ${expandCls}" id="versionContent-${idx}">
-                    <div class="version-info">
-                        <div class="info-item">
-                            <span class="info-label">版本</span>
-                            <span class="version-number">${release.tag_name}${release.prerelease ? ' <span style="color:#ffb042;font-size:12px;">⚠️预发布</span>' : ''}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">发布</span>
-                            <span style="color: var(--cream-2); font-size: 13px;">${timeStr}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">下载</span>
-                            <span class="download-count"><i class="fas fa-download"></i> ${totalDownloads}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">仓库</span>
-                            <span style="color: var(--cream-2); font-size: 13px;">${cfg.owner}/${cfg.repo}</span>
-                        </div>
+            `;
+        }
+    }
+    if (!assetsHtml) {
+        assetsHtml = `<div style="padding:8px 0;color:var(--cream-3);">暂无可用文件下载</div>`;
+    }
+
+    const expandCls = 'collapsed';
+    const iconCls = 'fa-chevron-down';
+
+    return `
+        <div class="version-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${idx * 0.1}s;">
+            <div class="version-header" onclick="toggleVersion(${idx})">
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div>
+                        <h2 class="version-name">${cfg.title} ${titleSuffix}</h2>
+                        <p class="version-description">${cfg.desc}</p>
                     </div>
-                    <div class="changelog-section">
-                        <h3 class="changelog-title"><i class="fas fa-file-alt"></i> 更新日志</h3>
-                        <div class="changelog-content">${logHtml}</div>
-                    </div>
-                    <div class="assets-section">${assetsHtml}</div>
+                    <i class="fas expand-icon ${iconCls}" id="expandIcon-${idx}"></i>
                 </div>
             </div>
-        `;
-    }
+            <div class="version-content ${expandCls}" id="versionContent-${idx}">
+                <div class="version-info">
+                    <div class="info-item">
+                        <span class="info-label">版本</span>
+                        <span class="version-number">${release.tag_name}${release.prerelease ? ' <span style="color:#ffb042;font-size:12px;">⚠️预发布</span>' : ''}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">发布</span>
+                        <span style="color: var(--cream-2); font-size: 13px;">${timeStr}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">下载</span>
+                        <span class="download-count"><i class="fas fa-download"></i> ${totalDownloads}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">仓库</span>
+                        <span style="color: var(--cream-2); font-size: 13px;">${cfg.owner}/${cfg.repo}</span>
+                    </div>
+                </div>
+                <div class="changelog-section">
+                    <h3 class="changelog-title"><i class="fas fa-file-alt"></i> 更新日志</h3>
+                    <div class="changelog-content">${logHtml}</div>
+                </div>
+                <div class="assets-section">${assetsHtml}</div>
+            </div>
+        </div>
+    `;
+}
 
     // ========== 仓库配置 ==========
     const repoConfigList = [
