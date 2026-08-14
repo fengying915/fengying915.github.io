@@ -463,7 +463,6 @@ input:checked + .slider:before {
 </div>
 
 <script>
-//生成粒子
 const particleBox = document.getElementById('particles');
 for(let i=0;i<20;i++){
     const p = document.createElement('div');
@@ -471,11 +470,10 @@ for(let i=0;i<20;i++){
     particleBox.appendChild(p);
 }
 
-//折叠卡片
 function toggleVersion(idx){
     const content = document.getElementById('versionContent-'+idx);
     const icon = document.getElementById('expandIcon-'+idx);
-    if(!content||!icon)return;
+    if(!content||!icon) return;
     if(content.classList.contains('collapsed')){
         content.classList.remove('collapsed');
         content.classList.add('expanded');
@@ -489,49 +487,54 @@ function toggleVersion(idx){
     }
 }
 
-//主题切换
 const themeBtn = document.getElementById('themeToggle');
 themeBtn.onclick = function(){
     document.body.classList.toggle('dark');
 };
 
-// ==========仓库配置 完全保留你原来的配置============
+// 给Sigma、MD3增加 dual:true标记，其余false
 const repoConfigList = [
     {
         title:"🚩阅读 R",
         desc:"体验最好！阅读 R 继承自 Rimchars 维护的 阅读Archive，基于 Legado/lyc 分支开发，延续了 Legado 的开源阅读体验，并进一步增强了界面、AI、EPUB、漫画、视频和主题等功能。",
         owner:"refgd", repo:"legado",
-        defaultExpand:false
+        defaultExpand:false,
+        dual: false
     },
     {
         title:"🚩阅读 Sigma",
         desc:"阅读Sigma是gedoor/legado的一个分支版本，在原有基础上增加更多功能，为书源带来更多可能性。",
         owner:"Luoyacheng", repo:"legado",
-        defaultExpand:true
+        defaultExpand:true,
+        dual: true
     },
     {
         title:"🚩阅读 MAX",
         desc:"本项目基于 lyc版 持续开发，在此基础上有更多功能优化 appLegacy版：包名 io.legado.app，与原版相同，可覆盖更新 appMax版：包名 io.legado.app.yuedu，共存包名，不会覆盖原版 appS版：包名 io.legado.app.yuedu.a，另一个共存包名",
         owner:"Suml-1", repo:"Legado_Max",
-        defaultExpand:false
+        defaultExpand:false,
+        dual: false
     },
     {
         title:"🚩阅读 MD3",
         desc:"采用 Material Design 3 风格重新设计的界面版，本项目在对 UI 进行重绘的基础上，加入了多项分支独有功能，并正在逐步从传统 View 迁移至 Jetpack Compose 框架，目标是提供更加现代、流畅且一致的阅读体验。",
         owner:"HapeLee", repo:"legado-with-MD3",
-        defaultExpand:true
+        defaultExpand:true,
+        dual: true
     },
     {
         title:"🚩轻悦时光",
         desc:"轻悦时光全平台都可用,不需要后端服务器支持,不支持阅读书源,有自己的书源",
         owner:"autobcb", repo:"qysg",
-        defaultExpand:true
+        defaultExpand:true,
+        dual: false
     },
     {
         title:"🚩轻阅读",
         desc:"后端，需要自己部署，部署后可以绑定轻悦时光/栖阅，测试地址：https://qyd.gyks.cf",
         owner:"autobcb", repo:"read",
-        defaultExpand:true
+        defaultExpand:true,
+        dual: false
     }
 ];
 
@@ -541,8 +544,8 @@ function getDownloadUrl(originUrl){
     return originUrl;
 }
 
-//普通逻辑：优先latest，404降级列表
-async function fetchNormalRelease(owner,repo){
+// 原始函数：优先latest，404降级列表
+async function fetchRelease(owner, repo){
     const apiLatest = `${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`;
     const resp = await fetch(apiLatest);
     if(resp.ok){
@@ -559,24 +562,23 @@ async function fetchNormalRelease(owner,repo){
     throw new Error(`HTTP ${resp.status}`);
 }
 
-//双版本：Sigma MD3用，各自独立try‑catch，互不影响
-async function fetchDualRelease(owner,repo){
-    let latestData = null;
-    try{
-        const r1 = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`);
-        if(r1.ok) latestData = await r1.json();
-    }catch(e){latestData=null;}
+// 专门获取列表第一条（允许pre‑release）
+async function fetchNewestFromList(owner, repo){
+    const listResp = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`);
+    if(!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
+    const arr = await listResp.json();
+    const valid = arr.filter(x=>!x.draft);
+    if(!valid.length) throw new Error("无公开release");
+    return valid[0];
+}
 
-    let newestData = null;
+// 获取latest正式版，404返回null不抛错
+async function fetchLatestSoft(owner, repo){
     try{
-        const r2 = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`);
-        if(r2.ok){
-            const arr = await r2.json();
-            const valid = arr.filter(x=>!x.draft);
-            if(valid.length) newestData = valid[0];
-        }
-    }catch(e){newestData=null;}
-    return {latestData, newestData};
+        const resp = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`);
+        if(resp.ok) return await resp.json();
+    }catch(e){}
+    return null;
 }
 
 function formatLocalDate(d){
@@ -584,10 +586,9 @@ function formatLocalDate(d){
     return `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}:${String(dt.getSeconds()).padStart(2,'0')}`;
 }
 
-//构建单张卡片，和你原始页面输出结构完全一致
-function buildCardHtml(cfg,release,suffixTitle,idx){
+// ========== 这里完全复用你原来的卡片渲染逻辑，只多一个titleSuffix参数 ==========
+function renderCard(cfg, release, idx, titleSuffix=""){
     const logMd = release.body||"暂无更新日志";
-    //直接输出原始markdown文本，不调用marked库，避免缺少marked报错
     const logHtml = logMd.replace(/</g,"&lt;").replace(/>/g,"&gt;");
     const publishTimeText = formatLocalDate(release.published_at);
 
@@ -619,7 +620,7 @@ function buildCardHtml(cfg,release,suffixTitle,idx){
     <div class="version-header" onclick="toggleVersion(${idx})">
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
             <div>
-                <h2 class="version-name">${cfg.title} ${suffixTitle}</h2>
+                <h2 class="version-name">${cfg.title} ${titleSuffix}</h2>
                 <p class="version-description">${cfg.desc}</p>
             </div>
             <i class="fa expand-icon ${iconCls}" id="expandIcon-${idx}"></i>
@@ -657,40 +658,24 @@ function buildCardHtml(cfg,release,suffixTitle,idx){
 }
 
 window.onload = function(){
-    async function run(){
+    (async ()=>{
         const container = document.getElementById('versions-container');
         let html = '';
-        let globalIdx = 0;
+        let idx = 0;
 
         for(const cfg of repoConfigList){
-            if(cfg.title === "🚩阅读 Sigma" || cfg.title === "🚩阅读 MD3"){
-                const {latestData, newestData} = await fetchDualRelease(cfg.owner,cfg.repo);
-                if(latestData){
-                    html += buildCardHtml(cfg,latestData,"【正式版】",globalIdx++);
-                }
-                if(newestData){
-                    html += buildCardHtml(cfg,newestData,"【最新(含预发布)】",globalIdx++);
-                }
-                if(!latestData && !newestData){
-                    html += `
-                    <div class="version-card error-card">
-                        <div class="version-header">
-                            <div>
-                                <h2 class="version-name">${cfg.title}</h2>
-                                <p class="version-description">${cfg.desc}</p>
-                            </div>
-                        </div>
-                        <div style="padding:16px 22px;">
-                            <i class="fa fa-exclamation-triangle"></i> 获取GitHub Release失败
-                            <div style="font-size:12px;margin-top:6px;">可能原因：API限流、网络跨域、无公开Release</div>
-                        </div>
-                    </div>`;
-                    globalIdx++;
-                }
-            }else{
+            // 双版本模式 Sigma MD3
+            if(cfg.dual === true){
                 try{
-                    const rel = await fetchNormalRelease(cfg.owner,cfg.repo);
-                    html += buildCardHtml(cfg,rel,"",globalIdx++);
+                    // 1.拿正式版 latest，失败得到null
+                    const latestRel = await fetchLatestSoft(cfg.owner, cfg.repo);
+                    // 2.拿列表最新（允许pre）
+                    const newestRel = await fetchNewestFromList(cfg.owner, cfg.repo);
+
+                    if(latestRel){
+                        html += renderCard(cfg, latestRel, idx++, "【正式版】");
+                    }
+                    html += renderCard(cfg, newestRel, idx++, "【最新(含预发布)】");
                 }catch(err){
                     html += `
                     <div class="version-card error-card">
@@ -702,17 +687,35 @@ window.onload = function(){
                         </div>
                         <div style="padding:16px 22px;">
                             <i class="fa fa-exclamation-triangle"></i> 获取失败：${err.message}
-                            <div style="font-size:12px;margin-top:6px;">可能原因：API限流、网络跨域、无公开Release</div>
                         </div>
                     </div>`;
-                    globalIdx++;
+                    idx++;
+                }
+            }else{
+                //普通仓库，老逻辑不变
+                try{
+                    const rel = await fetchRelease(cfg.owner, cfg.repo);
+                    html += renderCard(cfg, rel, idx++, "");
+                }catch(err){
+                    html += `
+                    <div class="version-card error-card">
+                        <div class="version-header">
+                            <div>
+                                <h2 class="version-name">${cfg.title}</h2>
+                                <p class="version-description">${cfg.desc}</p>
+                            </div>
+                        </div>
+                        <div style="padding:16px 22px;">
+                            <i class="fa fa-exclamation-triangle"></i> 获取失败：${err.message}
+                        </div>
+                    </div>`;
+                    idx++;
                 }
             }
         }
         container.innerHTML = html;
         document.getElementById('lastUpdate').innerText = formatLocalDate(new Date());
-    }
-    run();
+    })();
 };
 </script>
 </body>
