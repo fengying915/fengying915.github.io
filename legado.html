@@ -2,171 +2,463 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>阅读系列版本下载页</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Legado 开源阅读多版本下载 - 聚合官方版、Sigma、MD3、Plus 等多个版本">
+    <meta name="keywords" content="Legado,阅读,开源,下载,Android">
+    <title>开源阅读 Legado 多版本下载</title>
+    <!-- CDN依赖 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        :root {
-            --bg: #f7f9fc;
-            --card-bg: #ffffff;
-            --text-main: #1f2937;
-            --text-secondary: #4b5563;
-            --cream-2:#6b7280;
-            --accent-teal:#0d9488;
-            --border:#e5e7eb;
-            --shadow: 0 4px 16px rgba(0,0,0,0.08);
-        }
-        [data-theme="dark"] {
-            --bg:#111827;
-            --card-bg:#1f2937;
-            --text-main:#f3f4f6;
-            --text-secondary:#d1d5db;
-            --cream-2:#9ca3af;
-            --accent-teal:#2dd4bf;
-            --border:#374151;
-            --shadow:0 4px 16px rgba(0,0,0,0.35);
-        }
-        *{box-sizing:border-box;margin:0;padding:0;}
-        body{
-            font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-            background:var(--bg);
-            color:var(--text-main);
-            min-height:100vh;
-            padding:24px 16px;
-            position:relative;
-            overflow-x:hidden;
-        }
-        #particles{
-            position:fixed;
-            inset:0;
-            pointer-events:none;
-            z-index:0;
-            overflow:hidden;
-        }
-        .particle{
-            position:absolute;
-            width:2px;height:2px;
-            background:rgba(13,148,136,0.25);
-            border-radius:50%;
-            animation:floatUp linear infinite;
-        }
-        @keyframes floatUp{
-            0%{transform:translateY(0);opacity:0;}
-            10%{opacity:1;}
-            90%{opacity:1;}
-            100%{transform:translateY(-110vh);opacity:0;}
-        }
-        @keyframes fadeUp{
-            from{opacity:0;transform:translateY(14px);}
-            to{opacity:1;transform:translateY(0);}
-        }
-        .container{
-            max-width:920px;
-            margin:0 auto;
-            position:relative;
-            z-index:1;
-        }
-        .page-header{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom:28px;
-        }
-        .page-title{font-size:26px;font-weight:600;}
-        .header-right{display:flex;gap:12px;align-items:center;}
-        .toggle-wrap{display:flex;align-items:center;gap:6px;font-size:14px;}
-        button{
-            padding:8px 14px;
-            border:1px solid var(--border);
-            background:var(--card-bg);
-            color:var(--text-main);
-            border-radius:8px;
-            cursor:pointer;
-        }
-        button:hover{background:var(--border);}
-        #versions-container{
-            display:flex;
-            flex-direction:column;
-            gap:18px;
-        }
-        .version-card{
-            background:var(--card-bg);
-            border-radius:14px;
-            box-shadow:var(--shadow);
-            overflow:hidden;
-            border:1px solid var(--border);
-        }
-        .error-card{border-left:4px solid #ef4444;}
-        .version-header{
-            padding:18px 22px;
-            cursor:pointer;
-        }
-        .version-name{font-size:18px;margin-bottom:6px;}
-        .version-description{color:var(--text-secondary);font-size:14px;line-height:1.5;}
-        .expand-icon{font-size:18px;color:var(--cream-2);}
-        .version-content.collapsed{max-height:0;overflow:hidden;transition:max-height 0.32s ease;}
-        .version-content.expanded{max-height:3000px;overflow:auto;transition:max-height 0.45s ease;}
-        .version-info{padding:0 22px 14px;display:flex;flex-direction:column;gap:8px;}
-        .info-item{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-        .info-label{font-weight:500;font-size:14px;min-width:86px;color:var(--text-secondary);}
-        .version-number{font-weight:600;font-size:15px;}
-        .changelog-section{padding:0 22px 14px;}
-        .changelog-title{font-size:16px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
-        .changelog-content{
-            font-size:14px;
-            line-height:1.6;
-            color:var(--text-secondary);
-            border-radius:8px;
-            padding:10px 12px;
-            background:rgba(13,148,136,0.06);
-        }
-        .changelog-content pre{overflow-x:auto;}
-        .assets-section{padding:0 22px 20px;display:flex;flex-direction:column;gap:10px;}
-        .asset-item{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            border:1px solid var(--border);
-            border-radius:10px;
-            padding:12px 14px;
-            gap:12px;
-            flex-wrap:wrap;
-        }
-        .asset-info{display:flex;flex-direction:column;gap:3px;}
-        .asset-name{font-size:14px;font-weight:500;}
-        .asset-size{font-size:12px;color:var(--cream-2);}
-        .download-btn{
-            white-space:nowrap;
-            padding:7px 14px;
-            background:var(--accent-teal);
-            color:#fff;
-            border-radius:8px;
-            text-decoration:none;
-            font-size:14px;
-        }
-        .download-btn:hover{opacity:0.88;}
-        .footer-note{margin-top:30px;font-size:13px;color:var(--cream-2);text-align:center;}
+:root {
+    --bg-main: #0b0e17;
+    --bg-card: rgba(22,27,40,0.7);
+    --bg-card-opaque: #161b28;
+    --text-primary: #e8e8e8;
+    --text-secondary: #b8c2cc;
+    --cream: #f0e6d2;
+    --cream-2: #d4c8b0;
+    --accent-teal: #2DD4C0;
+    --border: rgba(255,255,255,0.12);
+    --shadow-card: 0 8px 32px rgba(0,0,0,0.35);
+}
+[data-theme="light"] {
+    --bg-main: #f7f8fa;
+    --bg-card: rgba(255,255,255,0.75);
+    --bg-card-opaque: #ffffff;
+    --text-primary: #1c2028;
+    --text-secondary: #444954;
+    --cream: #2c2820;
+    --cream-2: #544e42;
+    --border: rgba(0,0,0,0.10);
+    --shadow-card: 0 6px 24px rgba(0,0,0,0.08);
+}
+* {
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+body {
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    min-height:100vh;
+    overflow-x:hidden;
+}
+.theme-toggle {
+    position:fixed;
+    top:14px;
+    right:14px;
+    z-index:999;
+    background:var(--bg-card);
+    backdrop-filter: blur(8px);
+    border:1px solid var(--border);
+    color:var(--text-primary);
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+/* 背景特效 */
+.space-bg {
+    position:fixed;
+    inset:0;
+    z-index:-4;
+    background: var(--bg-main);
+}
+.aurora {
+    position:fixed;
+    inset:0;
+    z-index:-3;
+    overflow:hidden;
+    pointer-events:none;
+}
+.aurora-orb {
+    position:absolute;
+    border-radius:50%;
+    filter:blur(120px);
+    opacity:0.25;
+}
+.aurora-orb:nth-child(1) {
+    width:420px;height:420px;
+    background:#2DD4C0;
+    top:-120px;left:-80px;
+}
+.aurora-orb:nth-child(2) {
+    width:460px;height:460px;
+    background:#7c3aed;
+    bottom:-140px;right:-100px;
+}
+.aurora-orb:nth-child(3) {
+    width:340px;height:340px;
+    background:#db2777;
+    top:30%;right:20%;
+}
+.scanlines {
+    position:fixed;inset:0;z-index:-2;
+    background-image:repeating-linear-gradient(0deg,rgba(255,255,255,0.02) 0px,rgba(255,255,255,0.02) 1px,transparent 1px,transparent 3px);
+    pointer-events:none;
+}
+.grid-texture {
+    position:fixed;inset:0;z-index:-1;
+    background-image: linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+    background-size:40px 40px;
+    opacity:0.25;
+    pointer-events:none;
+}
+.particles {
+    position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;
+}
+.particle {
+    position:absolute;
+    background:#fff;
+    border-radius:50%;
+    animation: particleUp linear infinite;
+}
+@keyframes particleUp {
+    0% {transform: translateY(0);opacity:0;}
+    10% {opacity:0.7;}
+    90% {opacity:0.7;}
+    100% {transform: translateY(-110vh);opacity:0;}
+}
+@keyframes fadeUp {
+    from {opacity:0;transform: translateY(18px);}
+    to {opacity:1;transform: translateY(0);}
+}
+/* 双栏布局 */
+.layout {
+    display:flex;
+    min-height:100vh;
+}
+.left-panel {
+    width:420px;
+    flex:0 0 420px;
+    padding:48px 32px;
+    display:flex;
+    flex-direction:column;
+    position:sticky;
+    top:0;
+    height:100vh;
+    overflow-y:auto;
+}
+.brand-badge {
+    display:flex;align-items:center;gap:12px;margin-bottom:24px;
+}
+.brand-icon {
+    width:44px;height:44px;
+    border-radius:12px;
+    background:rgba(45,212,192,0.12);
+    display:flex;align-items:center;justify-content:center;
+}
+.brand-name {
+    font-family:'Noto Serif SC',serif;
+    font-size:19px;letter-spacing:0.08em;
+    color:var(--cream);
+}
+.hero-headline {
+    font-family:'Noto Serif SC',serif;
+    font-size:34px;
+    line-height:1.35;
+    margin-bottom:20px;
+    color:var(--cream);
+}
+.hero-headline em {
+    color:var(--accent-teal);
+    font-style:normal;
+}
+.hero-desc {
+    color:var(--text-secondary);
+    font-size:16px;
+    line-height:1.7;
+    margin-bottom:32px;
+}
+.feature-list {
+    display:flex;flex-direction:column;gap:16px;margin-bottom:36px;
+}
+.feature-item {
+    display:flex;align-items:center;gap:12px;
+}
+.feature-dot {
+    width:32px;height:32px;
+    border-radius:8px;
+    background:rgba(45,212,192,0.12);
+    color:var(--accent-teal);
+    display:flex;align-items:center;justify-content:center;
+    flex:0 0 32px;
+}
+.feature-text {
+    color:var(--text-secondary);
+    font-size:15px;
+}
+.deco-line {
+    height:1px;
+    background:linear-gradient(90deg,var(--accent-teal),transparent);
+    width:100%;
+    opacity:0.4;
+}
+.right-panel {
+    flex:1;
+    overflow-y:auto;
+}
+.content-wrapper {
+    max-width:860px;
+    padding:48px 32px;
+    margin:0 auto;
+}
+.mobile-brand {
+    display:none;
+    align-items:center;gap:10px;margin-bottom:24px;
+}
+.proxy-toggle {
+    display:flex;align-items:center;gap:10px;margin-bottom:28px;
+}
+.switch {
+    position:relative;
+    display:inline-block;
+    width:44px;height:24px;
+}
+.switch input {opacity:0;width:0;height:0;}
+.slider {
+    position:absolute;cursor:pointer;inset:0;
+    background:#444;border-radius:24px;
+    transition:0.25s;
+}
+.slider:before {
+    position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;
+    background:white;border-radius:50%;
+    transition:0.25s;
+}
+input:checked + .slider {
+    background-color:var(--accent-teal);
+}
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+.toggle-label {
+    font-size:15px;color:var(--text-secondary);
+}
+.versions-grid {
+    display:flex;flex-direction:column;gap:20px;
+}
+.version-card {
+    background:var(--bg-card);
+    backdrop-filter: blur(10px);
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow:var(--shadow-card);
+    overflow:hidden;
+}
+.version-header {
+    padding:20px 22px;
+    cursor:pointer;
+}
+.version-name {
+    font-size:19px;margin-bottom:8px;
+}
+.version-description {
+    font-size:14.5px;color:var(--text-secondary);
+    line-height:1.6;
+}
+.version-content {
+    padding:0 22px 22px;
+    max-height:0;
+    overflow:hidden;
+    transition: max-height 0.38s ease;
+}
+.version-content.expanded {
+    max-height:2200px;
+}
+.version-content.collapsed {
+    max-height:0;
+}
+.expand-icon {
+    transition:transform 0.28s ease;
+}
+.expand-icon.fa-chevron-up {
+    transform:rotate(180deg);
+}
+.version-info {
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(130px,1fr));
+    gap:12px;
+    margin:16px 0 22px;
+}
+.info-item {
+    display:flex;flex-direction:column;gap:3px;
+}
+.info-label {
+    font-size:12px;color:var(--text-secondary);
+    text-transform:uppercase;letter-spacing:0.04em;
+}
+.version-number,.download-count {
+    font-size:14.5px;
+}
+.changelog-section {
+    margin-bottom:22px;
+}
+.changelog-title {
+    display:flex;align-items:center;gap:8px;
+    font-size:16px;margin-bottom:10px;
+}
+.changelog-content {
+    background:rgba(0,0,0,0.15);
+    border-radius:10px;
+    padding:14px 16px;
+    font-size:14px;
+    line-height:1.65;
+    color:var(--text-secondary);
+}
+.changelog-content ul {
+    padding-left:20px;
+}
+.changelog-content table {
+    width:100%;border-collapse:collapse;margin:10px 0;
+}
+.changelog-content th,.changelog-content td {
+    border:1px solid var(--border);
+    padding:7px 9px;
+}
+.assets-section {
+    display:flex;flex-direction:column;gap:12px;
+}
+.asset-item {
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    background:rgba(255,255,255,0.04);
+    padding:12px 14px;
+    border-radius:10px;
+}
+.asset-info {
+    display:flex;flex-direction:column;gap:2px;
+}
+.asset-name {
+    font-size:14px;
+}
+.asset-size {
+    font-size:12.5px;color:var(--text-secondary);
+}
+.download-btn {
+    white-space:nowrap;
+    background:var(--accent-teal);
+    color:#000;
+    text-decoration:none;
+    padding:7px 14px;
+    border-radius:8px;
+    font-size:13.5px;
+    font-weight:500;
+}
+.footer {
+    margin-top:40px;
+    font-size:13px;
+    color:var(--text-secondary);
+    line-height:1.7;
+}
+.disclaimer {
+    margin-top:8px;opacity:0.7;
+}
+.loading-card{
+    padding:32px 22px;text-align:center;color:var(--text-secondary);
+    background:var(--bg-card);border:1px solid var(--border);border-radius:14px;
+}
+.error-card{
+    padding:24px 22px;background:rgba(220,40,40,0.12);border:1px solid rgba(220,80,80,0.25);border-radius:14px;color:#ffb8b8;
+}
+/* 移动端 */
+@media (max-width: 960px) {
+    .layout {flex-direction:column;}
+    .left-panel {
+        width:100%;flex:none;height:auto;position:static;
+        padding:24px 20px;
+    }
+    .hero-headline,.brand-badge,.feature-list,.deco-line {
+        display:none;
+    }
+    .mobile-brand {display:flex;}
+    .content-wrapper {padding:24px 18px;}
+}
     </style>
 </head>
-<body>
-<div id="particles"></div>
-<div class="container">
-    <div class="page-header">
-        <h1 class="page-title">阅读系列版本下载</h1>
-        <div class="header-right">
-            <label class="toggle-wrap">
-                <input type="checkbox" id="proxySwitch" checked>
-                GHProxy加速下载
-            </label>
-            <button id="themeToggle"><i class="fa fa-moon-o"></i> 切换主题</button>
+<body data-theme="light">
+<button class="theme-toggle" id="themeToggle" title="自动模式 (点击切换)">
+    <i class="fa fa-adjust"></i>
+</button>
+
+<div class="space-bg"></div>
+<div class="aurora">
+    <div class="aurora-orb"></div>
+    <div class="aurora-orb"></div>
+    <div class="aurora-orb"></div>
+</div>
+<div class="scanlines"></div>
+<div class="grid-texture"></div>
+<div class="particles" id="particles"></div>
+
+<div class="layout">
+    <div class="left-panel">
+        <div class="brand-badge">
+            <div class="brand-icon">
+                <i class="fa fa-book" style="color:#2DD4C0;font-size:26px;"></i>
+            </div>
+            <div class="brand-name">开源阅读<span>Legado Reader</span></div>
         </div>
+        <h1 class="hero-headline">探索<em>阅读</em><br>无限可能</h1>
+        <p class="hero-desc">
+            聚合多个 Legado 版本下载<br>
+            让每一次阅读，都是与文字的美好邂逅
+        </p>
+        <div class="feature-list">
+            <div class="feature-item">
+                <div class="feature-dot"><i class="fa fa-git"></i></div>
+                <span class="feature-text">多版本聚合，官方版、Sigma、MD3、Plus 等</span>
+            </div>
+            <div class="feature-item">
+                <div class="feature-dot"><i class="fa fa-bolt"></i></div>
+                <span class="feature-text">GitHub 加速代理，极速下载体验</span>
+            </div>
+            <div class="feature-item">
+                <div class="feature-dot"><i class="fa fa-refresh"></i></div>
+                <span class="feature-text">实时同步，自动获取最新版本</span>
+            </div>
+        </div>
+        <div class="deco-line"></div>
     </div>
 
-    <div id="versions-container"></div>
+    <div class="right-panel">
+        <div class="content-wrapper">
+            <div class="mobile-brand">
+                <div class="brand-icon" style="width:42px;height:42px;border-radius:11px;">
+                    <i class="fa fa-book" style="color:#2DD4C0;font-size:20px;"></i>
+                </div>
+                <span style="font-family:'Noto Serif SC',serif;font-size:17px;font-weight:600;letter-spacing:0.1em;color:var(--cream);">开源阅读</span>
+            </div>
 
-    <div class="footer-note">
-        数据来自 GitHub API · <span id="lastUpdate"></span>
+            <div class="proxy-toggle">
+                <label class="switch">
+                    <input type="checkbox" id="proxySwitch" checked>
+                    <span class="slider"></span>
+                </label>
+                <span class="toggle-label"><i class="fa fa-bolt"></i> 启用 GitHub 下载加速</span>
+            </div>
+
+            <div id="versions-container" class="versions-grid">
+                <div class="loading-card">
+                    <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    <div style="margin-top:12px;">正在从GitHub拉取最新Release数据...</div>
+                </div>
+            </div>
+
+            <footer class="footer">
+                <p>最后更新: <span id="lastUpdate">--</span></p>
+                <p>数据来源: GitHub Release API</p>
+                <p class="disclaimer">本项目仅为聚合下载页面，应用版权归原作者所有</p>
+            </footer>
+        </div>
     </div>
 </div>
 
@@ -211,7 +503,7 @@ themeBtn.onclick = function(){
     body.dataset.theme = body.dataset.theme === 'light' ? 'dark' : 'light';
 };
 
-// ========== 仓库配置 ==========
+// ========== 仓库配置：仅静态配置元信息，不包含任何release/版本/日志/下载数据 ==========
 const repoConfigList = [
     {
         title:"🚩阅读 R",
@@ -251,9 +543,11 @@ const repoConfigList = [
     }
 ];
 
+// 开发跨域代理前缀，生产环境请删除，改用后端转发
 const DEV_CORS_PROXY = "";
 // const DEV_CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
 
+// github下载加速地址前缀
 function getDownloadUrl(originUrl){
     const proxySwitch = document.getElementById('proxySwitch');
     if(proxySwitch.checked){
@@ -264,7 +558,7 @@ function getDownloadUrl(originUrl){
 }
 
 /**
- * 获取release：过滤draft草稿，保留prerelease预发布
+ * 改用 /releases 列表接口：过滤草稿draft，保留预发布prerelease，解决latest接口遇到pre‑release直接404问题
  */
 async function fetchLatestRelease(owner,repo){
     const apiUrl = `${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`;
@@ -276,6 +570,7 @@ async function fetchLatestRelease(owner,repo){
     if(!Array.isArray(releaseList) || releaseList.length === 0){
         throw new Error("仓库无任何Release");
     }
+    // 过滤草稿，保留预发布
     const validReleases = releaseList.filter(r => !r.draft);
     if(validReleases.length === 0){
         throw new Error("所有Release均为草稿，无公开版本");
@@ -283,16 +578,23 @@ async function fetchLatestRelease(owner,repo){
     return validReleases[0];
 }
 
+/**
+ * 格式化时间为本地字符串
+ */
 function formatLocalDate(d){
     const dt = new Date(d);
     return dt.getFullYear()+"/"+String(dt.getMonth()+1).padStart(2,'0')+"/"+String(dt.getDate()).padStart(2,'0')+" "+String(dt.getHours()).padStart(2,'0')+":"+String(dt.getMinutes()).padStart(2,'0')+":"+String(dt.getSeconds()).padStart(2,'0');
 }
 
+/**
+ * 渲染全部卡片，数据来自github api返回结果
+ */
 function renderAll(repoFetchResultList){
     const container = document.getElementById('versions-container');
     let html = '';
 
     repoFetchResultList.forEach((item,idx)=>{
+        // 处理异常情况
         if(item.error){
             html += `
             <div class="version-card error-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${idx*0.1}s;">
@@ -316,6 +618,7 @@ function renderAll(repoFetchResultList){
         const logHtml = marked.parse(logMd);
         const publishTimeText = formatLocalDate(release.published_at);
 
+        // 渲染资产列表
         let assetHtml = '';
         if(release.assets && release.assets.length>0){
             release.assets.forEach(ast=>{
@@ -356,7 +659,7 @@ function renderAll(repoFetchResultList){
                 <span class="info-label">版本标签</span>
                 <span class="version-number">
                     ${release.tag_name}
-                    ${release.prerelease ? '<span style="color:#ff9800;font-size:12px;margin-left:8px;">⚠️预发布</span>' : ''}
+                    ${release.prerelease ? '<span style="color:#ffb042;font-size:12px;margin-left:8px;">⚠️预发布</span>' : ''}
                 </span>
             </div>
             <div class="info-item">
@@ -383,6 +686,7 @@ function renderAll(repoFetchResultList){
     container.innerHTML = html;
 }
 
+// 页面加载完成，批量拉取所有仓库release
 window.onload = async function(){
     const resultList = [];
     for(const cfg of repoConfigList){
