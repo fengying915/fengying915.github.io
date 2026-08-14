@@ -906,7 +906,9 @@ function renderCard(cfg, release, idx, titleSuffix = '') {
                     </div>
                     <div class="info-item">
                         <span class="info-label">仓库</span>
-                        <span style="color: var(--cream-2); font-size: 13px;">${cfg.owner}/${cfg.repo}</span>
+                        <a href="https://github.com/${cfg.owner}/${cfg.repo}" target="_blank" style="color: var(--teal); font-size: 13px; text-decoration: none;">
+                            ${cfg.owner}/${cfg.repo}
+                        </a>
                     </div>
                 </div>
                 <div class="changelog-section">
