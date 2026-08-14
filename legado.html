@@ -561,21 +561,30 @@ function getDownloadUrl(originUrl){
  * 改用 /releases 列表接口：过滤草稿draft，保留预发布prerelease，解决latest接口遇到pre‑release直接404问题
  */
 async function fetchLatestRelease(owner,repo){
-    const apiUrl = `${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`;
-    const resp = await fetch(apiUrl);
-    if(!resp.ok){
-        throw new Error(`HTTP ${resp.status}`);
+    const apiLatest = `${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+    let resp = await fetch(apiLatest);
+    // latest成功，直接返回正式版
+    if(resp.ok){
+        return await resp.json();
     }
-    const releaseList = await resp.json();
-    if(!Array.isArray(releaseList) || releaseList.length === 0){
-        throw new Error("仓库无任何Release");
+    // latest 404：没有正式版，去拿release列表，取最新公开版本（过滤draft）
+    if(resp.status === 404){
+        const apiList = `${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`;
+        const listResp = await fetch(apiList);
+        if(!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
+        const releaseList = await listResp.json();
+        if(!Array.isArray(releaseList) || releaseList.length === 0){
+            throw new Error("仓库无任何Release");
+        }
+        // 过滤草稿，按接口原生时间排序，第一条就是时间最新
+        const valid = releaseList.filter(r => !r.draft);
+        if(valid.length === 0){
+            throw new Error("所有Release均为草稿，无公开版本");
+        }
+        return valid[0];
     }
-    // 过滤草稿，保留预发布
-    const validReleases = releaseList.filter(r => !r.draft);
-    if(validReleases.length === 0){
-        throw new Error("所有Release均为草稿，无公开版本");
-    }
-    return validReleases[0];
+    // 其他错误直接抛出
+    throw new Error(`HTTP ${resp.status}`);
 }
 
 /**
