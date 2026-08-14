@@ -4,230 +4,197 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>开源阅读Legado Reader</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
-/* 全局变量 严格对标原站配色尺寸 */
-:root {
-    --page-bg: #ffffff;
-    --card-bg: #f7f8fa;
-    --text-main: #111111;
-    --text-secondary: #555555;
-    --text-light: #777777;
-    --border-color: #e5e7eb;
-    --log-bg: #f3f4f6;
-    --primary-blue: #0366d6;
-    --beta-orange: #ff7800;
-    --danger-red: #dc2626;
-    --radius-sm: 4px;
-    --radius-md: 6px;
-    --gap-base: 12px;
-}
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: system-ui, -apple-system, "Microsoft YaHei", sans-serif;
+    font-family: "Microsoft YaHei", system-ui, sans-serif;
 }
 body {
-    background: var(--page-bg);
-    color: var(--text-main);
-    max-width: 1180px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 24px 16px;
-    line-height: 1.65;
+    background: #fff;
+    color: #111;
+    line-height: 1.7;
 }
-/* 头部区域 */
-header {
+/* 头部完全匹配原版居中文本 */
+.page-header {
     text-align: center;
+    margin-bottom: 40px;
     padding-bottom: 20px;
-    margin-bottom: 32px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid #eee;
 }
-header h1 {
+.page-header h1 {
     font-size: 28px;
+    font-weight: normal;
     margin-bottom: 8px;
-    font-weight: 600;
 }
-header .sub-title {
+.page-header .desc {
     font-size: 16px;
-    color: var(--text-secondary);
-    margin-bottom: 6px;
-}
-header .desc-text {
-    font-size: 15px;
-    color: var(--text-secondary);
+    color: #444;
     margin: 4px 0;
 }
-/* 版本卡片容器 */
+/* 每个版本区块 原版无卡片无阴影 */
 .version-block {
-    background: var(--card-bg);
-    border-radius: var(--radius-md);
-    padding: 20px;
-    margin-bottom: 24px;
+    margin-bottom: 36px;
 }
 .block-title {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    font-size: 22px;
+    margin-bottom: 10px;
 }
-.beta-tag {
-    background: var(--beta-orange);
+.beta-label {
+    display: inline-block;
+    background: #ff7800;
     color: #fff;
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
+    font-size: 13px;
+    padding: 2px 6px;
+    margin-left: 8px;
 }
-.warn-text {
-    color: var(--danger-red);
-    font-weight: 500;
-    margin: 8px 0;
+.block-desc {
+    font-size: 15px;
+    color: #222;
+    margin-bottom: 8px;
+    white-space: pre-wrap;
 }
-.meta-row {
+.meta-line {
     font-size: 14px;
-    color: var(--text-secondary);
-    margin: 6px 0;
+    color: #555;
+    margin-bottom: 10px;
 }
-.meta-row a {
-    color: var(--primary-blue);
+.meta-line a {
+    color: #0366d6;
     text-decoration: none;
 }
-.meta-row a:hover {
+.meta-line a:hover {
     text-decoration: underline;
 }
-/* 更新日志区块 */
-.log-title {
-    font-size: 17px;
-    font-weight: 600;
-    margin: 16px 0 10px;
-    border-left: 4px solid var(--primary-blue);
-    padding-left: 10px;
+.warn-notice {
+    color: #dc2626;
+    font-weight: bold;
+    margin: 8px 0;
 }
-.log-box {
-    background: var(--log-bg);
-    padding: 12px 16px;
-    border-radius: var(--radius-sm);
-    margin-bottom: 16px;
+.log-heading {
+    font-size: 19px;
+    margin: 16px 0 8px;
+}
+.log-wrap {
+    background: #f3f4f6;
+    padding: 14px 16px;
     font-size: 14px;
+    margin-bottom: 12px;
 }
-.log-box ul {
-    padding-left: 20px;
+.log-wrap ul {
+    padding-left: 22px;
 }
-.log-box li {
-    margin: 4px 0;
+.log-wrap li {
+    margin: 5px 0;
 }
-/* 表格样式 完全还原原站细线表格 */
-table {
+/* 原版细线表格 */
+.log-wrap table {
     width: 100%;
     border-collapse: collapse;
-    margin: 12px 0 16px;
-    font-size: 14px;
+    margin: 10px 0;
 }
-th, td {
-    border: 1px solid var(--border-color);
-    padding: 8px 12px;
+.log-wrap th, .log-wrap td {
+    border: 1px solid #ddd;
+    padding: 7px 10px;
 }
-th {
-    background: #eff6ff;
+.log-wrap th {
+    background: #eef4ff;
 }
-/* 下载项 */
-.download-item {
+/* 下载行：文件名+大小 + 右侧蓝色按钮 */
+.download-row {
     margin: 6px 0;
     font-size: 14px;
 }
-.download-link {
+.download-btn {
     display: inline-block;
-    background: var(--primary-blue);
+    background: #0366d6;
     color: #fff;
-    padding: 4px 12px;
-    border-radius: var(--radius-sm);
+    padding: 3px 10px;
     text-decoration: none;
     margin-left: 10px;
 }
-.download-link:hover {
+.download-btn:hover {
     background: #0250ac;
 }
-/* 底部信息 */
-footer {
-    margin-top: 40px;
+/* 底部靠右文字 */
+.page-footer {
+    margin-top: 50px;
     text-align: right;
     font-size: 13px;
-    color: var(--text-light);
+    color: #666;
 }
-/* Markdown基础渲染适配日志表格 */
-.md-table {
-    width:100%;border-collapse:collapse;margin:0.6rem 0;
-}
-.md-table th,.md-table td {
-    border:1px solid #ddd;padding:6px 10px;
-}
-.md-table th {background:#eef4ff;}
 </style>
 </head>
 <body>
-<header>
+<div class="page-header">
     <h1>开源阅读Legado Reader</h1>
-    <p class="sub-title">探索<em>阅读</em>无限可能</p>
-    <p class="desc-text">聚合多个 Legado 版本下载  让每一次阅读，都是与文字的美好邂逅</p>
-    <p class="desc-text">多版本聚合，官方版、Sigma、MD3、Plus 等<br>GitHub 加速代理，极速下载体验<br>实时同步，自动获取最新版本</p>
-</header>
+    <p class="desc"># 探索<em>阅读</em>无限可能</p>
+    <p class="desc">聚合多个 Legado 版本下载  让每一次阅读，都是与文字的美好邂逅</p>
+    <p class="desc">多版本聚合，官方版、Sigma、MD3、Plus 等</p>
+    <p class="desc">GitHub 加速代理，极速下载体验</p>
+    <p class="desc">实时同步，自动获取最新版本</p>
+</div>
 
-<div id="container"></div>
+<div id="main-content"></div>
 
-<footer>
-    <div id="last-update">最后更新: 2026/08/13 22:04:23</div>
+<div class="page-footer">
+    <div>最后更新: 2026/08/13 22:04:23</div>
     <div>数据来源: GitHub Release API</div>
-</footer>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
-// 静态快照兜底数据（与你提供文档完全一致，API失败直接渲染）
-const staticData = [
+// 内置静态快照（和你给文档一字不差，API拉取失败直接渲染）
+const staticReleaseData = [
     {
         title: "🚩阅读 R",
         isBeta: false,
-        repo: "refgd/legado",
         version: "3.26.062203",
-        publishAgo: "1 个月前",
-        totalDownload: 28379,
+        publishText: "1 个月前",
+        totalDL: 28379,
+        repo: "refgd/legado",
         desc: "体验最好！阅读 R 继承自 Rimchars 维护的 阅读Archive，基于 Legado/lyc 分支开发，延续了 Legado 的开源阅读体验，并进一步增强了界面、AI、EPUB、漫画、视频和主题等功能。",
         warn: "",
-        logContent: `- 修复 TTS 回原位时定位异常的问题
+        mdLog: `- 修复 TTS 回原位时定位异常的问题
 - 修复切换主题后 TTS 浮窗消失的问题
 - 优化书籍首次加载速度
 - 修复其它BUG`,
         assets: [
-            {name:"legado_app_3.26.062203_10489.apk",size:"30.5 MB",count:28379,url:"#"}
+            {name: "legado_app_3.26.062203_10489.apk", size: "30.5 MB", count: 28379, url: "#"}
         ]
     },
     {
         title: "🚩阅读 Sigma",
         isBeta: true,
-        repo: "Luoyacheng/legado",
         version: "beta",
-        publishAgo: "1 周前",
-        totalDownload: 6374,
+        publishText: "1 周前",
+        totalDL: 6374,
+        repo: "Luoyacheng/legado",
         desc: "阅读Sigma是gedoor/legado的一个分支版本，在原有基础上增加更多功能，为书源带来更多可能性。",
         warn: "",
-        logContent: `- 优化工作流文件`,
+        mdLog: `### 更新内容
+- 优化工作流文件`,
         assets: [
-            {name:"legado_beta_3.26.08011308_release.apk",size:"19.4 MB",count:6374,url:"#"}
+            {name: "legado_beta_3.26.08011308_release.apk", size: "19.4 MB", count: 6374, url: "#"}
         ]
     },
     {
         title: "🚩阅读 MAX",
         isBeta: true,
-        repo: "Suml-1/Legado_Max",
         version: "beta-3.26.081301",
-        publishAgo: "20 小时前",
-        totalDownload: 857,
+        publishText: "20 小时前",
+        totalDL: 857,
+        repo: "Suml-1/Legado_Max",
         desc: `本项目基于 lyc版 持续开发，在此基础上有更多功能优化
 appLegacy版：包名 io.legado.app，与原版相同，可覆盖更新
 appMax版：包名 io.legado.app.yuedu，共存包名，不会覆盖原版
 appS版：包名 io.legado.app.yuedu.a，另一个共存包名`,
         warn: "⚠️ **重要提醒：安装前请务必备份您的数据！**",
-        logContent: `📦 **APK版本说明：**
+        mdLog: `📦 **APK版本说明：**
 
 | 版本类型 | 文件名标识 | 说明 |
 |---|---|---|
@@ -248,22 +215,23 @@ appS版：包名 io.legado.app.yuedu.a，另一个共存包名`,
 - refactor(摘录分享): 按 UI-ARCHITECTURE 规范整改
 - 更新日志`,
         assets: [
-            {name:"legado_beta_3.26.081301_release.apk",size:"23.6 MB",count:555,url:"#"},
-            {name:"legado_compat_3.26.081301_legacy.apk",size:"23.6 MB",count:163,url:"#"},
-            {name:"legado_plus_3.26.081301_releaseS.apk",size:"23.6 MB",count:101,url:"#"},
-            {name:"legado_z_debug_3.26.081301.apk",size:"57.6 MB",count:38,url:"#"},
+            {name: "legado_beta_3.26.081301_release.apk", size: "23.6 MB", count: 555, url: "#"},
+            {name: "legado_compat_3.26.081301_legacy.apk", size: "23.6 MB", count: 163, url: "#"},
+            {name: "legado_plus_3.26.081301_releaseS.apk", size: "23.6 MB", count: 101, url: "#"},
+            {name: "legado_z_debug_3.26.081301.apk", size: "57.6 MB", count: 38, url: "#"}
         ]
     },
     {
         title: "🚩阅读 MD3",
         isBeta: false,
-        repo: "HapeLee/legado-with-MD3",
         version: "3.26.15",
-        publishAgo: "3 周前",
-        totalDownload: 17188,
+        publishText: "3 周前",
+        totalDL: 17188,
+        repo: "HapeLee/legado-with-MD3",
         desc: "采用 Material Design 3 风格重新设计的界面版，本项目在对 UI 进行重绘的基础上，加入了多项分支独有功能，并正在逐步从传统 View 迁移至 Jetpack Compose 框架，目标是提供更加现代、流畅且一致的阅读体验。",
         warn: "",
-        logContent: `- fix: Miuix亮暗色问题
+        mdLog: `### 更新内容
+- fix: Miuix亮暗色问题
 - fix: 优化了一下阅读菜单
 - fix: 同步窗口背景色与 Compose 主题背景色，优化背景色更新逻辑
 - fix: 提供旧主题迁移，保存书架卡片日间、夜间背景色
@@ -276,162 +244,157 @@ appS版：包名 io.legado.app.yuedu.a，另一个共存包名`,
 - Fix accessibility issues and synchronize reading progress (#1790)
 - 修复朗读错误重置，朗读进度强调与实际不同步的问题 (#1787)`,
         assets: [
-            {name:"legado-3.26.15-arm64-v8a.apk",size:"17.5 MB",count:14583,url:"#"},
-            {name:"legado-3.26.15-armeabi-v7a.apk",size:"17.0 MB",count:316,url:"#"},
-            {name:"legado-3.26.15.apk",size:"23.7 MB",count:1933,url:"#"},
-            {name:"mapping.txt",size:"223.3 MB",count:356,url:"#"},
+            {name: "legado-3.26.15-arm64-v8a.apk", size: "17.5 MB", count: 14583, url: "#"},
+            {name: "legado-3.26.15-armeabi-v7a.apk", size: "17.0 MB", count: 316, url: "#"},
+            {name: "legado-3.26.15.apk", size: "23.7 MB", count: 1933, url: "#"},
+            {name: "mapping.txt", size: "223.3 MB", count: 356, url: "#"}
         ]
     },
     {
         title: "🚩阅读 MD3测试版",
         isBeta: true,
-        repo: "HapeLee/legado-with-MD3",
         version: "3.26.16-beta.15",
-        publishAgo: "3 天前",
-        totalDownload: 4545,
-        desc: "采用 Material Design 3 风格重新设计的界面版，此版本为测试版，会存在不稳定问题。<br><a href='#'>发布页</a> &nbsp; <a href='#'>反馈群组</a>",
+        publishText: "3 天前",
+        totalDL: 4545,
+        repo: "HapeLee/legado-with-MD3",
+        desc: "采用 Material Design 3 风格重新设计的界面版，此版本为测试版，会存在不稳定问题。<a href='#'>发布页</a> &nbsp; <a href='#'>反馈群组</a>",
         warn: "**此版本为测试版，会存在不稳定问题。**",
-        logContent: `- feat: 神秘优化
+        mdLog: `### 更新内容
+- feat: 神秘优化
 - feat: 顶栏按钮液态玻璃效果
 - feat: 优化一些AI功能
 - feat: 优化快速滚动条`,
         assets: [
-            {name:"legado-3.26.16-beta.15-arm64-v8a.apk",size:"18.5 MB",count:3951,url:"#"},
-            {name:"legado-3.26.16-beta.15-armeabi-v7a.apk",size:"18.1 MB",count:124,url:"#"},
-            {name:"legado-3.26.16-beta.15.apk",size:"24.8 MB",count:337,url:"#"},
-            {name:"mapping.txt",size:"247.4 MB",count:133,url:"#"},
+            {name: "legado-3.26.16-beta.15-arm64-v8a.apk", size: "18.5 MB", count: 3951, url: "#"},
+            {name: "legado-3.26.16-beta.15-armeabi-v7a.apk", size: "18.1 MB", count: 124, url: "#"},
+            {name: "legado-3.26.16-beta.15.apk", size: "24.8 MB", count: 337, url: "#"},
+            {name: "mapping.txt", size: "247.4 MB", count: 133, url: "#"}
         ]
     },
     {
         title: "🚩阅读 Plus",
         isBeta: false,
-        repo: "Luoyacheng/legado",
         version: "3.26.030717",
-        publishAgo: "5 个月前",
-        totalDownload: 18299,
+        publishText: "5 个月前",
+        totalDL: 18299,
+        repo: "Luoyacheng/legado",
         desc: "Sigma 的稳定版,使用不同的签名",
         warn: "",
-        logContent: `**2026/03/07**
+        mdLog: `### 更新内容
+**2026/03/07**
 - 优化代码，修复问题`,
         assets: [
-            {name:"legado_beta_3.26.03071721_release.apk",size:"19.5 MB",count:9063,url:"#"},
-            {name:"legado_plus_3.26.03071721_releaseS.apk",size:"19.5 MB",count:9236,url:"#"},
+            {name: "legado_beta_3.26.03071721_release.apk", size: "19.5 MB", count: 9063, url: "#"},
+            {name: "legado_plus_3.26.03071721_releaseS.apk", size: "19.5 MB", count: 9236, url: "#"}
         ]
     },
     {
         title: "🚩轻悦时光",
         isBeta: false,
-        repo: "autobcb/qysg",
         version: "2.2.0808",
-        publishAgo: "4 天前",
-        totalDownload: 2807,
+        publishText: "4 天前",
+        totalDL: 2807,
+        repo: "autobcb/qysg",
         desc: "轻悦时光全平台都可用,不需要后端服务器支持,不支持阅读书源,有自己的书源",
         warn: "",
-        logContent: `轻悦时光 0808
+        mdLog: `轻悦时光 0808
 修改主题规则 并允许单独设置每个界面的背景等 新增删除字体时 如果字体被主题应用则会提醒  增加翻页速度的刻度 优化登录ui 适配阅读宽度函数 修复上下滚动滚动到下一章时因为一些原因无法长按选择 兼容层和原生书源适配事件监听 和 定制按钮 详情页简介 html增加按钮支持 修复多角色引擎选择引擎时会显示其他多角色引擎 兼容层webview 适配java.ajax 函数 打开菜单时禁止翻页  主题新增启动图 打开启动图后会增加启动屏时间（以免启动太快看不到启动图） 鸿蒙webview 更新至最新版 朗读引擎新增性别参数（多角色朗读时会给引擎传入） 新增主题广场主题更新检测(需要重新在主题广场下载后支持, 之前下载的主题不支持) 尝试修复span 中包裹span 时出现的解析错误问题 替换进化样式选择 允许单独设置 白天颜色 和夜间颜色 不填写夜间颜色 则全按照白天颜色 尝试修复仿真翻页偶尔会丢失动画 兼容层书源可以在登录界面查看loginheader`,
         assets: [
-            {name:"android_0808_32.apk",size:"71.3 MB",count:398,url:"#"},
-            {name:"android_0808_64.apk",size:"73.6 MB",count:1320,url:"#"},
-            {name:"android_0808_all.apk",size:"154.1 MB",count:200,url:"#"},
-            {name:"android_0808_x86.apk",size:"76.2 MB",count:54,url:"#"},
-            {name:"ios0808.ipa",size:"31.3 MB",count:454,url:"#"},
-            {name:"mac0808.dmg",size:"49.0 MB",count:51,url:"#"},
-            {name:"win0808.msix",size:"88.6 MB",count:124,url:"#"},
-            {name:"win0808.zip",size:"42.4 MB",count:206,url:"#"},
+            {name: "android_0808_32.apk", size: "71.3 MB", count: 398, url: "#"},
+            {name: "android_0808_64.apk", size: "73.6 MB", count: 1320, url: "#"},
+            {name: "android_0808_all.apk", size: "154.1 MB", count: 200, url: "#"},
+            {name: "android_0808_x86.apk", size: "76.2 MB", count: 54, url: "#"},
+            {name: "ios0808.ipa", size: "31.3 MB", count: 454, url: "#"},
+            {name: "mac0808.dmg", size: "49.0 MB", count: 51, url: "#"},
+            {name: "win0808.msix", size: "88.6 MB", count: 124, url: "#"},
+            {name: "win0808.zip", size: "42.4 MB", count: 206, url: "#"}
         ]
     },
     {
         title: "🚩轻阅读",
         isBeta: false,
-        repo: "autobcb/read",
         version: "3.4.6b3",
-        publishAgo: "3 个月前",
-        totalDownload: 8346,
+        publishText: "3 个月前",
+        totalDL: 8346,
+        repo: "autobcb/read",
         desc: "后端，需要自己部署，部署后可以绑定轻悦时光/栖阅，测试地址：<a href='https://qyd.gyks.cf' target='_blank'>https://qyd.gyks.cf</a>",
         warn: "",
-        logContent: `- 修复一个 独立书源保存订阅源失败的bug`,
+        mdLog: `- 修复一个 独立书源保存订阅源失败的bug`,
         assets: [
-            {name:"web3.4.6b3.zip",size:"103.6 MB",count:8346,url:"#"}
+            {name: "web3.4.6b3.zip", size: "103.6 MB", count: 8346, url: "#"}
         ]
     }
 ];
 
-// 渲染单模块
+// 渲染单个版本区块
 function renderBlock(item) {
-    const logHtml = marked.parse(item.logContent);
-    let betaLabel = item.isBeta ? `<span class="beta-tag">beta</span>` : "";
-    let warnDom = item.warn ? `<p class="warn-text">${item.warn}</p>` : "";
+    let betaTag = item.isBeta ? `<span class="beta-label">beta</span>` : "";
+    let warnHtml = item.warn ? `<p class="warn-notice">${item.warn}</p>` : "";
+    let logRender = marked.parse(item.mdLog);
     let assetHtml = "";
     item.assets.forEach(ast => {
-        assetHtml += `
-        <div class="download-item">
-            ${ast.name} ${ast.size}
-            <a href="${ast.url}" target="_blank" class="download-link">下载 (${ast.count} 次)</a>
-        </div>`;
+        assetHtml += `<div class="download-row">${ast.name} ${ast.size}<a class="download-btn" href="${ast.url}" target="_blank">下载 (${ast.count} 次)</a></div>`;
     });
     return `
 <div class="version-block">
-    <div class="block-title">${item.title} ${betaLabel}</div>
-    <div class="meta-row">${item.desc}</div>
-    ${warnDom}
-    <div class="meta-row">版本${item.version} &nbsp;发布${item.publishAgo} &nbsp;总下载 ${item.totalDownload}</div>
-    <div class="meta-row">仓库：<a href="https://github.com/${item.repo}" target="_blank">${item.repo}</a></div>
-
-    <h3 class="log-title">更新日志</h3>
-    <div class="log-box">${logHtml}</div>
-
+    <h2 class="block-title">${item.title}${betaTag}</h2>
+    <div class="block-desc">${item.desc}</div>
+    ${warnHtml}
+    <div class="meta-line">版本${item.version} &nbsp;发布${item.publishText} &nbsp;总下载 ${item.totalDL}</div>
+    <div class="meta-line">仓库：<a href="https://github.com/${item.repo}" target="_blank">${item.repo}</a></div>
+    <h3 class="log-heading">更新日志</h3>
+    <div class="log-wrap">${logRender}</div>
     ${assetHtml}
-</div>`;
+</div>
+`;
 }
 
 // 批量渲染全部区块
-function renderAll(list) {
-    const container = document.getElementById("container");
+function renderAll(data) {
+    const wrap = document.getElementById("main-content");
     let fullHtml = "";
-    list.forEach(block => fullHtml += renderBlock(block));
-    container.innerHTML = fullHtml;
+    data.forEach(block => fullHtml += renderBlock(block));
+    wrap.innerHTML = fullHtml;
 }
 
-// 线上API请求函数（带异常捕获，失败自动切静态快照）
-async function loadGithubData() {
-    const repoList = [
-        {key:"refgd/legado",idx:0},
-        {key:"Luoyacheng/legado",idx:1},
-        {key:"Suml-1/Legado_Max",idx:2},
-        {key:"HapeLee/legado-with-MD3",idx:3},
-        {key:"HapeLee/legado-with-MD3",idx:4},
-        {key:"Luoyacheng/legado",idx:5},
-        {key:"autobcb/qysg",idx:6},
-        {key:"autobcb/read",idx:7},
+// GH API 拉取逻辑，失败静默切静态快照
+async function loadReleaseData() {
+    const repoMap = [
+        {repo: "refgd/legado", idx: 0},
+        {repo: "Luoyacheng/legado", idx: 1},
+        {repo: "Suml-1/Legado_Max", idx: 2},
+        {repo: "HapeLee/legado-with-MD3", idx: 3},
+        {repo: "HapeLee/legado-with-MD3", idx: 4},
+        {repo: "Luoyacheng/legado", idx: 5},
+        {repo: "autobcb/qysg", idx: 6},
+        {repo: "autobcb/read", idx: 7}
     ];
+    // 公共GH代理，规避浏览器CORS
+    const proxyUrl = "https://ghapi.huchen.dev";
     try {
-        // 使用公共gh代理解决跨域，替换#为真实加速下载链接
-        const proxy = "https://ghapi.huchen.dev";
-        for(let r of repoList) {
-            const res = await fetch(`${proxy}/repos/${r.key}/releases/latest`);
-            if(!res.ok) throw new Error("api limit");
-            const data = await res.json();
-            const target = staticData[r.idx];
-            target.version = data.tag_name;
-            target.assets = data.assets.map(a=>({
-                name:a.name,
-                size:(a.size/1024/1024).toFixed(1)+" MB",
-                count:a.download_count,
-                url:a.browser_download_url
+        for (let item of repoMap) {
+            const res = await fetch(`${proxyUrl}/repos/${item.repo}/releases/latest`);
+            if (!res.ok) throw new Error("limit");
+            const rel = await res.json();
+            const target = staticReleaseData[item.idx];
+            target.version = rel.tag_name;
+            target.assets = rel.assets.map(a => ({
+                name: a.name,
+                size: (a.size / 1024 / 1024).toFixed(1) + " MB",
+                count: a.download_count,
+                url: a.browser_download_url
             }));
         }
-        renderAll(staticData);
-    } catch(e) {
-        // 无论跨域/403/网络错误，直接渲染内置快照，无报错提示
-        console.log("GitHub API获取失败，使用本地静态快照",e);
-        renderAll(staticData);
+        renderAll(staticReleaseData);
+    } catch (err) {
+        // 跨域/403/网络错误 静默使用内置快照，无任何报错文字
+        console.log("GH API 请求异常，使用本地快照", err);
+        renderAll(staticReleaseData);
     }
 }
 
 // 页面加载执行
-window.onload = function() {
-    loadGithubData();
-}
+window.onload = loadReleaseData;
 </script>
 </body>
 </html>
