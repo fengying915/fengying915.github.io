@@ -639,7 +639,7 @@
         <p class="hero-desc">聚合多个 Legado 版本下载<br>让每一次阅读，都是与文字的美好邂逅</p>
         <div class="feature-list">
             <div class="feature-item"><div class="feature-dot"><i class="fas fa-code-branch"></i></div><span class="feature-text">多版本聚合，官方版、Sigma、MD3、Plus 等</span></div>
-            <div class="feature-item"><div class="feature-dot"><i class="fas fa-bolt"></i></div><span class="feature-text">没有加速代理，缓慢下载体验</span></div>
+            <div class="feature-item"><div class="feature-dot"><i class="fas fa-bolt"></i></div><span class="feature-text">直接调用 GitHub API（可能受速率限制）</span></div>
             <div class="feature-item"><div class="feature-dot"><i class="fas fa-sync-alt"></i></div><span class="feature-text">实时同步，自动获取最新版本</span></div>
         </div>
         <div class="deco-line"></div>
@@ -768,21 +768,22 @@
         throw lastError;
     }
 
-    // ========== 获取 Release 数据（通过 Worker 代理，带降级） ==========
-    const PROXY_BASE = 'https://api.facg.top/api/repos';
-
+    // ========== 获取 Release 数据（直接调用 GitHub API） ==========
+    // 注意：GitHub API 直接返回数组，而不是 { releases: [...] }
     async function fetchLatestSoft(owner, repo) {
         const cacheKey = `gh_cache_latest_${owner}_${repo}`;
         const cached = getCachedData(cacheKey);
 
         try {
-            const url = `${PROXY_BASE}/${owner}/${repo}`;
+            const url = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
             const data = await fetchWithRetry(url);
-            if (!data.releases || data.releases.length === 0) throw new Error('无发布');
-            const stable = data.releases.find(r => !r.prerelease);
-            if (!stable) throw new Error('无稳定版');
-            setCachedData(cacheKey, stable);
-            return stable;
+            // data 是单个 release 对象
+            if (!data || data.draft) throw new Error('无有效发布');
+            // 如果是预发布但我们需要稳定版，但 latest 可能包含预发布，但没办法，我们取这个
+            // 但我们可以检查 prerelease，若为 true 则抛错，让下游去取列表
+            if (data.prerelease) throw new Error('latest 是预发布，尝试从列表获取稳定版');
+            setCachedData(cacheKey, data);
+            return data;
         } catch (err) {
             if (cached) return cached;
             throw err;
@@ -794,10 +795,12 @@
         const cached = getCachedData(cacheKey);
 
         try {
-            const url = `${PROXY_BASE}/${owner}/${repo}`;
+            const url = `https://api.github.com/repos/${owner}/${repo}/releases`;
             const data = await fetchWithRetry(url);
-            if (!data.releases || data.releases.length === 0) throw new Error('无公开 Release');
-            const newest = data.releases[0];
+            if (!Array.isArray(data) || data.length === 0) throw new Error('无公开 Release');
+            const valid = data.filter(r => !r.draft);
+            if (!valid.length) throw new Error('无有效发布');
+            const newest = valid[0]; // 第一个是最新的
             setCachedData(cacheKey, newest);
             return newest;
         } catch (err) {
@@ -806,6 +809,7 @@
         }
     }
 
+    // 单卡片默认获取：先尝试稳定版，若失败则取最新（可能预发布）
     async function fetchRelease(owner, repo) {
         try {
             return await fetchLatestSoft(owner, repo);
