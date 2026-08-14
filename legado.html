@@ -840,17 +840,12 @@
 function renderCard(cfg, release, idx, titleSuffix = '') {
     const logHtml = marked.parse(release.body || '暂无更新日志');
     const publishTime = new Date(release.published_at);
-    const timeStr = timeAgo(publishTime);
+    const timeStr = formatLocalDate(publishTime);
 
-    // ----- 资产过滤逻辑 -----
+    // ----- 资产过滤（Sigma 稳定版只保留 plus）-----
     let assetsToRender = release.assets || [];
-
-    // 特殊规则：阅读 Sigma 稳定版只显示 plus 版本
     if (cfg.title === '🚩阅读 Sigma' && titleSuffix === '【稳定版】') {
-        assetsToRender = assetsToRender.filter(ast => {
-            const name = ast.name.toLowerCase();
-            return name.includes('plus');
-        });
+        assetsToRender = assetsToRender.filter(ast => ast.name.toLowerCase().includes('plus'));
     }
 
     let totalDownloads = 0;
@@ -920,7 +915,6 @@ function renderCard(cfg, release, idx, titleSuffix = '') {
         </div>
     `;
 }
-
     // ========== 仓库配置 ==========
     const repoConfigList = [
         {
