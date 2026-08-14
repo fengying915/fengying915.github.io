@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>开源阅读Legado Reader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        beta: '#ff7d00',
+                        danger: '#dc2626'
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen">
+<div class="max-w-5xl mx-auto px-4 py-6">
+    <header class="text-center pb-6 border-b border-gray-200 dark:border-gray-700 mb-8">
+        <h1 class="text-[clamp(1.75rem,3vw,2rem)] font-bold mb-2">开源阅读Legado Reader</h1>
+        <p class="text-gray-500 dark:text-gray-400 text-base mb-2">探索<em>阅读</em>无限可能</p>
+        <p class="text-gray-600 dark:text-gray-300 text-sm">聚合多个 Legado 版本下载 &nbsp;让每一次阅读，都是与文字的美好邂逅</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">多版本聚合，官方版、Sigma、MD3、Plus 等<br>GitHub 加速代理，极速下载体验<br>实时同步，自动获取最新版本</p>
+        <div class="mt-4">
+            <button id="toggleDark" class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 text-sm">切换深色模式</button>
+        </div>
+    </header>
+
+    <div id="app"></div>
+
+    <footer class="mt-12 text-right text-sm text-gray-500 dark:text-gray-400">
+        <div id="lastUpdate">最后更新: --</div>
+        <div>数据来源: GitHub Release API</div>
+    </footer>
+</div>
+
+<script>
+// 仓库配置，和原站完全一致
+const reposConfig = [
+    {
+        title: "🚩阅读 R",
+        repo: "refgd/legado",
+        desc: "体验最好！阅读 R 继承自 Rimchars 维护的 阅读Archive，基于 Legado/lyc 分支开发，延续了 Legado 的开源阅读体验，并进一步增强了界面、AI、EPUB、漫画、视频和主题等功能。",
+        isBeta: false
+    },
+    {
+        title: "🚩阅读 Sigma",
+        repo: "Luoyacheng/legado",
+        desc: "阅读Sigma是gedoor/legado的一个分支版本，在原有基础上增加更多功能，为书源带来更多可能性。",
+        isBeta: true
+    },
+    {
+        title: "🚩阅读 MAX",
+        repo: "Suml-1/Legado_Max",
+        desc: `本项目基于 lyc版 持续开发，在此基础上有更多功能优化
+appLegacy版：包名 shturl.cc/QAf，与原版相同，可覆盖更新
+appMax版：包名 shturl.cc/QAf.yuedu，共存包名，不会覆盖原版
+appS版：包名 shturl.cc/QAf.yuedu.a，另一个共存包名`,
+        warn: "⚠️ 重要提醒：安装前请务必备份您的数据！",
+        isBeta: true
+    },
+    {
+        title: "🚩阅读 MD3",
+        repo: "HapeLee/legado-with-MD3",
+        desc: "采用 Material Design 3 风格重新设计的界面版，本项目在对 UI 进行重绘的基础上，加入了多项分支独有功能，并正在逐步从传统 View 迁移至 Jetpack Compose 框架，目标是提供更加现代、流畅且一致的阅读体验。",
+        isBeta: false
+    },
+    {
+        title: "🚩阅读 MD3测试版",
+        repo: "HapeLee/legado-with-MD3",
+        desc: "采用 Material Design 3 风格重新设计的界面版，此版本为测试版，会存在不稳定问题。",
+        warn: "此版本为测试版，会存在不稳定问题。",
+        isBeta: true
+    },
+    {
+        title: "🚩阅读 Plus",
+        repo: "Luoyacheng/legado",
+        desc: "Sigma 的稳定版,使用不同的签名",
+        isBeta: false
+    },
+    {
+        title: "🚩轻悦时光",
+        repo: "autobcb/qysg",
+        desc: "轻悦时光全平台都可用,不需要后端服务器支持,不支持阅读书源,有自己的书源",
+        isBeta: false
+    },
+    {
+        title: "🚩轻阅读",
+        repo: "autobcb/read",
+        desc: "后端，需要自己部署，部署后可以绑定轻悦时光/栖阅，测试地址：<a href='https://qyd.gyks.cf' target='_blank' class='text-blue-600 dark:text-blue-400 underline'>https://qyd.gyks.cf</a>",
+        isBeta: false
+    }
+];
+
+// 时间格式化
+function formatTime(dateStr) {
+    const d = new Date(dateStr);
+    return d.toLocaleString('zh-CN');
+}
+
+// 计算多久之前
+function timeAgo(dateString) {
+    const now = Date.now();
+    const then = new Date(dateString).getTime();
+    const diffMs = now - then;
+    const diffDays = Math.floor(diffMs / 86400000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    if(diffDays > 30) return `${Math.floor(diffDays/30)} 个月前`;
+    if(diffDays > 0) return `${diffDays} 天前`;
+    return `${diffHours} 小时前`;
+}
+
+// 格式化文件大小
+function formatBytes(bytes) {
+    if(!bytes) return '';
+    const mb = (bytes / 1024 / 1024).toFixed(1);
+    return `${mb} MB`;
+}
+
+// 获取release
+async function fetchRelease(repo) {
+    const url = `https://api.github.com/repos/${repo}/releases/latest`;
+    const res = await fetch(url);
+    if(!res.ok) return null;
+    return await res.json();
+}
+
+// 渲染单块
+function renderCard(item, release) {
+    if(!release) {
+        return `
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-5 mb-6 card-shadow">
+            <div class="flex items-center gap-2 text-xl font-semibold mb-3">${item.title} ${item.isBeta?'<span class="bg-beta text-white text-xs px-2 py-0.5 rounded">beta</span>':''}</div>
+            <div class="text-gray-600 dark:text-gray-300 text-sm">获取版本信息失败，请检查网络</div>
+        </div>`;
+    }
+    const tagName = release.tag_name;
+    const publishedAt = release.published_at;
+    const publishedAgo = timeAgo(publishedAt);
+    const body = release.body || '';
+    const htmlUrl = release.html_url;
+    const assets = release.assets || [];
+
+    let warnHtml = item.warn ? `<p class="text-danger font-medium my-2">${item.warn}</p>` : '';
+
+    let assetsHtml = '';
+    assets.forEach(ast=>{
+        const sizeStr = formatBytes(ast.size);
+        const dlCount = ast.download_count;
+        assetsHtml += `
+        <div class="my-1.5">
+            <span>${ast.name} ${sizeStr}</span>
+            <a href="${ast.browser_download_url}" target="_blank" class="inline-block ml-2 bg-primary text-white px-3 py-1 rounded text-sm hover:bg-blue-700">下载 (${dlCount} 次)</a>
+        </div>`
+    })
+
+    return `
+<div class="bg-white dark:bg-gray-800 rounded-xl p-5 mb-6 card-shadow">
+    <div class="flex items-center gap-2 text-xl font-semibold mb-3">
+        ${item.title}
+        ${item.isBeta?'<span class="bg-beta text-white text-xs px-2 py-0.5 rounded">beta</span>':''}
+    </div>
+    <div class="text-gray-700 dark:text-gray-200 text-sm whitespace-pre-wrap mb-2">${item.desc}</div>
+    ${warnHtml}
+    <div class="text-sm text-gray-500 dark:text-gray-400 my-1">版本${tagName} | 发布${publishedAgo}</div>
+    <div class="text-sm text-gray-500 dark:text-gray-400 my-1">仓库：<a href="https://github.com/${item.repo}" target="_blank" class="text-blue-600 dark:text-blue-400 underline">${item.repo}</a></div>
+
+    <h3 class="mt-4 mb-2 pl-3 border-l-4 border-primary text-base font-semibold">更新日志</h3>
+    <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded text-sm whitespace-pre-wrap">${body}</div>
+
+    <div class="mt-3">${assetsHtml}</div>
+</div>
+`
+}
+
+async function run() {
+    const appEl = document.querySelector('#app');
+    appEl.innerHTML = '<div class="text-center py-10">正在从 GitHub API 获取版本数据...</div>';
+    let html = '';
+    let lastUpdate = new Date().toLocaleString('zh-CN');
+    for(const cfg of reposConfig) {
+        const rel = await fetchRelease(cfg.repo);
+        html += renderCard(cfg, rel);
+    }
+    appEl.innerHTML = html;
+    document.querySelector('#lastUpdate').innerText = `最后更新: ${lastUpdate}`;
+}
+
+// 深色模式
+const toggleBtn = document.querySelector('#toggleDark');
+toggleBtn.addEventListener('click',()=>{
+    document.documentElement.classList.toggle('dark');
+})
+
+// 页面加载执行
+run();
+</script>
+</body>
+</html>
