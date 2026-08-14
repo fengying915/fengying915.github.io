@@ -1,275 +1,437 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>开源阅读Legado Reader</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter','system-ui','-apple-system','sans-serif']
-                    },
-                    colors: {
-                        site: {
-                            primary:'#2563eb',
-                            beta:'#ff7800',
-                            danger:'#ef4444',
-                            cardBg:'#ffffff',
-                            cardBgDark:'#1f2937',
-                            pageBg:'#f3f4f6',
-                            pageBgDark:'#111827'
-                        }
-                    },
-                    maxWidth: {
-                        site:'1100px'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        * {
-            scrollbar-width: thin;
-        }
-        ::-webkit-scrollbar {width:6px;height:6px}
-        ::-webkit-scrollbar-thumb {background:#aaa;border-radius:3px}
-        .md-body h1,.md-body h2,.md-body h3 {margin:0.75rem 0 0.4rem;font-weight:600}
-        .md-body ul,.md-body ol {padding-left:1.5rem;margin:0.4rem 0}
-        .md-body li {margin:0.25rem 0}
-        .md-body table {width:100%;border-collapse:collapse;margin:0.6rem 0}
-        .md-body th,.md-body td {border:1px solid #d1d5db;padding:0.4rem 0.6rem}
-        .md-body th {background:#e5e7eb}
-        .dark .md-body th {background:#374151}
-        .dark .md-body th,.dark .md-body td {border-color:#4b5563}
-        .md-body a {color:#2563eb;text-decoration:underline}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开源阅读Legado Reader</title>
+<style>
+/* 全局变量 严格对标原站配色尺寸 */
+:root {
+    --page-bg: #ffffff;
+    --card-bg: #f7f8fa;
+    --text-main: #111111;
+    --text-secondary: #555555;
+    --text-light: #777777;
+    --border-color: #e5e7eb;
+    --log-bg: #f3f4f6;
+    --primary-blue: #0366d6;
+    --beta-orange: #ff7800;
+    --danger-red: #dc2626;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --gap-base: 12px;
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, "Microsoft YaHei", sans-serif;
+}
+body {
+    background: var(--page-bg);
+    color: var(--text-main);
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    line-height: 1.65;
+}
+/* 头部区域 */
+header {
+    text-align: center;
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--border-color);
+}
+header h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+header .sub-title {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+header .desc-text {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin: 4px 0;
+}
+/* 版本卡片容器 */
+.version-block {
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 24px;
+}
+.block-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.beta-tag {
+    background: var(--beta-orange);
+    color: #fff;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+}
+.warn-text {
+    color: var(--danger-red);
+    font-weight: 500;
+    margin: 8px 0;
+}
+.meta-row {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 6px 0;
+}
+.meta-row a {
+    color: var(--primary-blue);
+    text-decoration: none;
+}
+.meta-row a:hover {
+    text-decoration: underline;
+}
+/* 更新日志区块 */
+.log-title {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 16px 0 10px;
+    border-left: 4px solid var(--primary-blue);
+    padding-left: 10px;
+}
+.log-box {
+    background: var(--log-bg);
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+.log-box ul {
+    padding-left: 20px;
+}
+.log-box li {
+    margin: 4px 0;
+}
+/* 表格样式 完全还原原站细线表格 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px;
+    font-size: 14px;
+}
+th, td {
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+}
+th {
+    background: #eff6ff;
+}
+/* 下载项 */
+.download-item {
+    margin: 6px 0;
+    font-size: 14px;
+}
+.download-link {
+    display: inline-block;
+    background: var(--primary-blue);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    margin-left: 10px;
+}
+.download-link:hover {
+    background: #0250ac;
+}
+/* 底部信息 */
+footer {
+    margin-top: 40px;
+    text-align: right;
+    font-size: 13px;
+    color: var(--text-light);
+}
+/* Markdown基础渲染适配日志表格 */
+.md-table {
+    width:100%;border-collapse:collapse;margin:0.6rem 0;
+}
+.md-table th,.md-table td {
+    border:1px solid #ddd;padding:6px 10px;
+}
+.md-table th {background:#eef4ff;}
+</style>
 </head>
-<body class="bg-site-pageBg dark:bg-site-pageBgDark text-gray-800 dark:text-gray-100">
-<div class="max-w-site mx-auto px-4 sm:px-6 py-8">
-    <header class="text-center pb-6 border-b border-gray-200 dark:border-gray-700 mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold mb-2">开源阅读Legado Reader</h1>
-        <p class="text-gray-500 dark:text-gray-400 mb-1">探索<em>阅读</em>无限可能</p>
-        <p class="text-gray-600 dark:text-gray-300 text-sm">聚合多个 Legado 版本下载 &nbsp;让每一次阅读，都是与文字的美好邂逅</p>
-        <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">多版本聚合，官方版、Sigma、MD3、Plus 等<br/>GitHub 加速代理，极速下载体验<br/>实时同步，自动获取最新版本</p>
-        <div class="mt-4">
-            <button id="toggleDark" class="px-3 py-1 text-sm rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800">
-                切换深色模式
-            </button>
-        </div>
-    </header>
+<body>
+<header>
+    <h1>开源阅读Legado Reader</h1>
+    <p class="sub-title">探索<em>阅读</em>无限可能</p>
+    <p class="desc-text">聚合多个 Legado 版本下载  让每一次阅读，都是与文字的美好邂逅</p>
+    <p class="desc-text">多版本聚合，官方版、Sigma、MD3、Plus 等<br>GitHub 加速代理，极速下载体验<br>实时同步，自动获取最新版本</p>
+</header>
 
-    <div id="app">
-        <div class="py-10 text-center">正在拉取GitHub版本数据...</div>
-    </div>
+<div id="container"></div>
 
-    <footer class="mt-12 text-right text-sm text-gray-500 dark:text-gray-400">
-        <div id="lastUpdate">最后更新: --</div>
-        <div>数据来源: GitHub Release API</div>
-    </footer>
-</div>
+<footer>
+    <div id="last-update">最后更新: 2026/08/13 22:04:23</div>
+    <div>数据来源: GitHub Release API</div>
+</footer>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
-// 仓库列表配置
-const reposConfig = [
-    {title:"🚩阅读 R",repo:"refgd/legado",desc:"体验最好！阅读 R 继承自 Rimchars 维护的 阅读Archive，基于 Legado/lyc 分支开发，延续了 Legado 的开源阅读体验，并进一步增强了界面、AI、EPUB、漫画、视频和主题等功能。",warn:"",isBeta:false},
-    {title:"🚩阅读 Sigma",repo:"Luoyacheng/legado",desc:"阅读Sigma是gedoor/legado的一个分支版本，在原有基础上增加更多功能，为书源带来更多可能性。",warn:"",isBeta:true},
-    {title:"🚩阅读 MAX",repo:"Suml-1/Legado_Max",desc:`本项目基于 lyc版 持续开发，在此基础上有更多功能优化
-appLegacy版：包名 shturl.cc/QAf，与原版相同，可覆盖更新
-appMax版：包名 shturl.cc/QAf.yuedu，共存包名，不会覆盖原版
-appS版：包名 shturl.cc/QAf.yuedu.a，另一个共存包名`,warn:"⚠️ 重要提醒：安装前请务必备份您的数据！",isBeta:true},
-    {title:"🚩阅读 MD3",repo:"HapeLee/legado-with-MD3",desc:"采用 Material Design 3 风格重新设计的界面版，本项目在对 UI 进行重绘的基础上，加入了多项分支独有功能，并正在逐步从传统 View 迁移至 Jetpack Compose 框架，目标是提供更加现代、流畅且一致的阅读体验。",warn:"",isBeta:false},
-    {title:"🚩阅读 MD3测试版",repo:"HapeLee/legado-with-MD3",desc:"采用 Material Design 3 风格重新设计的界面版，此版本为测试版，会存在不稳定问题。",warn:"此版本为测试版，会存在不稳定问题。",isBeta:true},
-    {title:"🚩阅读 Plus",repo:"Luoyacheng/legado",desc:"Sigma 的稳定版,使用不同的签名",warn:"",isBeta:false},
-    {title:"🚩轻悦时光",repo:"autobcb/qysg",desc:"轻悦时光全平台都可用,不需要后端服务器支持,不支持阅读书源,有自己的书源",warn:"",isBeta:false},
-    {title:"🚩轻阅读",repo:"autobcb/read",desc:"后端，需要自己部署，部署后可以绑定轻悦时光/栖阅，测试地址：<a href='https://qyd.gyks.cf' target='_blank' class='text-site-primary underline'>https://qyd.gyks.cf</a>",warn:"",isBeta:false},
-];
+// 静态快照兜底数据（与你提供文档完全一致，API失败直接渲染）
+const staticData = [
+    {
+        title: "🚩阅读 R",
+        isBeta: false,
+        repo: "refgd/legado",
+        version: "3.26.062203",
+        publishAgo: "1 个月前",
+        totalDownload: 28379,
+        desc: "体验最好！阅读 R 继承自 Rimchars 维护的 阅读Archive，基于 Legado/lyc 分支开发，延续了 Legado 的开源阅读体验，并进一步增强了界面、AI、EPUB、漫画、视频和主题等功能。",
+        warn: "",
+        logContent: `- 修复 TTS 回原位时定位异常的问题
+- 修复切换主题后 TTS 浮窗消失的问题
+- 优化书籍首次加载速度
+- 修复其它BUG`,
+        assets: [
+            {name:"legado_app_3.26.062203_10489.apk",size:"30.5 MB",count:28379,url:"#"}
+        ]
+    },
+    {
+        title: "🚩阅读 Sigma",
+        isBeta: true,
+        repo: "Luoyacheng/legado",
+        version: "beta",
+        publishAgo: "1 周前",
+        totalDownload: 6374,
+        desc: "阅读Sigma是gedoor/legado的一个分支版本，在原有基础上增加更多功能，为书源带来更多可能性。",
+        warn: "",
+        logContent: `- 优化工作流文件`,
+        assets: [
+            {name:"legado_beta_3.26.08011308_release.apk",size:"19.4 MB",count:6374,url:"#"}
+        ]
+    },
+    {
+        title: "🚩阅读 MAX",
+        isBeta: true,
+        repo: "Suml-1/Legado_Max",
+        version: "beta-3.26.081301",
+        publishAgo: "20 小时前",
+        totalDownload: 857,
+        desc: `本项目基于 lyc版 持续开发，在此基础上有更多功能优化
+appLegacy版：包名 io.legado.app，与原版相同，可覆盖更新
+appMax版：包名 io.legado.app.yuedu，共存包名，不会覆盖原版
+appS版：包名 io.legado.app.yuedu.a，另一个共存包名`,
+        warn: "⚠️ **重要提醒：安装前请务必备份您的数据！**",
+        logContent: `📦 **APK版本说明：**
 
-// 静态快照兜底数据，网络/代理失败直接渲染这个
-const snapshotData = [
-    {
-        title:"🚩阅读 R",isBeta:false,repo:"refgd/legado",version:"3.26.062203",publishAgo:"1 个月前",
-        desc:"体验最好！阅读 R 继承自 Rimchars 维护的 阅读Archive，基于 Legado/lyc 分支开发，延续了 Legado 的开源阅读体验，并进一步增强了界面、AI、EPUB、漫画、视频和主题等功能。",
-        body:`- 修复 TTS 回原位时定位异常的问题\n- 修复切换主题后 TTS 浮窗消失的问题\n- 优化书籍首次加载速度\n- 修复其它BUG`,
-        warn:"",assets:[{name:"legado_app_3.26.062203_10489.apk",size:30.5*1024*1024,download_count:28379,browser_download_url:"#"}]
-    },
-    {
-        title:"🚩阅读 Sigma",isBeta:true,repo:"Luoyacheng/legado",version:"beta",publishAgo:"1 周前",
-        desc:"阅读Sigma是gedoor/legado的一个分支版本，在原有基础上增加更多功能，为书源带来更多可能性。",
-        body:`- 优化工作流文件`,warn:"",
-        assets:[{name:"legado_beta_3.26.08011308_release.apk",size:19.4*1024*1024,download_count:6374,browser_download_url:"#"}]
-    },
-    {
-        title:"🚩阅读 MAX",isBeta:true,repo:"Suml-1/Legado_Max",version:"beta-3.26.081301",publishAgo:"20 小时前",
-        desc:`本项目基于 lyc版 持续开发，在此基础上有更多功能优化\nappLegacy版：包名 shturl.cc/QAf，与原版相同，可覆盖更新\nappMax版：包名 shturl.cc/QAf.yuedu，共存包名，不会覆盖原版\nappS版：包名 shturl.cc/QAf.yuedu.a，另一个共存包名`,
-        warn:"⚠️ 重要提醒：安装前请务必备份您的数据！",
-        body:`有点bug，release包摘录分享功能有点问题，明天再修了\n- fix(调试): 移除悬浮球show/hide的success冗余日志避免刷屏\n- fix(主题): 优化重复导入处理同名项覆盖或复用不再追加名称2\n- fix(主题): 修复应用主题列表大字号时更多按钮被遮挡的问题\n- feat(阅读): 实现正文长按摘录分享功能\n- fix(摘录分享): 适配弹窗主题并精简模板管理操作\n- 上传Compose UI 架构规范\n- refactor(摘录分享): 按 UI‑ARCHITECTURE 规范整改\n- 更新日志\n\n|版本类型|文件名标识|说明|\n|---|---|---|\n|测试版|beta|测试版，包含新功能，专属于max版的安装包|\n|兼容版|compact|可覆盖原版和lyc版|\n|共存版|plus|独立安装，与主版本共存|\n|调试包|debug|独立安装，与其他共存，适用于调试用，无代码混淆，函数名完整，方便抓取崩溃、报错日志定位问题。此版本能正常抓包|\n\n四个包名都不同，在安卓系统中不同包名视为不同软件，都可以独立存在。`,
-        assets:[
-            {name:"legado_beta_3.26.081301_release.apk",size:23.6*1024*1024,download_count:555,browser_download_url:"#"},
-            {name:"legado_compat_3.26.081301_legacy.apk",size:23.6*1024*1024,download_count:163,browser_download_url:"#"},
-            {name:"legado_plus_3.26.081301_releaseS.apk",size:23.6*1024*1024,download_count:101,browser_download_url:"#"},
-            {name:"legado_z_debug_3.26.081301.apk",size:57.6*1024*1024,download_count:38,browser_download_url:"#"},
+| 版本类型 | 文件名标识 | 说明 |
+|---|---|---|
+| 测试版 | beta | 测试版，包含新功能，专属于max版的安装包 |
+| 兼容版 | compact | 可覆盖原版和lyc版 |
+| 共存版 | plus | 独立安装，与主版本共存 |
+| 调试包 | debug | 独立安装，与其他共存，适用于调试用，无代码混淆，函数名完整，方便抓取崩溃、报错日志定位问题。此版本能正常抓包 |
+
+四个包名都不同，在安卓系统中不同包名视为不同软件，都可以独立存在。
+
+#### 有点bug，release包摘录分享功能有点问题，明天再修了
+- fix(调试): 移除悬浮球show/hide的success冗余日志避免刷屏
+- fix(主题): 优化重复导入处理同名项覆盖或复用不再追加名称2
+- fix(主题): 修复应用主题列表大字号时更多按钮被遮挡的问题
+- feat(阅读): 实现正文长按摘录分享功能
+- fix(摘录分享): 适配弹窗主题并精简模板管理操作
+- 上传Compose UI 架构规范
+- refactor(摘录分享): 按 UI-ARCHITECTURE 规范整改
+- 更新日志`,
+        assets: [
+            {name:"legado_beta_3.26.081301_release.apk",size:"23.6 MB",count:555,url:"#"},
+            {name:"legado_compat_3.26.081301_legacy.apk",size:"23.6 MB",count:163,url:"#"},
+            {name:"legado_plus_3.26.081301_releaseS.apk",size:"23.6 MB",count:101,url:"#"},
+            {name:"legado_z_debug_3.26.081301.apk",size:"57.6 MB",count:38,url:"#"},
         ]
     },
     {
-        title:"🚩阅读 MD3",isBeta:false,repo:"HapeLee/legado-with-MD3",version:"3.26.15",publishAgo:"3 周前",
-        desc:"采用 Material Design 3 风格重新设计的界面版，本项目在对 UI 进行重绘的基础上，加入了多项分支独有功能，并正在逐步从传统 View 迁移至 Jetpack Compose 框架，目标是提供更加现代、流畅且一致的阅读体验。",
-        body:`- fix: Miuix亮暗色问题\n- fix: 优化了一下阅读菜单\n- fix: 同步窗口背景色与 Compose 主题背景色，优化背景色更新逻辑\n- fix: 提供旧主题迁移，保存书架卡片日间、夜间背景色\n- fix: sigma的一些特性 @luoyacheng\n- fix: 同步窗口背景色与 Compose 主题背景色\n- 修复: 优化动态配色逻辑，确保缺失图片时回退到种子色\n- 修复: 切换主题时支持无重启更新，优化配置管理\n- [修复] 切换自定义主题不再需要重启\n- fix: 漫画刷新问题\n- Fix accessibility issues and synchronize reading progress (#1790)\n- 修复朗读错误重置，朗读进度强调与实际不同步的问题 (#1787)`,
-        warn:"",
-        assets:[
-            {name:"legado‑3.26.15‑arm64‑v8a.apk",size:17.5*1024*1024,download_count:14583,browser_download_url:"#"},
-            {name:"legado‑3.26.15‑armeabi‑v7a.apk",size:17.0*1024*1024,download_count:316,browser_download_url:"#"},
-            {name:"legado‑3.26.15.apk",size:23.7*1024*1024,download_count:1933,browser_download_url:"#"},
-            {name:"mapping.txt",size:223.3*1024*1024,download_count:356,browser_download_url:"#"},
+        title: "🚩阅读 MD3",
+        isBeta: false,
+        repo: "HapeLee/legado-with-MD3",
+        version: "3.26.15",
+        publishAgo: "3 周前",
+        totalDownload: 17188,
+        desc: "采用 Material Design 3 风格重新设计的界面版，本项目在对 UI 进行重绘的基础上，加入了多项分支独有功能，并正在逐步从传统 View 迁移至 Jetpack Compose 框架，目标是提供更加现代、流畅且一致的阅读体验。",
+        warn: "",
+        logContent: `- fix: Miuix亮暗色问题
+- fix: 优化了一下阅读菜单
+- fix: 同步窗口背景色与 Compose 主题背景色，优化背景色更新逻辑
+- fix: 提供旧主题迁移，保存书架卡片日间、夜间背景色
+- fix: sigma的一些特性 @luoyacheng
+- fix: 同步窗口背景色与 Compose 主题背景色
+- 修复: 优化动态配色逻辑，确保缺失图片时回退到种子色
+- 修复: 切换主题时支持无重启更新，优化配置管理
+- [修复] 切换自定义主题不再需要重启
+- fix: 漫画刷新问题
+- Fix accessibility issues and synchronize reading progress (#1790)
+- 修复朗读错误重置，朗读进度强调与实际不同步的问题 (#1787)`,
+        assets: [
+            {name:"legado-3.26.15-arm64-v8a.apk",size:"17.5 MB",count:14583,url:"#"},
+            {name:"legado-3.26.15-armeabi-v7a.apk",size:"17.0 MB",count:316,url:"#"},
+            {name:"legado-3.26.15.apk",size:"23.7 MB",count:1933,url:"#"},
+            {name:"mapping.txt",size:"223.3 MB",count:356,url:"#"},
         ]
     },
     {
-        title:"🚩阅读 MD3测试版",isBeta:true,repo:"HapeLee/legado-with-MD3",version:"3.26.16‑beta.15",publishAgo:"3 天前",
-        desc:"采用 Material Design 3 风格重新设计的界面版，此版本为测试版，会存在不稳定问题。",
-        warn:"此版本为测试版，会存在不稳定问题。",
-        body:`- feat: 神秘优化\n- feat: 顶栏按钮液态玻璃效果\n- feat: 优化一些AI功能\n- feat: 优化快速滚动条`,
-        assets:[
-            {name:"legado‑3.26.16‑beta.15‑arm64‑v8a.apk",size:18.5*1024*1024,download_count:3951,browser_download_url:"#"},
-            {name:"legado‑3.26.16‑beta.15‑armeabi‑v7a.apk",size:18.1*1024*1024,download_count:124,browser_download_url:"#"},
-            {name:"legado‑3.26.16‑beta.15.apk",size:24.8*1024*1024,download_count:337,browser_download_url:"#"},
-            {name:"mapping.txt",size:247.4*1024*1024,download_count:133,browser_download_url:"#"},
+        title: "🚩阅读 MD3测试版",
+        isBeta: true,
+        repo: "HapeLee/legado-with-MD3",
+        version: "3.26.16-beta.15",
+        publishAgo: "3 天前",
+        totalDownload: 4545,
+        desc: "采用 Material Design 3 风格重新设计的界面版，此版本为测试版，会存在不稳定问题。<br><a href='#'>发布页</a> &nbsp; <a href='#'>反馈群组</a>",
+        warn: "**此版本为测试版，会存在不稳定问题。**",
+        logContent: `- feat: 神秘优化
+- feat: 顶栏按钮液态玻璃效果
+- feat: 优化一些AI功能
+- feat: 优化快速滚动条`,
+        assets: [
+            {name:"legado-3.26.16-beta.15-arm64-v8a.apk",size:"18.5 MB",count:3951,url:"#"},
+            {name:"legado-3.26.16-beta.15-armeabi-v7a.apk",size:"18.1 MB",count:124,url:"#"},
+            {name:"legado-3.26.16-beta.15.apk",size:"24.8 MB",count:337,url:"#"},
+            {name:"mapping.txt",size:"247.4 MB",count:133,url:"#"},
         ]
     },
     {
-        title:"🚩阅读 Plus",isBeta:false,repo:"Luoyacheng/legado",version:"3.26.030717",publishAgo:"5 个月前",
-        desc:"Sigma 的稳定版,使用不同的签名",warn:"",
-        body:`**2026/03/07**\n- 优化代码，修复问题`,
-        assets:[
-            {name:"legado_beta_3.26.03071721_release.apk",size:19.5*1024*1024,download_count:9063,browser_download_url:"#"},
-            {name:"legado_plus_3.26.03071721_releaseS.apk",size:19.5*1024*1024,download_count:9236,browser_download_url:"#"},
+        title: "🚩阅读 Plus",
+        isBeta: false,
+        repo: "Luoyacheng/legado",
+        version: "3.26.030717",
+        publishAgo: "5 个月前",
+        totalDownload: 18299,
+        desc: "Sigma 的稳定版,使用不同的签名",
+        warn: "",
+        logContent: `**2026/03/07**
+- 优化代码，修复问题`,
+        assets: [
+            {name:"legado_beta_3.26.03071721_release.apk",size:"19.5 MB",count:9063,url:"#"},
+            {name:"legado_plus_3.26.03071721_releaseS.apk",size:"19.5 MB",count:9236,url:"#"},
         ]
     },
     {
-        title:"🚩轻悦时光",isBeta:false,repo:"autobcb/qysg",version:"2.2.0808",publishAgo:"4 天前",
-        desc:"轻悦时光全平台都可用,不需要后端服务器支持,不支持阅读书源,有自己的书源",warn:"",
-        body:`轻悦时光 0808\n- 修改主题规则 并允许单独设置每个界面的背景等\n- 新增删除字体时 如果字体被主题应用则会提醒\n- 增加翻页速度的刻度\n- 优化登录ui\n- 适配阅读宽度函数\n- 修复上下滚动滚动到下一章时因为一些原因无法长按选择\n- 兼容层和原生书源适配事件监听 和 定制按钮\n- 详情页简介 html增加按钮支持\n- 修复多角色引擎选择引擎时会显示其他多角色引擎\n- 兼容层webview 适配java.ajax 函数\n- 打开菜单时禁止翻页\n- 主题新增启动图 打开启动图后会增加启动屏时间（以免启动太快看不到启动图）\n- 鸿蒙webview 更新至最新版\n- 朗读引擎新增性别参数（多角色朗读时会给引擎传入）\n- 新增主题广场主题更新检测(需要重新在主题广场下载后支持, 之前下载的主题不支持)\n- 尝试修复span 中包裹span 时出现的解析错误问题\n- 替换进化样式选择 允许单独设置 白天颜色 和夜间颜色 不填写夜间颜色 则全按照白天颜色\n- 尝试修复仿真翻页偶尔会丢失动画\n- 兼容层书源可以在登录界面查看loginheader`,
-        assets:[
-            {name:"android_0808_32.apk",size:71.3*1024*1024,download_count:398,browser_download_url:"#"},
-            {name:"android_0808_64.apk",size:73.6*1024*1024,download_count:1320,browser_download_url:"#"},
-            {name:"android_0808_all.apk",size:154.1*1024*1024,download_count:200,browser_download_url:"#"},
-            {name:"android_0808_x86.apk",size:76.2*1024*1024,download_count:54,browser_download_url:"#"},
-            {name:"ios0808.ipa",size:31.3*1024*1024,download_count:454,browser_download_url:"#"},
-            {name:"mac0808.dmg",size:49.0*1024*1024,download_count:51,browser_download_url:"#"},
-            {name:"win0808.msix",size:88.6*1024*1024,download_count:124,browser_download_url:"#"},
-            {name:"win0808.zip",size:42.4*1024*1024,download_count:206,browser_download_url:"#"},
+        title: "🚩轻悦时光",
+        isBeta: false,
+        repo: "autobcb/qysg",
+        version: "2.2.0808",
+        publishAgo: "4 天前",
+        totalDownload: 2807,
+        desc: "轻悦时光全平台都可用,不需要后端服务器支持,不支持阅读书源,有自己的书源",
+        warn: "",
+        logContent: `轻悦时光 0808
+修改主题规则 并允许单独设置每个界面的背景等 新增删除字体时 如果字体被主题应用则会提醒  增加翻页速度的刻度 优化登录ui 适配阅读宽度函数 修复上下滚动滚动到下一章时因为一些原因无法长按选择 兼容层和原生书源适配事件监听 和 定制按钮 详情页简介 html增加按钮支持 修复多角色引擎选择引擎时会显示其他多角色引擎 兼容层webview 适配java.ajax 函数 打开菜单时禁止翻页  主题新增启动图 打开启动图后会增加启动屏时间（以免启动太快看不到启动图） 鸿蒙webview 更新至最新版 朗读引擎新增性别参数（多角色朗读时会给引擎传入） 新增主题广场主题更新检测(需要重新在主题广场下载后支持, 之前下载的主题不支持) 尝试修复span 中包裹span 时出现的解析错误问题 替换进化样式选择 允许单独设置 白天颜色 和夜间颜色 不填写夜间颜色 则全按照白天颜色 尝试修复仿真翻页偶尔会丢失动画 兼容层书源可以在登录界面查看loginheader`,
+        assets: [
+            {name:"android_0808_32.apk",size:"71.3 MB",count:398,url:"#"},
+            {name:"android_0808_64.apk",size:"73.6 MB",count:1320,url:"#"},
+            {name:"android_0808_all.apk",size:"154.1 MB",count:200,url:"#"},
+            {name:"android_0808_x86.apk",size:"76.2 MB",count:54,url:"#"},
+            {name:"ios0808.ipa",size:"31.3 MB",count:454,url:"#"},
+            {name:"mac0808.dmg",size:"49.0 MB",count:51,url:"#"},
+            {name:"win0808.msix",size:"88.6 MB",count:124,url:"#"},
+            {name:"win0808.zip",size:"42.4 MB",count:206,url:"#"},
         ]
     },
     {
-        title:"🚩轻阅读",isBeta:false,repo:"autobcb/read",version:"3.4.6b3",publishAgo:"3 个月前",
-        desc:"后端，需要自己部署，部署后可以绑定轻悦时光/栖阅，测试地址：<a href='https://qyd.gyks.cf' target='_blank'>https://qyd.gyks.cf</a>",warn:"",
-        body:`- 修复一个 独立书源保存订阅源失败的bug`,
-        assets:[{name:"web3.4.6b3.zip",size:103.6*1024*1024,download_count:8346,browser_download_url:"#"}]
+        title: "🚩轻阅读",
+        isBeta: false,
+        repo: "autobcb/read",
+        version: "3.4.6b3",
+        publishAgo: "3 个月前",
+        totalDownload: 8346,
+        desc: "后端，需要自己部署，部署后可以绑定轻悦时光/栖阅，测试地址：<a href='https://qyd.gyks.cf' target='_blank'>https://qyd.gyks.cf</a>",
+        warn: "",
+        logContent: `- 修复一个 独立书源保存订阅源失败的bug`,
+        assets: [
+            {name:"web3.4.6b3.zip",size:"103.6 MB",count:8346,url:"#"}
+        ]
     }
 ];
 
-// 代理地址，不要直接访问api.github.com
-const API_PROXY_PREFIX = "https://api.github.com";
-// 如果你遇到403限流，替换为第三方代理： const API_PROXY_PREFIX = "https://ghapi.huchen.dev";
-
-function formatBytes(bytes){
-    const mb=(bytes/1024/1024).toFixed(1);
-    return mb+" MB";
-}
-
-function timeAgo(dateString) {
-    const now = Date.now();
-    const then = new Date(dateString).getTime();
-    const diffMs = now - then;
-    const diffDays = Math.floor(diffMs / 86400000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    if(diffDays > 30) return `${Math.floor(diffDays/30)} 个月前`;
-    if(diffDays > 0) return `${diffDays} 天前`;
-    return `${diffHours} 小时前`;
-}
-
-function renderCard(item){
-    const mdHtml = marked.parse(item.body||"");
-    let warnDom = item.warn ? `<div class="my-2 text-site-danger font-medium">${item.warn}</div>` : "";
+// 渲染单模块
+function renderBlock(item) {
+    const logHtml = marked.parse(item.logContent);
+    let betaLabel = item.isBeta ? `<span class="beta-tag">beta</span>` : "";
+    let warnDom = item.warn ? `<p class="warn-text">${item.warn}</p>` : "";
     let assetHtml = "";
-    (item.assets||[]).forEach(a=>{
+    item.assets.forEach(ast => {
         assetHtml += `
-        <div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span class="text-sm">${a.name} ${formatBytes(a.size)}</span>
-            <a href="${a.browser_download_url}" target="_blank" class="bg-site-primary text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700">下载 (${a.download_count} 次)</a>
-        </div>`
-    })
+        <div class="download-item">
+            ${ast.name} ${ast.size}
+            <a href="${ast.url}" target="_blank" class="download-link">下载 (${ast.count} 次)</a>
+        </div>`;
+    });
     return `
-<div class="bg-site-cardBg dark:bg-site-cardBgDark rounded-xl p-5 mb-6 shadow-sm">
-    <div class="flex items-center gap-2 text-xl font-semibold mb-3">
-        ${item.title}
-        ${item.isBeta?'<span class="bg-site-beta text-white text-xs px-2 py-0.5 rounded">beta</span>':''}
-    </div>
-    <div class="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap mb-2">${item.desc}</div>
+<div class="version-block">
+    <div class="block-title">${item.title} ${betaLabel}</div>
+    <div class="meta-row">${item.desc}</div>
     ${warnDom}
-    <div class="text-sm text-gray-500 dark:text-gray-400">版本${item.version} | 发布${item.publishAgo}</div>
-    <div class="text-sm text-gray-500 dark:text-gray-400">仓库：<a href="https://github.com/${item.repo}" target="_blank" class="text-site-primary underline">${item.repo}</a></div>
-    <h3 class="mt-4 mb-2 pl-3 border-l-4 border-site-primary text-base font-semibold">更新日志</h3>
-    <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-md text-sm md-body">${mdHtml}</div>
-    <div class="mt-3">${assetHtml}</div>
+    <div class="meta-row">版本${item.version} &nbsp;发布${item.publishAgo} &nbsp;总下载 ${item.totalDownload}</div>
+    <div class="meta-row">仓库：<a href="https://github.com/${item.repo}" target="_blank">${item.repo}</a></div>
+
+    <h3 class="log-title">更新日志</h3>
+    <div class="log-box">${logHtml}</div>
+
+    ${assetHtml}
 </div>`;
 }
 
-// 渲染整套列表
-function renderList(data){
-    const app = document.getElementById("app");
-    let html = "";
-    data.forEach(i=> html += renderCard(i));
-    app.innerHTML = html;
-    document.querySelector("#lastUpdate").innerText = `最后更新: ${new Date().toLocaleString('zh-CN')}`;
+// 批量渲染全部区块
+function renderAll(list) {
+    const container = document.getElementById("container");
+    let fullHtml = "";
+    list.forEach(block => fullHtml += renderBlock(block));
+    container.innerHTML = fullHtml;
 }
 
-// 拉取单仓库release
-async function fetchRelease(repo){
-    const url = `${API_PROXY_PREFIX}/repos/${repo}/releases/latest`;
-    const res = await fetch(url);
-    if(!res.ok) throw new Error(`http ${res.status}`);
-    return await res.json();
-}
-
-// 主逻辑：线上优先拉取，出错直接渲染快照兜底
-async function main(){
-    try{
-        const list = [];
-        for(const cfg of reposConfig){
-            const rel = await fetchRelease(cfg.repo);
-            list.push({
-                title:cfg.title,
-                isBeta:cfg.isBeta,
-                repo:cfg.repo,
-                version:rel.tag_name,
-                publishAgo: timeAgo(rel.published_at),
-                desc:cfg.desc,
-                warn:cfg.warn,
-                body: rel.body,
-                assets: rel.assets.map(as=>({
-                    name:as.name,
-                    size:as.size,
-                    download_count:as.download_count,
-                    browser_download_url: as.browser_download_url
-                }))
-            })
+// 线上API请求函数（带异常捕获，失败自动切静态快照）
+async function loadGithubData() {
+    const repoList = [
+        {key:"refgd/legado",idx:0},
+        {key:"Luoyacheng/legado",idx:1},
+        {key:"Suml-1/Legado_Max",idx:2},
+        {key:"HapeLee/legado-with-MD3",idx:3},
+        {key:"HapeLee/legado-with-MD3",idx:4},
+        {key:"Luoyacheng/legado",idx:5},
+        {key:"autobcb/qysg",idx:6},
+        {key:"autobcb/read",idx:7},
+    ];
+    try {
+        // 使用公共gh代理解决跨域，替换#为真实加速下载链接
+        const proxy = "https://ghapi.huchen.dev";
+        for(let r of repoList) {
+            const res = await fetch(`${proxy}/repos/${r.key}/releases/latest`);
+            if(!res.ok) throw new Error("api limit");
+            const data = await res.json();
+            const target = staticData[r.idx];
+            target.version = data.tag_name;
+            target.assets = data.assets.map(a=>({
+                name:a.name,
+                size:(a.size/1024/1024).toFixed(1)+" MB",
+                count:a.download_count,
+                url:a.browser_download_url
+            }));
         }
-        renderList(list);
-    }catch(err){
-        console.warn("GitHub API拉取失败，使用静态快照兜底：",err);
-        renderList(snapshotData);
+        renderAll(staticData);
+    } catch(e) {
+        // 无论跨域/403/网络错误，直接渲染内置快照，无报错提示
+        console.log("GitHub API获取失败，使用本地静态快照",e);
+        renderAll(staticData);
     }
 }
 
-document.getElementById("toggleDark").addEventListener("click",()=>{
-    document.documentElement.classList.toggle("dark");
-})
-
-main();
+// 页面加载执行
+window.onload = function() {
+    loadGithubData();
+}
 </script>
 </body>
 </html>
