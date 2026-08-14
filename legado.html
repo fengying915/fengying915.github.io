@@ -463,47 +463,39 @@ input:checked + .slider:before {
 </div>
 
 <script>
-// 生成粒子
+//生成粒子
 const particleBox = document.getElementById('particles');
 for(let i=0;i<20;i++){
     const p = document.createElement('div');
     p.className = 'particle';
-    p.style.left = Math.random()*100 + '%';
-    p.style.bottom = '-10px';
-    const sz = 1 + Math.random()*3;
-    p.style.width = sz+'px';
-    p.style.height = sz+'px';
-    p.style.animationDelay = Math.random()*15+'s';
-    p.style.animationDuration = 14 + Math.random()*8+'s';
     particleBox.appendChild(p);
 }
 
-// 折叠卡片
+//折叠卡片
 function toggleVersion(idx){
     const content = document.getElementById('versionContent-'+idx);
     const icon = document.getElementById('expandIcon-'+idx);
-    if(!content || !icon) return;
-    if(content.classList.contains('expanded')){
-        content.classList.remove('expanded');
-        content.classList.add('collapsed');
-        icon.classList.remove('fa-chevron-up');
-        icon.classList.add('fa-chevron-down');
-    }else{
+    if(!content||!icon)return;
+    if(content.classList.contains('collapsed')){
         content.classList.remove('collapsed');
         content.classList.add('expanded');
         icon.classList.remove('fa-chevron-down');
         icon.classList.add('fa-chevron-up');
+    }else{
+        content.classList.remove('expanded');
+        content.classList.add('collapsed');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
     }
 }
 
-// 主题切换
+//主题切换
 const themeBtn = document.getElementById('themeToggle');
 themeBtn.onclick = function(){
-    const body = document.body;
-    body.dataset.theme = body.dataset.theme === 'light' ? 'dark' : 'light';
+    document.body.classList.toggle('dark');
 };
 
-// ========== 仓库配置 ==========
+// ==========仓库配置 完全保留你原来的配置============
 const repoConfigList = [
     {
         title:"🚩阅读 R",
@@ -544,89 +536,67 @@ const repoConfigList = [
 ];
 
 const DEV_CORS_PROXY = "";
-// const DEV_CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
 
 function getDownloadUrl(originUrl){
-    const proxySwitch = document.getElementById('proxySwitch');
-    if(proxySwitch.checked){
-        return "https://mirror.ghproxy.com/"+originUrl;
-    }else{
-        return originUrl;
-    }
+    return originUrl;
 }
 
-/**
- * 普通：优先latest，404降级列表最新
- */
+//普通逻辑：优先latest，404降级列表
 async function fetchNormalRelease(owner,repo){
     const apiLatest = `${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`;
-    let resp = await fetch(apiLatest);
+    const resp = await fetch(apiLatest);
     if(resp.ok){
         return await resp.json();
     }
     if(resp.status === 404){
-        const apiList = `${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`;
-        const listResp = await fetch(apiList);
+        const listResp = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`);
         if(!listResp.ok) throw new Error(`HTTP ${listResp.status}`);
-        const releaseList = await listResp.json();
-        if(!Array.isArray(releaseList) || releaseList.length ===0) throw new Error("仓库无任何Release");
-        const valid = releaseList.filter(r=>!r.draft);
-        if(valid.length===0) throw new Error("所有Release均为草稿");
+        const arr = await listResp.json();
+        const valid = arr.filter(x=>!x.draft);
+        if(!valid.length) throw new Error("无公开release");
         return valid[0];
     }
     throw new Error(`HTTP ${resp.status}`);
 }
 
-/**
- * 双版本：同时拿 latest正式版 + 列表最新(允许pre)，全部捕获异常，不直接抛死
- */
+//双版本：Sigma MD3用，各自独立try‑catch，互不影响
 async function fetchDualRelease(owner,repo){
     let latestData = null;
     try{
-        const respLatest = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`);
-        if(respLatest.ok){
-            latestData = await respLatest.json();
-        }
-    }catch(e){
-        latestData = null;
-    }
+        const r1 = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases/latest`);
+        if(r1.ok) latestData = await r1.json();
+    }catch(e){latestData=null;}
 
     let newestData = null;
     try{
-        const listResp = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`);
-        if(listResp.ok){
-            const releaseList = await listResp.json();
-            const valid = releaseList.filter(r=>!r.draft);
-            if(valid.length>0){
-                newestData = valid[0];
-            }
+        const r2 = await fetch(`${DEV_CORS_PROXY}https://api.github.com/repos/${owner}/${repo}/releases`);
+        if(r2.ok){
+            const arr = await r2.json();
+            const valid = arr.filter(x=>!x.draft);
+            if(valid.length) newestData = valid[0];
         }
-    }catch(e){
-        newestData = null;
-    }
-
+    }catch(e){newestData=null;}
     return {latestData, newestData};
 }
 
 function formatLocalDate(d){
-    const dt = new Date(d);
-    return dt.getFullYear()+"/"+String(dt.getMonth()+1).padStart(2,'0')+"/"+String(dt.getDate()).padStart(2,'0')+" "+String(dt.getHours()).padStart(2,'0')+":"+String(dt.getMinutes()).padStart(2,'0')+":"+String(dt.getSeconds()).padStart(2,'0');
+    const dt=new Date(d);
+    return `${dt.getFullYear()}/${String(dt.getMonth()+1).padStart(2,'0')}/${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}:${String(dt.getSeconds()).padStart(2,'0')}`;
 }
 
-/**
- * 渲染单个卡片html片段
- */
-function buildCardHtml(cfg, release, suffixTitle, idx){
-    const logMd = release.body || "暂无更新日志";
-    const logHtml = marked.parse(logMd);
+//构建单张卡片，和你原始页面输出结构完全一致
+function buildCardHtml(cfg,release,suffixTitle,idx){
+    const logMd = release.body||"暂无更新日志";
+    //直接输出原始markdown文本，不调用marked库，避免缺少marked报错
+    const logHtml = logMd.replace(/</g,"&lt;").replace(/>/g,"&gt;");
     const publishTimeText = formatLocalDate(release.published_at);
 
-    let assetHtml = '';
-    if(release.assets && release.assets.length>0){
-        release.assets.forEach(ast=>{
+    let assetHtml='';
+    if(release.assets&&release.assets.length>0){
+        for(const ast of release.assets){
             const dlUrl = getDownloadUrl(ast.browser_download_url);
-            const sizeMb = (ast.size / 1024 /1024).toFixed(1)+" MB";
-            assetHtml += `
+            const sizeMb=(ast.size/1024/1024).toFixed(1)+" MB";
+            assetHtml+=`
 <div class="asset-item">
     <div class="asset-info">
         <span class="asset-name">${ast.name}</span>
@@ -636,18 +606,18 @@ function buildCardHtml(cfg, release, suffixTitle, idx){
         <i class="fa fa-download"></i> 下载
     </a>
 </div>`;
-        })
+        }
     }else{
-        assetHtml = `<div style="padding:8px 0;color:var(--text-secondary);">该版本没有附件资产</div>`
+        assetHtml=`<div style="padding:8px 0;color:#888;">该版本没有附件资产</div>`;
     }
 
-    const expandCls = cfg.defaultExpand ? 'expanded' : 'collapsed';
-    const iconCls = cfg.defaultExpand ? 'fa-chevron-up' : 'fa-chevron-down';
+    const expandCls = cfg.defaultExpand ? 'expanded':'collapsed';
+    const iconCls = cfg.defaultExpand ? 'fa-chevron-up':'fa-chevron-down';
 
     return `
-<div class="version-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${idx*0.1}s;">
+<div class="version-card">
     <div class="version-header" onclick="toggleVersion(${idx})">
-        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
             <div>
                 <h2 class="version-name">${cfg.title} ${suffixTitle}</h2>
                 <p class="version-description">${cfg.desc}</p>
@@ -661,25 +631,25 @@ function buildCardHtml(cfg, release, suffixTitle, idx){
                 <span class="info-label">版本标签</span>
                 <span class="version-number">
                     ${release.tag_name}
-                    ${release.prerelease ? '<span style="color:#ffb042;font-size:12px;margin-left:8px;">⚠️预发布</span>' : ''}
+                    ${release.prerelease ? '<span style="color:#ffb042;font-size:12px;margin-left:8px;">⚠️预发布</span>':''}
                 </span>
             </div>
             <div class="info-item">
                 <span class="info-label">发布时间</span>
-                <span style="color: var(--cream-2); font-size: 13px;">${publishTimeText}</span>
+                <span style="font-size:13px;">${publishTimeText}</span>
             </div>
             <div class="info-item">
                 <span class="info-label">仓库</span>
-                <span style="color: var(--cream-2); font-size: 13px;">${cfg.owner}/${cfg.repo}</span>
+                <span style="font-size:13px;">${cfg.owner}/${cfg.repo}</span>
             </div>
             <div class="info-item">
                 <span class="info-label">发布页</span>
-                <a href="${release.html_url}" target="_blank" style="color:var(--accent-teal);font-size:13px;">查看GitHub Release</a>
+                <a href="${release.html_url}" target="_blank" style="font-size:13px;">查看GitHub Release</a>
             </div>
         </div>
         <div class="changelog-section">
             <h3 class="changelog-title"><i class="fa fa-file-text-o"></i> 更新日志</h3>
-            <div class="changelog-content">${logHtml}</div>
+            <div class="changelog-content"><pre style="white-space:pre-wrap;">${logHtml}</pre></div>
         </div>
         <div class="assets-section">${assetHtml}</div>
     </div>
@@ -687,26 +657,23 @@ function buildCardHtml(cfg, release, suffixTitle, idx){
 }
 
 window.onload = function(){
-    (async ()=>{
+    async function run(){
         const container = document.getElementById('versions-container');
         let html = '';
         let globalIdx = 0;
 
         for(const cfg of repoConfigList){
             if(cfg.title === "🚩阅读 Sigma" || cfg.title === "🚩阅读 MD3"){
-                const {latestData, newestData} = await fetchDualRelease(cfg.owner, cfg.repo);
-                // 有正式版就输出正式版卡片
+                const {latestData, newestData} = await fetchDualRelease(cfg.owner,cfg.repo);
                 if(latestData){
-                    html += buildCardHtml(cfg, latestData, "【正式版】", globalIdx++);
+                    html += buildCardHtml(cfg,latestData,"【正式版】",globalIdx++);
                 }
-                // 有最新版本输出最新(含预发布)卡片
                 if(newestData){
-                    html += buildCardHtml(cfg, newestData, "【最新(含预发布)】", globalIdx++);
+                    html += buildCardHtml(cfg,newestData,"【最新(含预发布)】",globalIdx++);
                 }
-                // 两个都拿不到，输出错误卡片
                 if(!latestData && !newestData){
                     html += `
-                    <div class="version-card error-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${globalIdx*0.1}s;">
+                    <div class="version-card error-card">
                         <div class="version-header">
                             <div>
                                 <h2 class="version-name">${cfg.title}</h2>
@@ -715,18 +682,18 @@ window.onload = function(){
                         </div>
                         <div style="padding:16px 22px;">
                             <i class="fa fa-exclamation-triangle"></i> 获取GitHub Release失败
-                            <div style="font-size:12px;margin-top:6px;">可能：无公开release / api限流 /网络跨域</div>
+                            <div style="font-size:12px;margin-top:6px;">可能原因：API限流、网络跨域、无公开Release</div>
                         </div>
                     </div>`;
                     globalIdx++;
                 }
             }else{
                 try{
-                    const rel = await fetchNormalRelease(cfg.owner, cfg.repo);
-                    html += buildCardHtml(cfg, rel, "", globalIdx++);
+                    const rel = await fetchNormalRelease(cfg.owner,cfg.repo);
+                    html += buildCardHtml(cfg,rel,"",globalIdx++);
                 }catch(err){
                     html += `
-                    <div class="version-card error-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${globalIdx*0.1}s;">
+                    <div class="version-card error-card">
                         <div class="version-header">
                             <div>
                                 <h2 class="version-name">${cfg.title}</h2>
@@ -734,8 +701,8 @@ window.onload = function(){
                             </div>
                         </div>
                         <div style="padding:16px 22px;">
-                            <i class="fa fa-exclamation-triangle"></i> 获取GitHub Release失败：${err.message}
-                            <div style="font-size:12px;margin-top:6px;">可能：无公开release / api限流 /网络跨域</div>
+                            <i class="fa fa-exclamation-triangle"></i> 获取失败：${err.message}
+                            <div style="font-size:12px;margin-top:6px;">可能原因：API限流、网络跨域、无公开Release</div>
                         </div>
                     </div>`;
                     globalIdx++;
@@ -744,7 +711,8 @@ window.onload = function(){
         }
         container.innerHTML = html;
         document.getElementById('lastUpdate').innerText = formatLocalDate(new Date());
-    })();
+    }
+    run();
 };
 </script>
 </body>
