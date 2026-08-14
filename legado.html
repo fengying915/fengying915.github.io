@@ -734,44 +734,56 @@
         localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), value: value }));
     }
 
-    // ========== 获取 Release 数据 ==========
+    // ========== 获取 Release 数据（通过 Cloudflare Worker 代理） ==========
+    const PROXY_BASE = 'https://legado-proxy.fengying915.workers.dev/api/repos';
+
+    // 获取稳定版（第一个非预发布）
     async function fetchLatestSoft(owner, repo) {
         const cacheKey = `gh_cache_latest_${owner}_${repo}`;
         const cached = getCachedData(cacheKey);
         if (cached) return cached;
-        try {
-            const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
-            if (resp.ok) {
-                const data = await resp.json();
-                setCachedData(cacheKey, data);
-                return data;
-            }
-        } catch (_) {}
-        return null;
-    }
 
-    async function fetchNewestFromList(owner, repo) {
-        const cacheKey = `gh_cache_newest_${owner}_${repo}`;
-        const cached = getCachedData(cacheKey);
-        if (cached) return cached;
         try {
-            const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`);
+            const resp = await fetch(`${PROXY_BASE}/${owner}/${repo}`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const arr = await resp.json();
-            const valid = arr.filter(r => !r.draft);
-            if (!valid.length) throw new Error('无公开 Release');
-            const data = valid[0];
-            setCachedData(cacheKey, data);
-            return data;
+            const data = await resp.json();
+            if (!data.releases || data.releases.length === 0) throw new Error('无发布');
+            // 找到第一个非预发布的
+            const stable = data.releases.find(r => !r.prerelease);
+            if (!stable) throw new Error('无稳定版');
+            setCachedData(cacheKey, stable);
+            return stable;
         } catch (err) {
             throw err;
         }
     }
 
+    // 获取最新（含预发布）—— 列表第一个
+    async function fetchNewestFromList(owner, repo) {
+        const cacheKey = `gh_cache_newest_${owner}_${repo}`;
+        const cached = getCachedData(cacheKey);
+        if (cached) return cached;
+
+        try {
+            const resp = await fetch(`${PROXY_BASE}/${owner}/${repo}`);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            if (!data.releases || data.releases.length === 0) throw new Error('无公开 Release');
+            const newest = data.releases[0];
+            setCachedData(cacheKey, newest);
+            return newest;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    // 单卡片默认：优先稳定版，否则最新
     async function fetchRelease(owner, repo) {
-        const latest = await fetchLatestSoft(owner, repo);
-        if (latest) return latest;
-        return await fetchNewestFromList(owner, repo);
+        try {
+            return await fetchLatestSoft(owner, repo);
+        } catch (_) {
+            return await fetchNewestFromList(owner, repo);
+        }
     }
 
     // ========== 工具函数 ==========
