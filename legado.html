@@ -714,7 +714,7 @@
     }
 
     // ========== localStorage 缓存 ==========
-    const CACHE_TTL = 10 * 60 * 1000; // 10 分钟
+    const CACHE_TTL = 60 * 60 * 1000; // 1 小时
 
     function getCachedData(key) {
         const raw = localStorage.getItem(key);
@@ -769,7 +769,6 @@
     }
 
     // ========== 获取 Release 数据（直接调用 GitHub API） ==========
-    // 注意：GitHub API 直接返回数组，而不是 { releases: [...] }
     async function fetchLatestSoft(owner, repo) {
         const cacheKey = `gh_cache_latest_${owner}_${repo}`;
         const cached = getCachedData(cacheKey);
@@ -777,10 +776,7 @@
         try {
             const url = `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
             const data = await fetchWithRetry(url);
-            // data 是单个 release 对象
             if (!data || data.draft) throw new Error('无有效发布');
-            // 如果是预发布但我们需要稳定版，但 latest 可能包含预发布，但没办法，我们取这个
-            // 但我们可以检查 prerelease，若为 true 则抛错，让下游去取列表
             if (data.prerelease) throw new Error('latest 是预发布，尝试从列表获取稳定版');
             setCachedData(cacheKey, data);
             return data;
@@ -800,7 +796,7 @@
             if (!Array.isArray(data) || data.length === 0) throw new Error('无公开 Release');
             const valid = data.filter(r => !r.draft);
             if (!valid.length) throw new Error('无有效发布');
-            const newest = valid[0]; // 第一个是最新的
+            const newest = valid[0];
             setCachedData(cacheKey, newest);
             return newest;
         } catch (err) {
@@ -809,7 +805,6 @@
         }
     }
 
-    // 单卡片默认获取：先尝试稳定版，若失败则取最新（可能预发布）
     async function fetchRelease(owner, repo) {
         try {
             return await fetchLatestSoft(owner, repo);
@@ -840,85 +835,137 @@
         return years + ' 年前';
     }
 
-// ========== 渲染卡片（支持特定版本过滤） ==========
-function renderCard(cfg, release, idx, titleSuffix = '') {
-    const logHtml = marked.parse(release.body || '暂无更新日志');
-    const publishTime = new Date(release.published_at);
-    const timeStr = formatLocalDate(publishTime);
+    // ========== 渲染卡片（支持特定版本过滤） ==========
+    function renderCard(cfg, release, idx, titleSuffix = '') {
+        const logHtml = marked.parse(release.body || '暂无更新日志');
+        const publishTime = new Date(release.published_at);
+        const timeStr = formatLocalDate(publishTime);
 
-    // ----- 资产过滤（Sigma 稳定版只保留 plus）-----
-    let assetsToRender = release.assets || [];
-    if (cfg.title === '🚩阅读 Sigma' && titleSuffix === '【稳定版】') {
-        assetsToRender = assetsToRender.filter(ast => ast.name.toLowerCase().includes('plus'));
+        // ----- 资产过滤（Sigma 稳定版只保留 plus）-----
+        let assetsToRender = release.assets || [];
+        if (cfg.title === '🚩阅读 Sigma' && titleSuffix === '【稳定版】') {
+            assetsToRender = assetsToRender.filter(ast => ast.name.toLowerCase().includes('plus'));
+        }
+
+        let totalDownloads = 0;
+        let assetsHtml = '';
+        if (assetsToRender.length > 0) {
+            for (const ast of assetsToRender) {
+                totalDownloads += ast.download_count;
+                const sizeMb = (ast.size / 1024 / 1024).toFixed(1) + ' MB';
+                assetsHtml += `
+                    <div class="asset-item">
+                        <div class="asset-info">
+                            <span class="asset-name">${ast.name}</span>
+                            <span class="asset-size">${sizeMb}</span>
+                        </div>
+                        <a href="${ast.browser_download_url}" class="download-btn" target="_blank">
+                            <i class="fas fa-download"></i> 下载 (${ast.download_count} 次)
+                        </a>
+                    </div>
+                `;
+            }
+        }
+        if (!assetsHtml) {
+            assetsHtml = `<div style="padding:8px 0;color:var(--cream-3);">暂无可用文件下载</div>`;
+        }
+
+        const expandCls = 'collapsed';
+        const iconCls = 'fa-chevron-down';
+
+        return `
+            <div class="version-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${idx * 0.1}s;">
+                <div class="version-header" onclick="toggleVersion(${idx})">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <div>
+                            <h2 class="version-name">${cfg.title} ${titleSuffix}</h2>
+                            <p class="version-description">${cfg.desc}</p>
+                        </div>
+                        <i class="fas expand-icon ${iconCls}" id="expandIcon-${idx}"></i>
+                    </div>
+                </div>
+                <div class="version-content ${expandCls}" id="versionContent-${idx}">
+                    <div class="version-info">
+                        <div class="info-item">
+                            <span class="info-label">版本</span>
+                            <span class="version-number">${release.tag_name}${release.prerelease ? ' <span style="color:#ffb042;font-size:12px;">⚠️预发布</span>' : ''}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">发布</span>
+                            <span style="color: var(--cream-2); font-size: 13px;">${timeStr}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">下载</span>
+                            <span class="download-count"><i class="fas fa-download"></i> ${totalDownloads}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">仓库</span>
+                            <a href="https://github.com/${cfg.owner}/${cfg.repo}" target="_blank" style="color: var(--teal); font-size: 13px; text-decoration: none;">
+                                ${cfg.owner}/${cfg.repo}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="changelog-section">
+                        <h3 class="changelog-title"><i class="fas fa-file-alt"></i> 更新日志</h3>
+                        <div class="changelog-content">${logHtml}</div>
+                    </div>
+                    <div class="assets-section">${assetsHtml}</div>
+                </div>
+            </div>
+        `;
     }
 
-    let totalDownloads = 0;
-    let assetsHtml = '';
-    if (assetsToRender.length > 0) {
-        for (const ast of assetsToRender) {
-            totalDownloads += ast.download_count;
-            const sizeMb = (ast.size / 1024 / 1024).toFixed(1) + ' MB';
-            assetsHtml += `
-                <div class="asset-item">
-                    <div class="asset-info">
-                        <span class="asset-name">${ast.name}</span>
-                        <span class="asset-size">${sizeMb}</span>
-                    </div>
-                    <a href="${ast.browser_download_url}" class="download-btn" target="_blank">
-                        <i class="fas fa-download"></i> 下载 (${ast.download_count} 次)
-                    </a>
+    // ========== 只重试当前卡片 ==========
+    async function retryCard(owner, repo, titleSuffix, cardElement) {
+        // 显示加载状态
+        cardElement.innerHTML = `
+            <div class="loading" style="display:flex;justify-content:center;align-items:center;min-height:200px;">
+                <div class="loading-spinner" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;">
+                    <div class="spinner" style="border:3px solid rgba(45,212,192,0.1);border-top:3px solid var(--teal);border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;"></div>
+                    <p style="color:var(--cream-2);font-family:'Lato',sans-serif;font-size:14px;">重新获取中...</p>
+                </div>
+            </div>
+        `;
+
+        // 找到对应的配置
+        const cfg = repoConfigList.find(c => c.owner === owner && c.repo === repo);
+        if (!cfg) {
+            cardElement.innerHTML = `<div class="version-card error-message"><h3>配置错误</h3></div>`;
+            return;
+        }
+
+        try {
+            let release;
+            if (titleSuffix === '【稳定版】') {
+                release = await fetchLatestSoft(owner, repo);
+            } else if (titleSuffix === '【最新（测试版）】') {
+                release = await fetchNewestFromList(owner, repo);
+            } else {
+                release = await fetchRelease(owner, repo);
+            }
+            // 重新渲染卡片
+            const newCardHtml = renderCard(cfg, release, 0, titleSuffix);
+            // 由于 renderCard 会生成带动画延迟的卡片，但我们需要替换现有卡片，所以移除动画延迟，直接替换内容
+            // 简便方法：用临时容器解析
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newCardHtml;
+            const newCard = tempDiv.firstElementChild;
+            // 清除动画延迟
+            newCard.style.animationDelay = '0s';
+            // 替换原卡片
+            cardElement.replaceWith(newCard);
+            // 重新绑定折叠事件（由于 onclick 是内联的，无需额外处理）
+        } catch (err) {
+            cardElement.innerHTML = `
+                <div class="version-card error-message" style="padding:20px;">
+                    <h3><i class="fas fa-exclamation-triangle"></i> 获取失败</h3>
+                    <p style="margin-bottom:6px;">${cfg.title} — ${err.message}</p>
+                    <button onclick="retryCard('${owner}', '${repo}', '${titleSuffix}', this.closest('.version-card'))">重试</button>
                 </div>
             `;
         }
     }
-    if (!assetsHtml) {
-        assetsHtml = `<div style="padding:8px 0;color:var(--cream-3);">暂无可用文件下载</div>`;
-    }
 
-    const expandCls = 'collapsed';
-    const iconCls = 'fa-chevron-down';
-
-    return `
-        <div class="version-card" style="animation: fadeUp 0.5s ease both; animation-delay: ${idx * 0.1}s;">
-            <div class="version-header" onclick="toggleVersion(${idx})">
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                    <div>
-                        <h2 class="version-name">${cfg.title} ${titleSuffix}</h2>
-                        <p class="version-description">${cfg.desc}</p>
-                    </div>
-                    <i class="fas expand-icon ${iconCls}" id="expandIcon-${idx}"></i>
-                </div>
-            </div>
-            <div class="version-content ${expandCls}" id="versionContent-${idx}">
-                <div class="version-info">
-                    <div class="info-item">
-                        <span class="info-label">版本</span>
-                        <span class="version-number">${release.tag_name}${release.prerelease ? ' <span style="color:#ffb042;font-size:12px;">⚠️预发布</span>' : ''}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">发布</span>
-                        <span style="color: var(--cream-2); font-size: 13px;">${timeStr}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">下载</span>
-                        <span class="download-count"><i class="fas fa-download"></i> ${totalDownloads}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">仓库</span>
-                        <a href="https://github.com/${cfg.owner}/${cfg.repo}" target="_blank" style="color: var(--teal); font-size: 13px; text-decoration: none;">
-                            ${cfg.owner}/${cfg.repo}
-                        </a>
-                    </div>
-                </div>
-                <div class="changelog-section">
-                    <h3 class="changelog-title"><i class="fas fa-file-alt"></i> 更新日志</h3>
-                    <div class="changelog-content">${logHtml}</div>
-                </div>
-                <div class="assets-section">${assetsHtml}</div>
-            </div>
-        </div>
-    `;
-}
     // ========== 仓库配置 ==========
     const repoConfigList = [
         {
@@ -983,27 +1030,30 @@ function renderCard(cfg, release, idx, titleSuffix = '') {
                         html += renderCard(cfg, newest, idx++, '【最新（测试版）】');
                     }
                 } catch (err) {
-                    html += `
+                    // 错误卡片，重试按钮调用 retryCard
+                    const errorHtml = `
                         <div class="version-card error-message" style="padding:20px;">
                             <h3><i class="fas fa-exclamation-triangle"></i> 获取失败</h3>
                             <p style="margin-bottom:6px;">${cfg.title} — ${err.message}</p>
-                            <button onclick="location.reload()">重试</button>
+                            <button onclick="retryCard('${cfg.owner}', '${cfg.repo}', '${'【稳定版】' || ''}', this.closest('.version-card'))">重试</button>
                         </div>
                     `;
-                    idx += 2;
+                    html += errorHtml;
+                    idx++;
                 }
             } else {
                 try {
                     const release = await fetchRelease(cfg.owner, cfg.repo);
                     html += renderCard(cfg, release, idx++, '');
                 } catch (err) {
-                    html += `
+                    const errorHtml = `
                         <div class="version-card error-message" style="padding:20px;">
                             <h3><i class="fas fa-exclamation-triangle"></i> 获取失败</h3>
                             <p style="margin-bottom:6px;">${cfg.title} — ${err.message}</p>
-                            <button onclick="location.reload()">重试</button>
+                            <button onclick="retryCard('${cfg.owner}', '${cfg.repo}', '', this.closest('.version-card'))">重试</button>
                         </div>
                     `;
+                    html += errorHtml;
                     idx++;
                 }
             }
