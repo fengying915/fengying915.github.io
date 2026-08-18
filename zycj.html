@@ -232,7 +232,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 </div>
 <div class="form-group">
 <label>弹幕设置（播放页弹幕默认参数）</label>
-<div class="dm-cfg-row"><span>默认关闭</span><div class="dm-cfg-toggle" id="cfgDmEnabled" onclick="cfgDmToggle(this)"><div class="knob"></div></div></div>
+<div class="dm-cfg-row"><span>默认开启</span><div class="dm-cfg-toggle on" id="cfgDmEnabled" onclick="cfgDmToggle(this)"><div class="knob"></div></div></div>
 <div class="dm-cfg-row"><span>不透明度</span><input type="range" class="dm-cfg-slider" id="cfgDmOpacity" min="10" max="100" value="80" oninput="cfgDmSave()"></div>
 <div class="dm-cfg-row"><span>字体大小</span><input type="range" class="dm-cfg-slider" id="cfgDmFontSize" min="14" max="48" value="20" oninput="cfgDmSave()"></div>
 <div class="dm-cfg-row"><span>显示区域</span><div class="dm-cfg-area-btns">
@@ -541,7 +541,9 @@ var Config = {
     { name: '爱奇艺', url: 'https://iqiyizyapi.com/api.php/provide/vod' },
     { name: '大众', url: 'https://cdn.dzzyapi.com/api.php/provide/vod' },
     { name: '98', url: 'https://98zy.vip/api.php/provide/vod' },
-    { name: '黑料🔞', url: 'https://www.heiliaozyapi.com/api.php/provide/vod/' },
+    { name: '无水印', url: 'https://api.wsyzy.net/api.php/provide/vod' },
+    { name: '豆瓣', url: 'https://caiji.dbzy5.com/api.php/provide/vod' },
+    { name: '黑料🔞', url: 'https://www.heiliaozyapi.com/api.php/provide/vod' },
     { name: '魔都🔞', url: 'https://www.mdzyapi.com/api.php/provide/vod' },
     { name: '玉兔🔞', url: 'https://apiyutu.com/api.php/provide/vod' },
     { name: '大奶子🔞', url: 'https://apidanaizi.com/api.php/provide/vod' },
@@ -562,9 +564,17 @@ var Config = {
     { name: '乐播🔞', url: 'https://lbapi9.com/api.php/provide/vod' },
     { name: '嘿嘿🔞', url: 'https://api.heiapi.cc/api.php/provide/vod' },
     { name: '火速🔞', url: 'https://api.huosuapi.cc/api.php/provide/vod' },
-    { name: '滴滴🔞', url: 'https://api.ddapi.cc/api.php/provide/vod' }
+    { name: '极品🔞', url: 'https://jipinvip1.com/api.php/provide/vod' },
+    { name: '滴滴🔞', url: 'https://api.ddapi.cc/api.php/provide/vod' },
+    { name: '香蕉🔞', url: 'https://www.xiangjiaozyw.com/api.php/provide/vod' },
+    { name: '小鸡🔞', url: 'https://api.xjzyapi.com/provide/vod' },
+    { name: 'CK🔞', url: 'https://ckzy.me/api.php/provide/vod' },
+    { name: '豆豆🔞', url: 'https://api.douapi.cc/api.php/provide/vod' },
+    { name: '精品X🔞', url: 'https://www.jingpinx.com/api.php/provide/vod' },
+    { name: '鲨鱼🔞', url: 'https://shayuapi.com/api.php/provide/vod' },
+    { name: '番号🔞', url: 'http://fhapi9.com/api.php/provide/vod' }
   ],
-  _storageKey: 'vplayer_settings_v9',
+  _storageKey: 'vplayer_settings_v10',
   loadSync: function() {
     var s = null, lsData = null;
     try { lsData = _lsGet(this._storageKey); } catch(e) {}
