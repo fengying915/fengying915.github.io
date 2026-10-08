@@ -3131,7 +3131,7 @@ document.addEventListener('touchend', function(e) {
 (function() {
   var status = document.getElementById('proxyStatus');
   function _hideStatus() { if (status) status.style.display = 'none'; }
-  _fetchCompat(CORS_PROXIES[0]('https://cj.ffzyapi.com/api.php/provide/vod?ac=list'), 8000,
+  _fetchCompat(CORS_PROXIES[1]('https://cj.ffzyapi.com/api.php/provide/vod?ac=list'), 8000,
     function(text) {
       if (status) { status.textContent = '✓ 云代理已连接'; status.classList.remove('proxy-switching'); }
       setTimeout(_hideStatus, 3000);
