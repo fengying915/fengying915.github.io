@@ -224,8 +224,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <option value="1">allorigins</option>
 <option value="2">codetabs</option>
 <option value="3">cors.syrins</option>
-<option value="4">corsproxy.io</option>
-<option value="5">corsproxy.dev</option>
+<option value="4">fengying</option>
 <option value="direct">直连（不代理）</option>
 </select>
 <p style="font-size:11px;color:var(--text-dim);margin-top:4px">搜索无结果时试试切换代理</p>
@@ -313,9 +312,7 @@ var CORS_PROXIES = [
   function(url) { return 'https://proxy.cors.sh/' + url; },
   function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
   function(url) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url); },
-  function(url) { return 'https://api.cors.syrins.tech/?url=' + encodeURIComponent(url); },
-  function(url) { return 'https://corsproxy.io/?url=' + encodeURIComponent(url); },
-  function(url) { return 'https://corsproxy.dev/?url=' + encodeURIComponent(url); }
+  function(url) { return 'https://cors-proxy.fengying915.workers.dev?url=' + encodeURIComponent(url); }
 ];
 var proxyMode = 'auto';
 var workingProxyIdx = 0;
