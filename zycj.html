@@ -220,8 +220,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <label>CORS代理（搜索/详情用）</label>
 <select class="form-input" id="proxySelect" onchange="changeProxy()">
 <option value="auto">自动选择（推荐）</option>
-<option value="0">cors.sh</option>
-<option value="1">fengying</option>
+<option value="0">fengying</option>
+<option value="1">allorigins</option>
 <option value="direct">直连（不代理）</option>
 </select>
 <p style="font-size:11px;color:var(--text-dim);margin-top:4px">搜索无结果时试试切换代理</p>
@@ -306,8 +306,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <script>
 // ========== CORS 代理配置 ==========
 var CORS_PROXIES = [
-  function(url) { return 'https://proxy.cors.sh/' + url; },
-  function(url) { return 'https://cors.facg.top/?url=?url=' + encodeURIComponent(url); }
+  function(url) { return 'https://cors.facg.top?url=' + encodeURIComponent(url); },
+  function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); }
 ];
 var proxyMode = 'auto';
 var workingProxyIdx = 0;
@@ -3131,7 +3131,7 @@ document.addEventListener('touchend', function(e) {
 (function() {
   var status = document.getElementById('proxyStatus');
   function _hideStatus() { if (status) status.style.display = 'none'; }
-  _fetchCompat(CORS_PROXIES[1]('https://cj.ffzyapi.com/api.php/provide/vod?ac=list'), 8000,
+  _fetchCompat(CORS_PROXIES[0]('https://cj.ffzyapi.com/api.php/provide/vod?ac=list'), 8000,
     function(text) {
       if (status) { status.textContent = '✓ 云代理已连接'; status.classList.remove('proxy-switching'); }
       setTimeout(_hideStatus, 3000);
