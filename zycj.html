@@ -219,12 +219,75 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="form-group">
 <label>CORS代理（搜索/详情用）</label>
 <select class="form-input" id="proxySelect" onchange="changeProxy()">
-<option value="auto">自动选择（推荐）</option>
-<option value="0">fengying</option>
-<option value="1">allorigins</option>
+<option value="auto">自动选择（推荐·并行竞速）</option>
 <option value="direct">直连（不代理）</option>
 </select>
-<p style="font-size:11px;color:var(--text-dim);margin-top:4px">搜索无结果时试试切换代理</p>
+<p style="font-size:11px;color:var(--text-dim);margin-top:4px">加载失败/搜索无结果时，点“代理诊断”自动测速并选用可用代理</p>
+<div style="display:flex;gap:8px;margin-top:8px">
+<button type="button" class="btn btn-sm" style="flex:1" onclick="runProxyDiagnostics()">🔍 代理诊断</button>
+<button type="button" class="btn btn-sm btn-outline" style="flex:1" onclick="resetProxyCache()">重新学习代理</button>
+</div>
+<div id="proxyDiagResult" style="display:none;margin-top:8px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px"></div>
+</div>
+<div class="form-group">
+<label>自定义代理（推荐：自建 Cloudflare Worker / 私有代理）</label>
+<input class="form-input" id="customProxyInput" placeholder="https://你的代理域名/?url=" style="margin-bottom:8px">
+<button type="button" class="btn btn-sm" style="width:100%" onclick="saveCustomProxy()">保存自定义代理</button>
+<p style="font-size:11px;color:var(--text-dim);margin-top:4px">填写规则：含 <code>{url}</code> 替换为原始地址，含 <code>{urlenc}</code> 替换为URL编码地址；都不含则直接拼在末尾（前缀以 = ? &amp; 结尾时自动URL编码）。公共代理全部失效时，自建一个即可彻底解决。</p>
+<details style="margin-top:8px">
+<summary style="font-size:12px;color:var(--primary);cursor:pointer">公共代理全失效？点此查看自建代理模板（Cloudflare Worker，免费）</summary>
+<pre style="font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-all;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:6px;font-family:monospace">export default {
+  async fetch(request) {
+    const cors = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,OPTIONS',
+      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Max-Age': '86400'
+    };
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+
+    const target = new URL(request.url).searchParams.get('url');
+    if (!target) return new Response('usage: ?url=&lt;encodeURIComponent(url)&gt;', { status: 400, headers: cors });
+
+    let u;
+    try { u = new URL(target); } catch (e) { return new Response('invalid url', { status: 400, headers: cors }); }
+    if (u.protocol !== 'http:' &amp;&amp; u.protocol !== 'https:') {
+      return new Response('only http/https', { status: 400, headers: cors });
+    }
+
+    // 关键：不要转发浏览器的 Accept-Encoding，交给 Workers 运行时协商并自动解压，
+    // 否则可能拿到“已压缩的 body + 被剥掉的 Content-Encoding”，前端 JSON 解析必然失败
+    const headers = new Headers();
+    headers.set('User-Agent', request.headers.get('User-Agent') ||
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    headers.set('Accept', '*/*');
+    headers.set('Referer', u.origin + '/');
+    const range = request.headers.get('Range');
+    if (range) headers.set('Range', range);   // 需要代理视频分片时有用
+
+    let upstream;
+    try {
+      upstream = await fetch(u.href, { headers, redirect: 'follow' });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: String((e &amp;&amp; e.message) || e) }), {
+        status: 502,
+        headers: Object.assign({}, cors, { 'Content-Type': 'application/json; charset=utf-8' })
+      });
+    }
+
+    // 透传上游响应头（流式返回 body），跳过压缩/长度/Cookie 这类不能再透传的头
+    const out = new Headers(cors);
+    upstream.headers.forEach(function (v, k) {
+      const lk = k.toLowerCase();
+      if (['content-encoding', 'content-length', 'set-cookie', 'access-control-allow-origin'].indexOf(lk) &gt;= 0) return;
+      out.set(k, v);
+    });
+    if (!out.has('Content-Type')) out.set('Content-Type', 'application/json; charset=utf-8');
+    return new Response(upstream.body, { status: upstream.status, headers: out });
+  }
+};</pre>
+<p style="font-size:11px;color:var(--text-dim);margin-top:4px">部署后把地址按 <code>https://你的域名/?url=</code> 填到上面的输入框并保存即可。</p>
+</details>
 </div>
 <div class="form-group">
 <label>弹幕设置（播放页弹幕默认参数）</label>
@@ -304,13 +367,62 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="toast" id="toast"></div>
 
 <script>
-// ========== CORS 代理配置 ==========
-var CORS_PROXIES = [
-  function(url) { return 'https://cors.facg.top?url=' + encodeURIComponent(url); },
-  function(url) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); }
+// ========== CORS 代理配置（并行竞速 + 自动学习 + 自定义代理） ==========
+// prefix = 拼接前缀；enc = true 表示目标地址需要 encodeURIComponent；unwrap = 该代理返回 {"contents":"..."} 包装需要拆包
+var CORS_PROXY_DEFS = [
+  { name: 'allorigins',     prefix: 'https://api.allorigins.win/raw?url=', enc: true },
+  { name: 'allorigins-get', prefix: 'https://api.allorigins.win/get?url=', enc: true, unwrap: 'contents' },
+  { name: 'codetabs',       prefix: 'https://api.codetabs.com/v1/proxy/?quest=', enc: true },
+  { name: 'cors.lol',       prefix: 'https://api.cors.lol/?url=', enc: true },
+  { name: 'corsproxy.io',   prefix: 'https://corsproxy.io/?url=', enc: true },
+  { name: 'cors.sh',        prefix: 'https://proxy.cors.sh/', enc: false },
+  { name: 'corsfix',        prefix: 'https://proxy.corsfix.com/?', enc: false },
+  { name: 'jina',           prefix: 'https://r.jina.ai/', enc: false }
 ];
-var proxyMode = 'auto';
-var workingProxyIdx = 0;
+var DIRECT_PROXY_DEF = { name: '直连', direct: true, prefix: '', enc: false };
+var _CUSTOM_PROXY_KEY = 'vplayer_custom_proxy';
+var _PROXY_PREF_KEY = 'vplayer_proxy_pref';
+var PROBE_PATH = '?ac=videolist&wd=__vplayer_probe__';
+
+var proxyMode = 'auto';       // auto | direct | p:<代理标识>
+var workingProxyIdx = 0;      // 兼容旧代码
+
+function proxyIdOf(def) { return def.direct ? 'direct' : (def.custom ? 'custom' : def.name); }
+function customProxyTemplate() { try { return _lsGet(_CUSTOM_PROXY_KEY) || ''; } catch(e) { return ''; } }
+function customProxyDef() {
+  var tpl = customProxyTemplate();
+  if (!tpl) return null;
+  return { name: '自定义', custom: true, prefix: tpl, enc: false };
+}
+function proxyUrlOf(def, url) {
+  if (def.direct) return url;
+  if (def.custom) {
+    var tpl = def.prefix;
+    if (tpl.indexOf('{urlenc}') >= 0) return tpl.replace('{urlenc}', encodeURIComponent(url));
+    if (tpl.indexOf('{url}') >= 0) return tpl.replace('{url}', url);
+    return tpl + (/[=&?]$/.test(tpl) ? encodeURIComponent(url) : url);
+  }
+  return def.prefix + (def.enc ? encodeURIComponent(url) : url);
+}
+function allProxyDefs() {
+  var list = [DIRECT_PROXY_DEF];
+  var c = customProxyDef();
+  if (c) list.push(c);
+  for (var i = 0; i < CORS_PROXY_DEFS.length; i++) list.push(CORS_PROXY_DEFS[i]);
+  return list;
+}
+function findProxyDef(id) {
+  var list = allProxyDefs();
+  for (var i = 0; i < list.length; i++) { if (proxyIdOf(list[i]) === id) return list[i]; }
+  return null;
+}
+function forcedProxyDef() {
+  if (!proxyMode || proxyMode === 'auto') return null;
+  if (proxyMode === 'direct') return DIRECT_PROXY_DEF;
+  if (proxyMode.indexOf('p:') === 0) return findProxyDef(proxyMode.substring(2));
+  if (/^\d+$/.test(proxyMode)) return CORS_PROXY_DEFS[parseInt(proxyMode, 10)] || null;  // 兼容旧版数字配置
+  return null;
+}
 
 function _newAbortController() {
   try { return new AbortController(); } catch(e) { return null; }
@@ -353,38 +465,309 @@ function safeParseJSON(text) {
     throw new Error('JSON parse failed');
   }
 }
-function fetchJson(url, cb, errCb, timeout) {
-  timeout = timeout || 12000;
-  if (proxyMode === 'direct') { fetchDirect(url, cb, errCb, timeout); return; }
-  if (proxyMode === 'auto') fetchWithAutoProxy(url, 0, cb, errCb, timeout);
-  else fetchSingle(CORS_PROXIES[parseInt(proxyMode)](url), cb, errCb, timeout);
+// 单次请求：返回 { promise, abort }，可随时中止（代理竞速用）
+function _fetchText(target, timeout, unwrap) {
+  var ctrl = _newAbortController();
+  var done = false, timer = null;
+  var promise = new Promise(function(resolve, reject) {
+    var opts = {};
+    if (ctrl) opts.signal = ctrl.signal;
+    timer = setTimeout(function() {
+      if (done) return;
+      done = true;
+      if (ctrl) { try { ctrl.abort(); } catch(e) {} }
+      reject(new Error('timeout'));
+    }, timeout);
+    fetch(target, opts).then(function(r) {
+      if (!r.ok) { var he = new Error('HTTP ' + r.status); he.status = r.status; throw he; }
+      return r.text();
+    }).then(function(text) {
+      if (done) return;
+      done = true; clearTimeout(timer);
+      if (unwrap) {
+        try {
+          var o = JSON.parse(cleanResponseText(text));
+          if (o && typeof o[unwrap] === 'string') text = o[unwrap];
+        } catch(e) {}
+      }
+      resolve(text);
+    }).catch(function(e) {
+      if (done) return;
+      done = true; clearTimeout(timer);
+      reject(e);
+    });
+  });
+  return {
+    promise: promise,
+    abort: function() {
+      if (done) return;
+      done = true; clearTimeout(timer);
+      if (ctrl) { try { ctrl.abort(); } catch(e) {} }
+    }
+  };
 }
-function fetchWithAutoProxy(url, idx, cb, errCb, timeout) {
-  if (idx >= CORS_PROXIES.length) { fetchDirect(url, cb, errCb, timeout); return; }
-  var pu = CORS_PROXIES[idx](url);
-  _fetchCompat(pu, timeout, function(text) {
-    try { workingProxyIdx = idx; cb(safeParseJSON(text)); }
-    catch(e) { fetchWithAutoProxy(url, idx + 1, cb, errCb, timeout); }
-  }, function() {
-    fetchWithAutoProxy(url, idx + 1, cb, errCb, timeout);
+
+// ========== 代理管理：记录可用代理，失败自动重新竞速 ==========
+var ProxyManager = {
+  active: null,
+  preferredId: '',
+  _failedAt: {},
+  init: function() { try { this.preferredId = _lsGet(_PROXY_PREF_KEY) || ''; } catch(e) { this.preferredId = ''; } },
+  markGood: function(def) {
+    if (!def) return;
+    this.active = def;
+    this.preferredId = proxyIdOf(def);
+    delete this._failedAt[this.preferredId];
+    try { _lsSet(_PROXY_PREF_KEY, this.preferredId); } catch(e) {}
+  },
+  markBad: function(def) {
+    if (!def) return;
+    var id = proxyIdOf(def);
+    this._failedAt[id] = Date.now();
+    if (this.active && proxyIdOf(this.active) === id) this.active = null;
+  },
+  // 优先顺序：当前可用 → 上次记录 → 直连 → 其余；刚失败的排到最后
+  orderedDefs: function() {
+    var defs = allProxyDefs();
+    var head = [];
+    if (this.active) head.push(this.active);
+    var pref = this.preferredId ? findProxyDef(this.preferredId) : null;
+    if (pref) head.push(pref);
+    head.push(DIRECT_PROXY_DEF);
+    var out = [], later = [], seen = {};
+    var now = Date.now(), self = this;
+    head.concat(defs).forEach(function(d) {
+      var id = proxyIdOf(d);
+      if (seen[id]) return;
+      seen[id] = 1;
+      var badAt = self._failedAt[id];
+      if (badAt && (now - badAt) < 20000) later.push(d); else out.push(d);
+    });
+    return out.concat(later);
+  },
+  reset: function(clearPref) {
+    this.active = null;
+    this._failedAt = {};
+    if (clearPref) { this.preferredId = ''; try { localStorage.removeItem(_PROXY_PREF_KEY); } catch(e) {} }
+  }
+};
+
+// 并行竞速：所有候选同时/错峰发出，第一个能解析出 JSON 的胜出，其余中止
+function raceFetchJson(url, timeout) {
+  return new Promise(function(resolve, reject) {
+    var defs = ProxyManager.orderedDefs();
+    var handles = [], settled = false, remaining = defs.length, lastErr = null, globalTimer = null;
+    function finish(ok, payload) {
+      if (settled) return;
+      settled = true;
+      if (globalTimer) clearTimeout(globalTimer);
+      handles.forEach(function(h) { if (h) h.abort(); });
+      if (ok) resolve(payload); else reject(payload);
+    }
+    function fail(e) {
+      remaining--;
+      lastErr = e;
+      if (remaining <= 0) finish(false, lastErr || new Error('全部代理均不可用'));
+    }
+    defs.forEach(function(def, i) {
+      setTimeout(function() {
+        if (settled) return;
+        var h = _fetchText(proxyUrlOf(def, url), timeout, def.unwrap);
+        handles.push(h);
+        h.promise.then(function(text) {
+          if (settled) return;
+          var data;
+          try { data = safeParseJSON(text); }
+          catch(e) { fail(new Error(def.name + ' 返回内容无法解析')); return; }
+          ProxyManager.markGood(def);
+          finish(true, { data: data, proxy: def });
+        }, function(e) {
+          if (settled) return;
+          fail(e);
+        });
+      }, Math.min(i * 300, 1800));
+    });
+    globalTimer = setTimeout(function() { finish(false, lastErr || new Error('请求超时')); }, timeout + 6000);
   });
 }
-function fetchSingle(pu, cb, errCb, timeout) {
-  _fetchCompat(pu, timeout, function(text) {
-    try { cb(safeParseJSON(text)); } catch(e) { errCb(new Error('parse fail')); }
+
+function _fetchViaDef(def, url, timeout, cb, errCb) {
+  var h = _fetchText(proxyUrlOf(def, url), timeout, def.unwrap);
+  h.promise.then(function(text) {
+    var data;
+    try { data = safeParseJSON(text); }
+    catch(e) { errCb(new Error('parse fail')); return; }
+    ProxyManager.markGood(def);
+    cb(data);
   }, function(e) { errCb(e); });
 }
-function fetchDirect(url, cb, errCb, timeout) {
-  _fetchCompat(url, timeout, function(text) {
-    try { cb(safeParseJSON(text)); } catch(e) { errCb(new Error('parse fail')); }
-  }, function(e) { errCb(e); });
+
+function fetchJson(url, cb, errCb, timeout) {
+  timeout = timeout || 12000;
+  var forced = forcedProxyDef();
+  if (forced) { _fetchViaDef(forced, url, timeout, cb, errCb); return; }
+  var act = ProxyManager.active;
+  if (act) {
+    _fetchViaDef(act, url, timeout, cb, function() {
+      ProxyManager.markBad(act);
+      raceFetchJson(url, timeout).then(function(r) { cb(r.data); }, function(e) { errCb(e); });
+    });
+    return;
+  }
+  raceFetchJson(url, timeout).then(function(r) { cb(r.data); }, function(e) { errCb(e); });
 }
+
+// 兼容旧调用
+function _fetchCompat(url, timeout, cb, errCb) {
+  _fetchText(url, timeout).promise.then(cb, errCb);
+}
+
+// ========== 代理探测 / 诊断 ==========
+function probeProxyDef(def, timeout) {
+  var t0 = Date.now();
+  var target = proxyUrlOf(def, getHomeSourceUrl() + PROBE_PATH);
+  var h = _fetchText(target, timeout || 8000, def.unwrap);
+  return h.promise.then(function(text) {
+    var ms = Date.now() - t0;
+    try { safeParseJSON(text); return { def: def, ok: true, reachable: true, ms: ms }; }
+    catch(e) { return { def: def, ok: false, reachable: true, ms: ms, err: '内容不是JSON' }; }
+  }, function(e) {
+    var status = e && e.status;
+    return { def: def, ok: false, reachable: !!status, ms: Date.now() - t0, err: (e && e.message) || '不可用' };
+  });
+}
+function buildProxySelect() {
+  var sel = document.getElementById('proxySelect');
+  if (!sel) return;
+  if (proxyMode !== 'auto' && proxyMode !== 'direct' && String(proxyMode).indexOf('p:') !== 0) proxyMode = 'auto';
+  var html = '<option value="auto">自动选择（推荐·并行竞速）</option>';
+  html += '<option value="direct">直连（不代理）</option>';
+  if (customProxyDef()) html += '<option value="p:custom">自定义代理</option>';
+  CORS_PROXY_DEFS.forEach(function(d) {
+    html += '<option value="p:' + d.name + '">' + d.name + '</option>';
+  });
+  sel.innerHTML = html;
+  sel.value = proxyMode;
+  if (!sel.value) { sel.value = 'auto'; proxyMode = 'auto'; }
+  var ci = document.getElementById('customProxyInput');
+  if (ci) ci.value = customProxyTemplate();
+}
+
 function changeProxy() {
   var sel = document.getElementById('proxySelect');
+  if (!sel) return;
   proxyMode = sel.value;
   State.settings.proxyMode = proxyMode;
   Config.save(State.settings);
-  showToast('代理已切换：' + sel.options[sel.selectedIndex].text);
+  ProxyManager.reset(false);
+  var opt = sel.options[sel.selectedIndex];
+  showToast('代理已切换：' + (opt ? opt.text : (sel.value || '自动')));
+  if (proxyMode === 'auto') runProxyDiagnostics();
+}
+function saveCustomProxy() {
+  var input = document.getElementById('customProxyInput');
+  if (!input) return;
+  var val = input.value.trim();
+  if (val && val.indexOf('http') !== 0) val = 'https://' + val;
+  try {
+    if (val) { _lsSet(_CUSTOM_PROXY_KEY, val); }
+    else { localStorage.removeItem(_CUSTOM_PROXY_KEY); }
+  } catch(e) {}
+  ProxyManager.reset(false);
+  buildProxySelect();
+  showToast(val ? '已保存自定义代理' : '已清除自定义代理');
+  if (val) runProxyDiagnostics();
+}
+function openProxyDiagnostics() { openSettings(); runProxyDiagnostics(); }
+function resetProxyCache() {
+  ProxyManager.reset(true);
+  showToast('已清除代理记忆，重新探测中...');
+  runProxyDiagnostics();
+}
+function runProxyDiagnostics() {
+  var box = document.getElementById('proxyDiagResult');
+  if (!box) return;
+  var defs = allProxyDefs();
+  box.style.display = 'block';
+  box.innerHTML = '<div style="color:var(--text-dim)">正在并发测试 ' + defs.length + ' 个代理（最多约 9 秒）...</div>';
+  var results = [], finished = 0, rendered = false;
+  var timer = setTimeout(function() { renderDiag(); }, 9500);
+  function renderDiag() {
+    if (rendered) return;
+    rendered = true;
+    clearTimeout(timer);
+    results.sort(function(a, b) {
+      function rank(r) { return r.ok ? 0 : (r.reachable ? 1 : 2); }
+      if (rank(a) !== rank(b)) return rank(a) - rank(b);
+      return a.ms - b.ms;
+    });
+    var okList = results.filter(function(r) { return r.ok; });
+    var reachCount = results.filter(function(r) { return r.reachable; }).length;
+    if (okList.length > 0) ProxyManager.markGood(okList[0].def);
+    var h = '<div style="margin-bottom:6px;color:' + (okList.length ? 'var(--success)' : 'var(--danger)') + '">';
+    if (okList.length) h += '可用 ' + okList.length + '/' + defs.length + '，已选用 ' + escapeHtml(okList[0].def.name) + '（' + okList[0].ms + 'ms）';
+    else if (reachCount > 0) h += '公共代理均被拒绝或返回异常（' + reachCount + ' 个可达），请在下方填写自定义代理';
+    else h += '0/' + defs.length + ' 可达，网络可能无法访问公共代理，请在下方填写自定义代理';
+    h += '</div>';
+    results.forEach(function(r) {
+      var icon = r.ok ? '✅' : (r.reachable ? '⚠️' : '❌');
+      h += '<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-top:1px solid var(--border)">';
+      h += '<span>' + icon + ' ' + escapeHtml(r.def.name) + '</span>';
+      h += '<span style="color:var(--text-dim)">' + (r.ok ? r.ms + 'ms' : escapeHtml(r.err || '不可用')) + '</span></div>';
+    });
+    box.innerHTML = h;
+    showToast(okList.length ? ('代理可用：' + okList.slice(0, 3).map(function(r) { return r.def.name; }).join('、')) : '公共代理均不可用，请配置自定义代理');
+  }
+  defs.forEach(function(def) {
+    probeProxyDef(def, 8000).then(function(r) {
+      results.push(r);
+      finished++;
+      if (finished >= defs.length) renderDiag();
+      else if (!rendered) box.innerHTML = '<div style="color:var(--text-dim)">测试中... ' + finished + '/' + defs.length + '</div>';
+    });
+  });
+}
+function updateProxyStatusBadge() {
+  var status = document.getElementById('proxyStatus');
+  if (!status) return;
+  if (forcedProxyDef()) {
+    status.textContent = '✓ 已指定代理：' + forcedProxyDef().name;
+    setTimeout(function() { status.style.display = 'none'; }, 3000);
+    return;
+  }
+  status.style.display = '';
+  status.classList.remove('proxy-switching');
+  status.style.cursor = 'pointer';
+  status.onclick = openProxyDiagnostics;
+  status.textContent = '⟳ 正在检测可用代理...';
+  var results = [], total = allProxyDefs().length;
+  var settled = false;
+  var timer = setTimeout(finish, 9000);
+  allProxyDefs().forEach(function(def) {
+    probeProxyDef(def, 7000).then(function(r) {
+      results.push(r);
+      if (results.length >= total) finish();
+    });
+  });
+  function finish() {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
+    var ok = results.filter(function(r) { return r.ok; }).sort(function(a, b) { return a.ms - b.ms; });
+    var reachable = results.filter(function(r) { return r.reachable; }).length;
+    if (ok.length > 0) {
+      ProxyManager.markGood(ok[0].def);
+      status.textContent = '✓ 代理：' + ok[0].def.name + ' ' + ok[0].ms + 'ms';
+      status.classList.remove('proxy-switching');
+      setTimeout(function() { status.style.display = 'none'; }, 4000);
+    } else if (reachable > 0) {
+      status.textContent = '⚠ 代理被拒绝，点此诊断';
+      status.classList.add('proxy-switching');
+    } else {
+      status.textContent = '⚠ 代理不可达，点此诊断';
+      status.classList.add('proxy-switching');
+    }
+  }
 }
 
 // ========== 持久化存储（浏览器环境，直接使用 localStorage） ==========
@@ -839,7 +1222,8 @@ function resetAllViews() {
 }
 
 // 浏览器返回：由 popstate/hashchange 统一处理（见上方 _doBack）；页头返回按钮直接调用 goBack()
-(function() { var sel = document.getElementById('proxySelect'); if (sel) sel.value = proxyMode; })();
+ProxyManager.init();
+buildProxySelect();
 
 function showToast(msg, duration) {
   var t = document.getElementById('toast');
@@ -951,7 +1335,7 @@ function loadHomeTypes() {
       document.getElementById('homeList').innerHTML = '<div class="loading"><div class="spinner"></div><p style="margin-top:12px">正在重试... (' + _homeRetryCount + '/2)</p></div>';
       setTimeout(function() { loadHomeTypes(); }, 1500);
     } else {
-      document.getElementById('homeList').innerHTML = '<div class="empty"><div class="icon">😢</div><p>加载失败，请检查网络或代理</p><button class="btn btn-sm" style="margin-top:12px" onclick="_homeRetryCount=0;loadHomeTypes()">重试</button></div>';
+      document.getElementById('homeList').innerHTML = '<div class="empty"><div class="icon">😢</div><p>加载失败：数据源或代理不可用</p><button class="btn btn-sm" style="margin-top:12px" onclick="_homeRetryCount=0;loadHomeTypes()">重试</button> <button class="btn btn-sm btn-outline" style="margin-top:12px" onclick="openProxyDiagnostics()">代理诊断</button></div>';
     }
   }, 10000);
 }
@@ -1199,7 +1583,7 @@ function loadHomeVideos(typeId, page, isRefresh) {
   }, function(e) {
     State.homeLoading = false;
     if (page === 1) {
-      container.innerHTML = '<div class="empty"><div class="icon">😢</div><p>加载失败，请检查代理设置</p></div>';
+      container.innerHTML = '<div class="empty"><div class="icon">😢</div><p>加载失败：数据源或代理不可用</p><button class="btn btn-sm" style="margin-top:12px" onclick="loadHomeVideos(State.homeCurrentType,1,true)">重试</button> <button class="btn btn-sm btn-outline" style="margin-top:12px" onclick="openProxyDiagnostics()">代理诊断</button></div>';
     }
   }, 12000);
 }
@@ -2100,7 +2484,12 @@ function generatePlayerHtml(detail, epIdx, resumeTime) {
   html += 'var dmState = {enabled:true, opacity:0.8, fontSize:20, area:0, color:"#ffffff", delay:0, speed:120, comments:[], allComments:[], fetchedExternal:false};';
   html += 'try{var savedDm=JSON.parse(localStorage.getItem("vp_danmaku_settings")||"{}");if(savedDm.opacity)dmState.opacity=savedDm.opacity;if(savedDm.fontSize)dmState.fontSize=savedDm.fontSize;if(savedDm.area!==undefined)dmState.area=savedDm.area;if(savedDm.color)dmState.color=savedDm.color;if(savedDm.delay!==undefined)dmState.delay=savedDm.delay;if(savedDm.speed)dmState.speed=savedDm.speed;if(savedDm.enabled!==undefined)dmState.enabled=savedDm.enabled;}catch(e){}';
   html += 'try{var ps=JSON.parse(localStorage.getItem("vp_player_settings")||"{}");if(ps.speed)pState.speed=ps.speed;if(ps.isAutoPlay!==undefined)pState.isAutoPlay=ps.isAutoPlay;if(ps.aspectRatio)pState.aspectRatio=ps.aspectRatio;}catch(e){}';
-  html += 'var CORS_PROXIES = [function(u){return "https://proxy.cors.sh/"+u},function(u){return "https://api.allorigins.win/raw?url="+encodeURIComponent(u)},function(u){return "https://api.codetabs.com/v1/proxy/?quest="+encodeURIComponent(u)},function(u){return "https://api.cors.syrins.tech/?url="+encodeURIComponent(u)},function(u){return "https://corsproxy.io/?url="+encodeURIComponent(u)},function(u){return "https://corsproxy.dev/?url="+encodeURIComponent(u)}];';
+  html += 'var PXY_DEFS = ' + JSON.stringify(CORS_PROXY_DEFS).replace(/</g, '\\u003c') + ';';
+  html += 'var PXY_CUSTOM = ' + JSON.stringify(customProxyTemplate()).replace(/</g, '\\u003c') + ';';
+  html += 'function pxyUrl(d,u){if(d.direct)return u;if(d.custom){var t=d.prefix;if(t.indexOf("{urlenc}")>=0)return t.replace("{urlenc}",encodeURIComponent(u));if(t.indexOf("{url}")>=0)return t.replace("{url}",u);return t+(/[=&?]$/.test(t)?encodeURIComponent(u):u);}return d.prefix+(d.enc?encodeURIComponent(u):u);}';
+  html += 'function pxyList(withDirect){var a=[];if(withDirect)a.push({name:"直连",direct:true});if(PXY_CUSTOM)a.push({name:"自定义",custom:true,prefix:PXY_CUSTOM});return a.concat(PXY_DEFS.filter(function(d){return !d.unwrap;}));}';
+  html += 'function pxyFetchText(target,ms){return new Promise(function(res,rej){var done=false,t=setTimeout(function(){if(done)return;done=true;rej(new Error("timeout"));},ms);fetch(target).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.text();}).then(function(txt){if(done)return;done=true;clearTimeout(t);res(txt);}).catch(function(e){if(done)return;done=true;clearTimeout(t);rej(e);});});}';
+  html += 'function pxyRace(url,ms,validator){return new Promise(function(res,rej){var cands=pxyList(true),settled=false,pending=cands.length,lastErr=null;cands.forEach(function(d,i){setTimeout(function(){if(settled)return;pxyFetchText(pxyUrl(d,url),ms).then(function(txt){if(settled)return;if(validator&&!validator(txt)){pending--;lastErr=new Error("内容校验失败");if(pending<=0){settled=true;rej(lastErr);}return;}settled=true;res({proxy:d,url:pxyUrl(d,url),text:txt});},function(e){if(settled)return;pending--;lastErr=e;if(pending<=0){settled=true;rej(lastErr||new Error("all failed"));}});},Math.min(i*300,1500));});});}';
   html += 'var workingProxyIdx = 0;';
   html += 'function el(id){return document.getElementById(id);}';
   html += 'function showToast(msg,dur){try{parent.showToast(msg,dur||2000);}catch(e){}}';
@@ -2169,8 +2558,8 @@ function generatePlayerHtml(detail, epIdx, resumeTime) {
   html += '  dmState.fetchedExternal=false;dmState.comments=[];dmState.allComments=[];rebuildDanmaku([]);updateDanmakuCount();var dmBtn=el("dmFetchBtn");var dmStatus=el("dmFetchStatus");if(dmBtn){dmBtn.textContent="🔍 匹配弹幕";dmBtn.classList.remove("loading");dmBtn.style.display="";}if(dmStatus){dmStatus.textContent="";}if(dmState.enabled)tryFetchDanmaku();';
   html += '}';
 
-  // M3U8播放函数
-  html += 'function playM3u8(url,video,attempt){if(typeof Hls==="undefined"){video.src=url;video.muted=false;video.play().then(function(){tryResume();}).catch(function(){hideLoading();showToast("不支持此视频格式");});return;}if(attempt===0)tryDirect(url,video,function(ok){if(!ok){showToast("直连失败，切换代理中...");playM3u8(url,video,1);}});else if(attempt<=CORS_PROXIES.length)tryProxy(CORS_PROXIES[attempt-1](url),video,attempt-1,function(ok){if(!ok&&attempt<CORS_PROXIES.length)playM3u8(url,video,attempt+1);else if(!ok){hideLoading();showToast("所有代理均播放失败，请换源");}});else{hideLoading();showToast("播放失败，请换源");}}';
+  // M3U8播放函数：直连失败后并行探测可用代理，再用选中的代理播放
+  html += 'function playM3u8(url,video,attempt){if(typeof Hls==="undefined"){video.src=url;video.muted=false;video.play().then(function(){tryResume();}).catch(function(){hideLoading();showToast("不支持此视频格式");});return;}if(!attempt){tryDirect(url,video,function(ok){if(!ok){showToast("直连失败，正在探测可用代理...");playM3u8(url,video,1);}});return;}if(attempt===1){pxyRace(url,8000,function(txt){return txt&&txt.indexOf("#EXTM3U")>=0;}).then(function(hit){showToast("代理可用："+hit.proxy.name);tryProxy(hit.url,video,0,function(ok){if(!ok){hideLoading();showToast("代理播放失败，请换源");}});},function(){hideLoading();showToast("所有代理均播放失败，请换源");});return;}hideLoading();showToast("播放失败，请换源");}';
   html += 'function tryDirect(url,video,cb){var fail=false,t=setTimeout(function(){if(!fail){fail=true;cb(false);}},15000);var hs=false;try{hs=(typeof Hls!=="undefined"&&Hls.isSupported());}catch(e){}if(hs){hls=new Hls({maxBufferLength:60,maxMaxBufferLength:120,enableWorker:true,lowLatencyMode:false,startLevel:-1,maxBufferHole:0.5,stretchShortVideoTrack:true,backBufferLength:60});hls.loadSource(url);hls.attachMedia(video);hls.on(Hls.Events.MANIFEST_PARSED,function(){clearTimeout(t);if(!fail){fail=true;video.play().then(function(){tryResume();}).catch(function(){showControls();showToast("点击播放按钮开始",2000);});cb(true);}});hls.on(Hls.Events.ERROR,function(e,d){if(d.fatal&&!fail){clearTimeout(t);fail=true;if(hls){hls.destroy();hls=null;}cb(false);}else if(d.fatal&&fail){if(hls){try{hls.destroy();}catch(e2){}hls=null;}}});}else if(video.canPlayType("application/vnd.apple.mpegurl")){video.src=url;video.muted=false;video.play().then(function(){clearTimeout(t);if(!fail){fail=true;tryResume();cb(true);}}).catch(function(){clearTimeout(t);if(!fail){fail=true;showControls();cb(true);}});}else{clearTimeout(t);cb(false);}}';
   html += 'function tryProxy(pu,video,idx,cb){var fail=false,t=setTimeout(function(){if(!fail){fail=true;cb(false);}},20000);var hs=false;try{hs=(typeof Hls!=="undefined"&&Hls.isSupported());}catch(e){}if(hs){hls=new Hls({maxBufferLength:60,maxMaxBufferLength:120,enableWorker:true,lowLatencyMode:false,startLevel:-1,maxBufferHole:0.5,stretchShortVideoTrack:true,backBufferLength:60,xhrSetup:function(xhr){if(idx===0)xhr.withCredentials=false;}});hls.loadSource(pu);hls.attachMedia(video);hls.on(Hls.Events.MANIFEST_PARSED,function(){clearTimeout(t);if(!fail){fail=true;workingProxyIdx=idx;video.play().then(function(){tryResume();}).catch(function(){showControls();showToast("点击播放按钮开始",2000);});cb(true);}});hls.on(Hls.Events.ERROR,function(e,d){if(d.fatal&&!fail){clearTimeout(t);fail=true;if(hls){hls.destroy();hls=null;}cb(false);}else if(d.fatal&&fail){if(hls){try{hls.destroy();}catch(e2){}hls=null;}}});}else if(video.canPlayType("application/vnd.apple.mpegurl")){video.src=pu;video.play().then(function(){clearTimeout(t);if(!fail){fail=true;tryResume();cb(true);}}).catch(function(){clearTimeout(t);if(!fail){fail=true;showControls();cb(true);}});}else{clearTimeout(t);cb(false);}}';
 
@@ -2280,8 +2669,7 @@ function generatePlayerHtml(detail, epIdx, resumeTime) {
   html += 'try{DM_CUSTOM_API=localStorage.getItem("vp_dm_custom_api")||"";}catch(e){}';
   html += 'var DM_WORKING_BASE="";';
   html += 'function dmFetchTimeout(url,ms){return Promise.race([fetch(url).then(function(r){if(!r.ok)throw new Error("status:"+r.status);return r.json();}),new Promise(function(_,rej){setTimeout(function(){rej(new Error("timeout"));},ms);})]);}';
-  html += 'var DM_CORS_PROXIES=[function(u){return"https://proxy.cors.sh/"+u},function(u){return"https://api.allorigins.win/raw?url="+encodeURIComponent(u)},function(u){return"https://api.cors.syrins.tech/?url="+encodeURIComponent(u)},function(u){return"https://corsproxy.io/?url="+encodeURIComponent(u)}];';
-  html += 'function dmFetchWithProxy(url,ms,idx){if(idx===undefined)idx=0;return dmFetchTimeout(url,ms).catch(function(e){if(idx<DM_CORS_PROXIES.length){return dmFetchTimeout(DM_CORS_PROXIES[idx](url),ms+5000).catch(function(){return dmFetchWithProxy(url,ms,idx+1);});}throw e;});}';
+  html += 'function dmFetchWithProxy(url,ms,idx){var cands=pxyList(true),settled=false,pending=cands.length,lastErr=null;return new Promise(function(res,rej){cands.forEach(function(d,i){setTimeout(function(){if(settled)return;dmFetchTimeout(pxyUrl(d,url),ms+3000).then(function(j){if(settled)return;settled=true;res(j);},function(e){if(settled)return;pending--;lastErr=e;if(pending<=0){settled=true;rej(lastErr||new Error("all failed"));}});},Math.min(i*300,1500));});setTimeout(function(){if(!settled){settled=true;rej(lastErr||new Error("timeout"));}},ms+9000);});}';
   html += 'function dmGetCache(key){try{var raw=localStorage.getItem(key);if(!raw)return null;var d=JSON.parse(raw);if(Date.now()-d.t>7*24*3600*1000)return null;return d.v;}catch(e){return null;}}';
   html += 'function dmSetCache(key,val){try{localStorage.setItem(key,JSON.stringify({t:Date.now(),v:val}));}catch(e){}}';
   html += 'function dmTrySearch(keyword,idx){var cacheKey="vp_dm_search_"+keyword;var cached=dmGetCache(cacheKey);if(cached)return Promise.resolve(cached);if(idx===undefined)idx=0;var bases=DM_CUSTOM_API?[DM_CUSTOM_API]:DM_API_BASES;if(idx>=bases.length)return Promise.reject(new Error("all mirrors failed"));var base=bases[idx];var url=base+"/api/v2/search/anime?keyword="+encodeURIComponent(keyword);return dmFetchWithProxy(url,10000,0).then(function(data){if(data&&data.success&&data.animes&&data.animes.length>0){DM_WORKING_BASE=base;dmSetCache(cacheKey,data);return data;}throw new Error("no results");}).catch(function(){return dmTrySearch(keyword,idx+1);});}';
@@ -2846,7 +3234,7 @@ function cfgDmSaveCustomApi() {
 function openSettings() {
   renderSourceList();
   renderHomeSourceSelect();
-  var sel = document.getElementById('proxySelect'); if (sel) sel.value = proxyMode;
+  buildProxySelect();
   initDmConfigUI();
   document.getElementById('settingsModal').classList.add('show');
   pushView('settings');
@@ -2970,7 +3358,8 @@ function importData(event) {
       } catch(e) {}
       Config.save(State.settings);
       proxyMode = State.settings.proxyMode;
-      var sel = document.getElementById('proxySelect'); if (sel) sel.value = proxyMode;
+      ProxyManager.reset(false);
+      buildProxySelect();
       renderSourceList();
       renderHomeSourceSelect();
       showToast('数据导入成功');
@@ -3128,19 +3517,7 @@ document.addEventListener('touchend', function(e) {
   }
 }, {passive: false});
 
-(function() {
-  var status = document.getElementById('proxyStatus');
-  function _hideStatus() { if (status) status.style.display = 'none'; }
-  _fetchCompat(CORS_PROXIES[0]('https://cj.ffzyapi.com/api.php/provide/vod?ac=list'), 8000,
-    function(text) {
-      if (status) { status.textContent = '✓ 云代理已连接'; status.classList.remove('proxy-switching'); }
-      setTimeout(_hideStatus, 3000);
-    },
-    function() {
-      _hideStatus();
-    }
-  );
-})();
+updateProxyStatusBadge();
 
 function _flushData() {
   try {
@@ -3154,9 +3531,6 @@ document.addEventListener('visibilitychange', function() {
   if (document.hidden || document.webkitHidden) _flushData();
 });
 setInterval(_flushData, 60000);
-
-var _proxySel = document.getElementById('proxySelect');
-if (_proxySel) _proxySel.value = proxyMode;
 
 // 调试入口：直接用测试流打开播放器
 function _testPlayDirect() {
@@ -3178,8 +3552,7 @@ Config.loadAsync(function(idbSettings) {
     idbSettings.proxyMode = proxyMode;
     State.settings = idbSettings;
     Config.save(State.settings);
-    var curSel = document.getElementById('proxySelect');
-    if (curSel) curSel.value = proxyMode;
+    buildProxySelect();
   } else {
     Config.save(State.settings);
   }
