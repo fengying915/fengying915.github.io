@@ -230,10 +230,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div id="proxyDiagResult" style="display:none;margin-top:8px;font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px"></div>
 </div>
 <div class="form-group">
-<label>自定义代理（推荐：自建 Cloudflare Worker / 私有代理）</label>
-<input class="form-input" id="customProxyInput" placeholder="https://你的代理域名/?url=" style="margin-bottom:8px">
+<label>自定义代理（可保存多个，推荐自建 Cloudflare Worker / 私有代理）</label>
+<input class="form-input" id="customProxyName" placeholder="代理名称（如：我的Worker）" style="margin-bottom:6px">
+<input class="form-input" id="customProxyInput" placeholder="代理地址：https://你的代理域名/?url=" style="margin-bottom:8px">
 <button type="button" class="btn btn-sm" style="width:100%" onclick="saveCustomProxy()">保存自定义代理</button>
-<p style="font-size:11px;color:var(--text-dim);margin-top:4px">填写规则：含 <code>{url}</code> 替换为原始地址，含 <code>{urlenc}</code> 替换为URL编码地址；都不含则直接拼在末尾（前缀以 = ? &amp; 结尾时自动URL编码）。公共代理全部失效时，自建一个即可彻底解决。</p>
+<div id="customProxyList" style="margin-top:8px"></div>
+<p style="font-size:11px;color:var(--text-dim);margin-top:8px">填写规则：含 <code>{url}</code> 替换为原始地址，含 <code>{urlenc}</code> 替换为URL编码地址；都不含则直接拼在末尾（前缀以 = ? &amp; 结尾时自动URL编码）。公共代理全部失效时，自建一个即可彻底解决。</p>
 <details style="margin-top:8px">
 <summary style="font-size:12px;color:var(--primary);cursor:pointer">公共代理全失效？点此查看自建代理模板（Cloudflare Worker，免费）</summary>
 <pre style="font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-all;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:6px;font-family:monospace">export default {
@@ -367,32 +369,43 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <div class="toast" id="toast"></div>
 
 <script>
-// ========== CORS 代理配置（并行竞速 + 自动学习 + 自定义代理） ==========
+// ========== CORS 代理配置（并行竞速 + 自动学习 + 多自定义代理） ==========
 // prefix = 拼接前缀；enc = true 表示目标地址需要 encodeURIComponent；unwrap = 该代理返回 {"contents":"..."} 包装需要拆包
 var CORS_PROXY_DEFS = [
-  { name: 'allorigins',     prefix: 'https://api.allorigins.win/raw?url=', enc: true },
-  { name: 'allorigins-get', prefix: 'https://api.allorigins.win/get?url=', enc: true, unwrap: 'contents' },
-  { name: 'codetabs',       prefix: 'https://api.codetabs.com/v1/proxy/?quest=', enc: true },
-  { name: 'cors.lol',       prefix: 'https://api.cors.lol/?url=', enc: true },
-  { name: 'corsproxy.io',   prefix: 'https://corsproxy.io/?key=78a3874d&url=', enc: true },
-  { name: 'cors.sh',        prefix: 'https://proxy.cors.sh/', enc: true },
-  { name: 'corsfix',        prefix: 'https://proxy.corsfix.com/?', enc: true },
-  { name: 'jina',           prefix: 'https://r.jina.ai/', enc: true }
+  { name: 'corsproxy.io', prefix: 'https://corsproxy.io/?key=78a3874d&url=', enc: true },
+  { name: 'allorigins', prefix: 'https://api.allorigins.win/raw?url=', enc: true },
+  { name: 'codetabs', prefix: 'https://api.codetabs.com/v1/proxy/?quest=', enc: true }
 ];
 var DIRECT_PROXY_DEF = { name: '直连', direct: true, prefix: '', enc: false };
-var _CUSTOM_PROXY_KEY = 'vplayer_custom_proxy';
+var _CUSTOM_PROXIES_KEY = 'vplayer_custom_proxies';   // [{id,name,tpl}]
+var _LEGACY_CUSTOM_KEY = 'vplayer_custom_proxy';      // 旧版单个自定义代理（字符串）
 var _PROXY_PREF_KEY = 'vplayer_proxy_pref';
 var PROBE_PATH = '?ac=videolist&wd=__vplayer_probe__';
 
 var proxyMode = 'auto';       // auto | direct | p:<代理标识>
-var workingProxyIdx = 0;      // 兼容旧代码
 
-function proxyIdOf(def) { return def.direct ? 'direct' : (def.custom ? 'custom' : def.name); }
-function customProxyTemplate() { try { return _lsGet(_CUSTOM_PROXY_KEY) || ''; } catch(e) { return ''; } }
-function customProxyDef() {
-  var tpl = customProxyTemplate();
-  if (!tpl) return null;
-  return { name: '自定义', custom: true, prefix: tpl, enc: false };
+function proxyIdOf(def) { return def.direct ? 'direct' : (def.custom ? def.customId : def.name); }
+var _customProxiesCache = null;
+function customProxyList() {
+  if (_customProxiesCache) return _customProxiesCache;
+  var list = [];
+  try { list = JSON.parse(_lsGet(_CUSTOM_PROXIES_KEY) || '[]') || []; } catch(e) { list = []; }
+  if (!list.length) {
+    var legacy = '';
+    try { legacy = _lsGet(_LEGACY_CUSTOM_KEY) || ''; } catch(e) {}
+    if (legacy) list = [{ id: 'custom_legacy', name: '自定义', tpl: legacy }];
+  }
+  _customProxiesCache = list.filter(function(p) { return p && p.tpl; });
+  return _customProxiesCache;
+}
+function saveCustomProxyList(list) {
+  _customProxiesCache = list;
+  try { _lsSet(_CUSTOM_PROXIES_KEY, JSON.stringify(list)); } catch(e) {}
+}
+function customProxyDefs() {
+  return customProxyList().map(function(p) {
+    return { name: p.name || '自定义', custom: true, customId: p.id, prefix: p.tpl, enc: false };
+  });
 }
 function proxyUrlOf(def, url) {
   if (def.direct) return url;
@@ -405,11 +418,7 @@ function proxyUrlOf(def, url) {
   return def.prefix + (def.enc ? encodeURIComponent(url) : url);
 }
 function allProxyDefs() {
-  var list = [DIRECT_PROXY_DEF];
-  var c = customProxyDef();
-  if (c) list.push(c);
-  for (var i = 0; i < CORS_PROXY_DEFS.length; i++) list.push(CORS_PROXY_DEFS[i]);
-  return list;
+  return [DIRECT_PROXY_DEF].concat(customProxyDefs(), CORS_PROXY_DEFS);
 }
 function findProxyDef(id) {
   var list = allProxyDefs();
@@ -426,30 +435,6 @@ function forcedProxyDef() {
 
 function _newAbortController() {
   try { return new AbortController(); } catch(e) { return null; }
-}
-
-function _fetchCompat(url, timeout, cb, errCb) {
-  var done = false;
-  function _cb(text) { if (!done) { done = true; cb(text); } }
-  function _err(e) { if (!done) { done = true; errCb(e); } }
-
-  var ctrl = _newAbortController();
-  var t = setTimeout(function() {
-    if (ctrl) { try { ctrl.abort(); } catch(e) {} }
-    _err(new Error('timeout'));
-  }, timeout);
-  var opts = {};
-  if (ctrl) opts.signal = ctrl.signal;
-  fetch(url, opts).then(function(r) {
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    return r.text();
-  }).then(function(text) {
-    clearTimeout(t);
-    _cb(text);
-  }).catch(function(e) {
-    clearTimeout(t);
-    _err(e);
-  });
 }
 
 function cleanResponseText(text) {
@@ -617,11 +602,6 @@ function fetchJson(url, cb, errCb, timeout) {
   raceFetchJson(url, timeout).then(function(r) { cb(r.data); }, function(e) { errCb(e); });
 }
 
-// 兼容旧调用
-function _fetchCompat(url, timeout, cb, errCb) {
-  _fetchText(url, timeout).promise.then(cb, errCb);
-}
-
 // ========== 代理探测 / 诊断 ==========
 function probeProxyDef(def, timeout) {
   var t0 = Date.now();
@@ -642,15 +622,16 @@ function buildProxySelect() {
   if (proxyMode !== 'auto' && proxyMode !== 'direct' && String(proxyMode).indexOf('p:') !== 0) proxyMode = 'auto';
   var html = '<option value="auto">自动选择（推荐·并行竞速）</option>';
   html += '<option value="direct">直连（不代理）</option>';
-  if (customProxyDef()) html += '<option value="p:custom">自定义代理</option>';
+  customProxyDefs().forEach(function(d) {
+    html += '<option value="p:' + d.customId + '">' + escapeHtml(d.name) + '（自定义）</option>';
+  });
   CORS_PROXY_DEFS.forEach(function(d) {
     html += '<option value="p:' + d.name + '">' + d.name + '</option>';
   });
   sel.innerHTML = html;
   sel.value = proxyMode;
   if (!sel.value) { sel.value = 'auto'; proxyMode = 'auto'; }
-  var ci = document.getElementById('customProxyInput');
-  if (ci) ci.value = customProxyTemplate();
+  renderCustomProxyList();
 }
 
 function changeProxy() {
@@ -665,18 +646,52 @@ function changeProxy() {
   if (proxyMode === 'auto') runProxyDiagnostics();
 }
 function saveCustomProxy() {
+  var nameInput = document.getElementById('customProxyName');
   var input = document.getElementById('customProxyInput');
   if (!input) return;
+  var name = nameInput ? nameInput.value.trim() : '';
   var val = input.value.trim();
-  if (val && val.indexOf('http') !== 0) val = 'https://' + val;
-  try {
-    if (val) { _lsSet(_CUSTOM_PROXY_KEY, val); }
-    else { localStorage.removeItem(_CUSTOM_PROXY_KEY); }
-  } catch(e) {}
+  if (!val) { showToast('请填写代理地址'); return; }
+  if (!name) { showToast('请填写代理名称（便于在列表中区分）'); return; }
+  if (val.indexOf('http') !== 0) val = 'https://' + val;
+  var list = customProxyList().filter(function(p) { return p.tpl !== val; });
+  list.push({ id: 'c' + Date.now().toString(36), name: name, tpl: val });
+  saveCustomProxyList(list);
   ProxyManager.reset(false);
   buildProxySelect();
-  showToast(val ? '已保存自定义代理' : '已清除自定义代理');
-  if (val) runProxyDiagnostics();
+  nameInput.value = ''; input.value = '';
+  showToast('已保存自定义代理：' + name);
+  runProxyDiagnostics();
+}
+function removeCustomProxy(id) {
+  var list = customProxyList().filter(function(p) { return p.id !== id; });
+  saveCustomProxyList(list);
+  if (proxyMode === 'p:' + id) {
+    proxyMode = 'auto';
+    State.settings.proxyMode = 'auto';
+    Config.save(State.settings);
+  }
+  ProxyManager.reset(false);
+  buildProxySelect();
+  showToast('已删除自定义代理');
+}
+function renderCustomProxyList() {
+  var box = document.getElementById('customProxyList');
+  if (!box) return;
+  var list = customProxyList();
+  if (!list.length) { box.innerHTML = ''; return; }
+  var h = '';
+  list.forEach(function(p) {
+    h += '<div class="source-list-item" style="margin-bottom:6px"><div style="flex:1;min-width:0"><div class="name">' + escapeHtml(p.name) + '</div><div class="url">' + escapeHtml(p.tpl) + '</div></div><div class="actions"><button type="button" class="btn btn-sm" onclick="useCustomProxy(\'' + p.id + '\')">使用</button><button type="button" class="btn btn-sm btn-outline" onclick="removeCustomProxy(\'' + p.id + '\')">删除</button></div></div>';
+  });
+  box.innerHTML = h;
+}
+function useCustomProxy(id) {
+  var sel = document.getElementById('proxySelect');
+  if (!sel) return;
+  sel.value = 'p:' + id;
+  if (sel.value !== 'p:' + id) { showToast('该代理不存在'); return; }
+  changeProxy();
 }
 function openProxyDiagnostics() { openSettings(); runProxyDiagnostics(); }
 function resetProxyCache() {
@@ -706,8 +721,8 @@ function runProxyDiagnostics() {
     if (okList.length > 0) ProxyManager.markGood(okList[0].def);
     var h = '<div style="margin-bottom:6px;color:' + (okList.length ? 'var(--success)' : 'var(--danger)') + '">';
     if (okList.length) h += '可用 ' + okList.length + '/' + defs.length + '，已选用 ' + escapeHtml(okList[0].def.name) + '（' + okList[0].ms + 'ms）';
-    else if (reachCount > 0) h += '公共代理均被拒绝或返回异常（' + reachCount + ' 个可达），请在下方填写自定义代理';
-    else h += '0/' + defs.length + ' 可达，网络可能无法访问公共代理，请在下方填写自定义代理';
+    else if (reachCount > 0) h += '可用代理均被拒绝或返回异常（' + reachCount + ' 个可达），请在下方填写自定义代理';
+    else h += '0/' + defs.length + ' 可达，网络可能无法访问公共代理，建议自建代理（见下方模板）';
     h += '</div>';
     results.forEach(function(r) {
       var icon = r.ok ? '✅' : (r.reachable ? '⚠️' : '❌');
@@ -716,7 +731,7 @@ function runProxyDiagnostics() {
       h += '<span style="color:var(--text-dim)">' + (r.ok ? r.ms + 'ms' : escapeHtml(r.err || '不可用')) + '</span></div>';
     });
     box.innerHTML = h;
-    showToast(okList.length ? ('代理可用：' + okList.slice(0, 3).map(function(r) { return r.def.name; }).join('、')) : '公共代理均不可用，请配置自定义代理');
+    showToast(okList.length ? ('代理可用：' + okList.slice(0, 3).map(function(r) { return r.def.name; }).join('、')) : '所有代理均不可用，建议自建代理');
   }
   defs.forEach(function(def) {
     probeProxyDef(def, 8000).then(function(r) {
@@ -2485,12 +2500,11 @@ function generatePlayerHtml(detail, epIdx, resumeTime) {
   html += 'try{var savedDm=JSON.parse(localStorage.getItem("vp_danmaku_settings")||"{}");if(savedDm.opacity)dmState.opacity=savedDm.opacity;if(savedDm.fontSize)dmState.fontSize=savedDm.fontSize;if(savedDm.area!==undefined)dmState.area=savedDm.area;if(savedDm.color)dmState.color=savedDm.color;if(savedDm.delay!==undefined)dmState.delay=savedDm.delay;if(savedDm.speed)dmState.speed=savedDm.speed;if(savedDm.enabled!==undefined)dmState.enabled=savedDm.enabled;}catch(e){}';
   html += 'try{var ps=JSON.parse(localStorage.getItem("vp_player_settings")||"{}");if(ps.speed)pState.speed=ps.speed;if(ps.isAutoPlay!==undefined)pState.isAutoPlay=ps.isAutoPlay;if(ps.aspectRatio)pState.aspectRatio=ps.aspectRatio;}catch(e){}';
   html += 'var PXY_DEFS = ' + JSON.stringify(CORS_PROXY_DEFS).replace(/</g, '\\u003c') + ';';
-  html += 'var PXY_CUSTOM = ' + JSON.stringify(customProxyTemplate()).replace(/</g, '\\u003c') + ';';
+  html += 'var PXY_CUSTOMS = ' + JSON.stringify(customProxyList()).replace(/</g, '\\u003c') + ';';
   html += 'function pxyUrl(d,u){if(d.direct)return u;if(d.custom){var t=d.prefix;if(t.indexOf("{urlenc}")>=0)return t.replace("{urlenc}",encodeURIComponent(u));if(t.indexOf("{url}")>=0)return t.replace("{url}",u);return t+(/[=&?]$/.test(t)?encodeURIComponent(u):u);}return d.prefix+(d.enc?encodeURIComponent(u):u);}';
-  html += 'function pxyList(withDirect){var a=[];if(withDirect)a.push({name:"直连",direct:true});if(PXY_CUSTOM)a.push({name:"自定义",custom:true,prefix:PXY_CUSTOM});return a.concat(PXY_DEFS.filter(function(d){return !d.unwrap;}));}';
+  html += 'function pxyList(withDirect){var a=[];if(withDirect)a.push({name:"直连",direct:true});PXY_CUSTOMS.forEach(function(p){a.push({name:p.name||"自定义",custom:true,prefix:p.tpl});});return a.concat(PXY_DEFS.filter(function(d){return !d.unwrap;}));}';
   html += 'function pxyFetchText(target,ms){return new Promise(function(res,rej){var done=false,t=setTimeout(function(){if(done)return;done=true;rej(new Error("timeout"));},ms);fetch(target).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.text();}).then(function(txt){if(done)return;done=true;clearTimeout(t);res(txt);}).catch(function(e){if(done)return;done=true;clearTimeout(t);rej(e);});});}';
   html += 'function pxyRace(url,ms,validator){return new Promise(function(res,rej){var cands=pxyList(true),settled=false,pending=cands.length,lastErr=null;cands.forEach(function(d,i){setTimeout(function(){if(settled)return;pxyFetchText(pxyUrl(d,url),ms).then(function(txt){if(settled)return;if(validator&&!validator(txt)){pending--;lastErr=new Error("内容校验失败");if(pending<=0){settled=true;rej(lastErr);}return;}settled=true;res({proxy:d,url:pxyUrl(d,url),text:txt});},function(e){if(settled)return;pending--;lastErr=e;if(pending<=0){settled=true;rej(lastErr||new Error("all failed"));}});},Math.min(i*300,1500));});});}';
-  html += 'var workingProxyIdx = 0;';
   html += 'function el(id){return document.getElementById(id);}';
   html += 'function showToast(msg,dur){try{parent.showToast(msg,dur||2000);}catch(e){}}';
   html += 'function updateFavIcon(){var icon=el("favIcon");if(!icon)return;var isFav=false;try{isFav=parent.isFavorited(detailData.vod_name);}catch(e){}if(isFav){icon.setAttribute("fill","#FFD600");icon.setAttribute("stroke","#FFD600");}else{icon.setAttribute("fill","none");icon.setAttribute("stroke","#fff");}}';
@@ -2561,7 +2575,7 @@ function generatePlayerHtml(detail, epIdx, resumeTime) {
   // M3U8播放函数：直连失败后并行探测可用代理，再用选中的代理播放
   html += 'function playM3u8(url,video,attempt){if(typeof Hls==="undefined"){video.src=url;video.muted=false;video.play().then(function(){tryResume();}).catch(function(){hideLoading();showToast("不支持此视频格式");});return;}if(!attempt){tryDirect(url,video,function(ok){if(!ok){showToast("直连失败，正在探测可用代理...");playM3u8(url,video,1);}});return;}if(attempt===1){pxyRace(url,8000,function(txt){return txt&&txt.indexOf("#EXTM3U")>=0;}).then(function(hit){showToast("代理可用："+hit.proxy.name);tryProxy(hit.url,video,0,function(ok){if(!ok){hideLoading();showToast("代理播放失败，请换源");}});},function(){hideLoading();showToast("所有代理均播放失败，请换源");});return;}hideLoading();showToast("播放失败，请换源");}';
   html += 'function tryDirect(url,video,cb){var fail=false,t=setTimeout(function(){if(!fail){fail=true;cb(false);}},15000);var hs=false;try{hs=(typeof Hls!=="undefined"&&Hls.isSupported());}catch(e){}if(hs){hls=new Hls({maxBufferLength:60,maxMaxBufferLength:120,enableWorker:true,lowLatencyMode:false,startLevel:-1,maxBufferHole:0.5,stretchShortVideoTrack:true,backBufferLength:60});hls.loadSource(url);hls.attachMedia(video);hls.on(Hls.Events.MANIFEST_PARSED,function(){clearTimeout(t);if(!fail){fail=true;video.play().then(function(){tryResume();}).catch(function(){showControls();showToast("点击播放按钮开始",2000);});cb(true);}});hls.on(Hls.Events.ERROR,function(e,d){if(d.fatal&&!fail){clearTimeout(t);fail=true;if(hls){hls.destroy();hls=null;}cb(false);}else if(d.fatal&&fail){if(hls){try{hls.destroy();}catch(e2){}hls=null;}}});}else if(video.canPlayType("application/vnd.apple.mpegurl")){video.src=url;video.muted=false;video.play().then(function(){clearTimeout(t);if(!fail){fail=true;tryResume();cb(true);}}).catch(function(){clearTimeout(t);if(!fail){fail=true;showControls();cb(true);}});}else{clearTimeout(t);cb(false);}}';
-  html += 'function tryProxy(pu,video,idx,cb){var fail=false,t=setTimeout(function(){if(!fail){fail=true;cb(false);}},20000);var hs=false;try{hs=(typeof Hls!=="undefined"&&Hls.isSupported());}catch(e){}if(hs){hls=new Hls({maxBufferLength:60,maxMaxBufferLength:120,enableWorker:true,lowLatencyMode:false,startLevel:-1,maxBufferHole:0.5,stretchShortVideoTrack:true,backBufferLength:60,xhrSetup:function(xhr){if(idx===0)xhr.withCredentials=false;}});hls.loadSource(pu);hls.attachMedia(video);hls.on(Hls.Events.MANIFEST_PARSED,function(){clearTimeout(t);if(!fail){fail=true;workingProxyIdx=idx;video.play().then(function(){tryResume();}).catch(function(){showControls();showToast("点击播放按钮开始",2000);});cb(true);}});hls.on(Hls.Events.ERROR,function(e,d){if(d.fatal&&!fail){clearTimeout(t);fail=true;if(hls){hls.destroy();hls=null;}cb(false);}else if(d.fatal&&fail){if(hls){try{hls.destroy();}catch(e2){}hls=null;}}});}else if(video.canPlayType("application/vnd.apple.mpegurl")){video.src=pu;video.play().then(function(){clearTimeout(t);if(!fail){fail=true;tryResume();cb(true);}}).catch(function(){clearTimeout(t);if(!fail){fail=true;showControls();cb(true);}});}else{clearTimeout(t);cb(false);}}';
+  html += 'function tryProxy(pu,video,idx,cb){var fail=false,t=setTimeout(function(){if(!fail){fail=true;cb(false);}},20000);var hs=false;try{hs=(typeof Hls!=="undefined"&&Hls.isSupported());}catch(e){}if(hs){hls=new Hls({maxBufferLength:60,maxMaxBufferLength:120,enableWorker:true,lowLatencyMode:false,startLevel:-1,maxBufferHole:0.5,stretchShortVideoTrack:true,backBufferLength:60,xhrSetup:function(xhr){if(idx===0)xhr.withCredentials=false;}});hls.loadSource(pu);hls.attachMedia(video);hls.on(Hls.Events.MANIFEST_PARSED,function(){clearTimeout(t);if(!fail){fail=true;video.play().then(function(){tryResume();}).catch(function(){showControls();showToast("点击播放按钮开始",2000);});cb(true);}});hls.on(Hls.Events.ERROR,function(e,d){if(d.fatal&&!fail){clearTimeout(t);fail=true;if(hls){hls.destroy();hls=null;}cb(false);}else if(d.fatal&&fail){if(hls){try{hls.destroy();}catch(e2){}hls=null;}}});}else if(video.canPlayType("application/vnd.apple.mpegurl")){video.src=pu;video.play().then(function(){clearTimeout(t);if(!fail){fail=true;tryResume();cb(true);}}).catch(function(){clearTimeout(t);if(!fail){fail=true;showControls();cb(true);}});}else{clearTimeout(t);cb(false);}}';
 
   // 进度恢复 / 跳过标记
   html += 'function tryResume(){var v=el("videoPlayer");if(v._resumeTime>0){var t=v._resumeTime;v._resumeTime=0;setTimeout(function(){if(v.duration&&isFinite(v.duration)&&v.duration>t){v.currentTime=t;showToast("已恢复上次播放进度",1500);}},500);}}';
@@ -2862,7 +2876,7 @@ function renderSearchResults(keyword) {
   var firstSource = sourceNames[0];
   sourceNames.forEach(function(name, i) {
     var count = State.searchResults[name].list.length;
-    html += '<div class="source-tab' + (i === 0 ? ' active' : '') + '" data-source="' + name + '">' + name + '<span class="count">' + count + '</span></div>';
+    html += '<div class="source-tab' + (i === 0 ? ' active' : '') + '" data-source="' + escapeHtml(name) + '">' + escapeHtml(name) + '<span class="count">' + count + '</span></div>';
   });
   html += '</div><div id="videoGrid" class="video-grid"></div>';
   view.innerHTML = html;
@@ -2882,14 +2896,14 @@ function renderVideoGrid(sourceName) {
   var html = '';
   entry.list.forEach(function(item, idx) {
     var cover = item.vod_pic || '', title = item.vod_name || '未知', remarks = item.vod_remarks || '', year = item.vod_year || '';
-    html += '<div class="video-card" data-action="search" data-source="' + sourceName + '" data-idx="' + idx + '">';
+    html += '<div class="video-card" data-action="search" data-source="' + escapeHtml(sourceName) + '" data-idx="' + idx + '">';
     html += '<div class="cover">';
-    if (cover) { html += '<img src="' + cover + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="placeholder" style="display:none">' + title + '</div>'; }
-    else html += '<div class="placeholder">' + title + '</div>';
+    if (cover) { html += '<img src="' + cover.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="placeholder" style="display:none">' + escapeHtml(title) + '</div>'; }
+    else html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
     if (item.type_name) html += '<div class="cat-badge">' + escapeHtml(item.type_name) + '</div>';
-    if (remarks) html += '<div class="remarks">' + remarks + '</div>';
-    html += '</div><div class="info"><div class="title">' + title + '</div>';
-    if (year) html += '<div class="sub">' + year + '</div>';
+    if (remarks) html += '<div class="remarks">' + escapeHtml(remarks) + '</div>';
+    html += '</div><div class="info"><div class="title">' + escapeHtml(title) + '</div>';
+    if (year) html += '<div class="sub">' + escapeHtml(year) + '</div>';
     html += '</div></div>';
   });
   grid.innerHTML = html;
@@ -3058,10 +3072,10 @@ function renderHistory() {
     html += '<button type="button" class="del-btn" data-action="del-history" data-idx="' + idx + '">×</button>';
     html += '<div class="video-card" data-action="show-history" data-idx="' + idx + '">';
     html += '<div class="cover">';
-    if (cover) html += '<img src="' + cover + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="placeholder" style="display:none">' + title + '</div>';
-    else html += '<div class="placeholder">' + title + '</div>';
-    if (remarks) html += '<div class="remarks">' + remarks + '</div>';
-    html += '</div><div class="info"><div class="title">' + title + '</div><div class="sub">' + new Date(h.time).toLocaleDateString() + '</div>';
+    if (cover) html += '<img src="' + cover.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="placeholder" style="display:none">' + escapeHtml(title) + '</div>';
+    else html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
+    if (remarks) html += '<div class="remarks">' + escapeHtml(remarks) + '</div>';
+    html += '</div><div class="info"><div class="title">' + escapeHtml(title) + '</div><div class="sub">' + new Date(h.time).toLocaleDateString() + '</div>';
     if (pct > 0) {
       html += '<div class="progress-mini"><div class="progress-mini-fill" style="width:' + pct + '%"></div></div>';
       html += '<div class="progress-mini-text">已看 ' + pct + '%</div>';
@@ -3104,10 +3118,10 @@ function renderFavorites() {
     html += '<button type="button" class="del-btn" data-action="del-fav" data-idx="' + idx + '">×</button>';
     html += '<div class="video-card" data-action="show-fav" data-idx="' + idx + '">';
     html += '<div class="cover">';
-    if (cover) html += '<img src="' + cover + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="placeholder" style="display:none">' + title + '</div>';
-    else html += '<div class="placeholder">' + title + '</div>';
-    if (epName) html += '<div class="remarks">' + epName + '</div>';
-    html += '</div><div class="info"><div class="title">' + title + '</div>';
+    if (cover) html += '<img src="' + cover.replace(/"/g, '&quot;') + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="placeholder" style="display:none">' + escapeHtml(title) + '</div>';
+    else html += '<div class="placeholder">' + escapeHtml(title) + '</div>';
+    if (epName) html += '<div class="remarks">' + escapeHtml(epName) + '</div>';
+    html += '</div><div class="info"><div class="title">' + escapeHtml(title) + '</div>';
     if (pct > 0) {
       html += '<div class="progress-mini"><div class="progress-mini-fill" style="width:' + pct + '%"></div></div>';
       html += '<div class="progress-mini-text">已看 ' + pct + '%</div>';
@@ -3273,7 +3287,7 @@ function renderSourceList() {
   var list = document.getElementById('sourceList');
   var html = '';
   State.settings.sources.forEach(function(s, i) {
-    html += '<div class="source-list-item"><div><div class="name">' + s.name + '</div><div class="url">' + s.url + '</div></div><div class="actions"><button class="btn btn-sm btn-outline" onclick="removeSource(' + i + ')">删除</button></div></div>';
+    html += '<div class="source-list-item"><div><div class="name">' + escapeHtml(s.name) + '</div><div class="url">' + escapeHtml(s.url) + '</div></div><div class="actions"><button class="btn btn-sm btn-outline" onclick="removeSource(' + i + ')">删除</button></div></div>';
   });
   if (State.settings.sources.length === 0) html = '<div style="color:var(--text-dim);font-size:13px;text-align:center;padding:12px">暂无视频源</div>';
   list.innerHTML = html;
@@ -3312,16 +3326,16 @@ function batchImport() {
 function exportData() {
   try {
     var data = JSON.parse(JSON.stringify(State.settings));
-    var progress = {};
+    var extra = {};
     try {
       var keys = Object.keys(localStorage);
       for (var i = 0; i < keys.length; i++) {
-        if (keys[i].indexOf('vp_') === 0) {
-          progress[keys[i]] = localStorage.getItem(keys[i]);
+        if (keys[i].indexOf('vp_') === 0 || keys[i].indexOf('vplayer_') === 0) {
+          extra[keys[i]] = localStorage.getItem(keys[i]);
         }
       }
     } catch(e) {}
-    data._playbackProgress = progress;
+    data._localStorage = extra;
     var json = JSON.stringify(data, null, 2);
     var blob = new Blob([json], {type: 'application/json'});
     var url = URL.createObjectURL(blob);
@@ -3344,20 +3358,27 @@ function importData(event) {
       var data = JSON.parse(e.target.result);
       if (!data.sources || data.sources.length === 0) { showToast('数据格式错误'); return; }
       if (!confirm('导入将覆盖当前所有设置，确定继续？')) return;
-      var progress = data._playbackProgress || {};
+      var extra = data._localStorage || {};
+      var legacyProgress = data._playbackProgress || {};
+      delete data._localStorage;
       delete data._playbackProgress;
       State.settings = data;
       if (!State.settings.favorites) State.settings.favorites = [];
       if (!State.settings.history) State.settings.history = [];
       if (!State.settings.proxyMode) State.settings.proxyMode = 'auto';
       try {
-        var pkeys = Object.keys(progress);
+        var pkeys = Object.keys(extra);
         for (var i = 0; i < pkeys.length; i++) {
-          localStorage.setItem(pkeys[i], progress[pkeys[i]]);
+          localStorage.setItem(pkeys[i], extra[pkeys[i]]);
+        }
+        var lkeys = Object.keys(legacyProgress);
+        for (var j = 0; j < lkeys.length; j++) {
+          localStorage.setItem(lkeys[j], legacyProgress[lkeys[j]]);
         }
       } catch(e) {}
       Config.save(State.settings);
       proxyMode = State.settings.proxyMode;
+      _customProxiesCache = null;
       ProxyManager.reset(false);
       buildProxySelect();
       renderSourceList();
