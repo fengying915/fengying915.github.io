@@ -256,7 +256,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <input class="form-input" id="customProxyInput" placeholder="代理地址：https://你的代理域名/?url=" style="margin-bottom:8px">
 <button type="button" class="btn btn-sm" style="width:100%" onclick="saveCustomProxy()">保存自定义代理</button>
 <div id="customProxyList" style="margin-top:8px"></div>
-<p style="font-size:11px;color:var(--text-dim);margin-top:8px">填写规则：含 <code>{url}</code> 替换为原始地址，含 <code>{urlenc}</code> 替换为URL编码地址；都不含则直接拼在末尾（前缀以 = ? &amp; 结尾时自动URL编码）。公共代理全部失效时，自建一个即可彻底解决。</p>
+<p style="font-size:11px;color:var(--text-dim);margin-top:8px">填写规则：含 <code>{url}</code> 替换为原始地址，含 <code>{urlenc}</code> 替换为URL编码地址；都不含则直接拼在末尾（前缀以 = ? &amp; 结尾时自动URL编码）。公共代理全部失效时，自建一个即可彻底解决。可去<a target="_blank" href="https://corsproxy.io/">corsproxy.i</a>创建一个免费账户，即可使用API密钥，每月最多可进行10,000次请求和1GB带宽，填写“https://corsproxy.io/?key=API密钥&url=”。</p>
 <details style="margin-top:8px">
 <summary style="font-size:12px;color:var(--primary);cursor:pointer">公共代理全失效？点此查看自建代理模板（Cloudflare Worker，免费）</summary>
 <pre style="font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-all;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:6px;font-family:monospace">export default {
@@ -393,9 +393,11 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 // ========== CORS 代理配置（并行竞速 + 自动学习 + 多自定义代理） ==========
 // prefix = 拼接前缀；enc = true 表示目标地址需要 encodeURIComponent
 var CORS_PROXY_DEFS = [
-  { name: 'corsproxy.io', prefix: 'https://corsproxy.io/?key=78a3874d&url=', enc: true },
+  { name: 'corsproxy.io-1', prefix: 'https://corsproxy.io/?key=78a3874d&url=', enc: true },
+  { name: 'corsproxy.io-2', prefix: 'https://corsproxy.io/?key=a88b02cc&url=', enc: true },
+  { name: 'corsproxy.io-3', prefix: 'https://corsproxy.io/?key=e5888b18&url=', enc: true },
   { name: 'allorigins', prefix: 'https://api.allorigins.win/raw?url=', enc: true },
-  { name: 'codetabs', prefix: 'https://api.codetabs.com/v1/proxy/?quest=', enc: true }
+  { name: 'cors.lol', prefix: 'https://api.cors.lol/?url=', enc: true }
 ];
 var DIRECT_PROXY_DEF = { name: '直连', direct: true, prefix: '', enc: false };
 var _CUSTOM_PROXIES_KEY = 'vplayer_custom_proxies';   // [{id,name,tpl}]
