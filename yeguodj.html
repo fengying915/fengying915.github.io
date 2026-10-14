@@ -347,7 +347,7 @@
   }
   .hero-scroll::-webkit-scrollbar { display: none; }
   .hero-card {
-    flex: 0 0 min(72%, 620px);
+    flex: 0 0 72%; max-width: 620px;
     scroll-snap-align: start;
     aspect-ratio: 16/8.2;
     border-radius: 18px; overflow: hidden; position: relative;
@@ -361,6 +361,11 @@
   @keyframes hero-in { from { opacity: 0; transform: translateY(20px) scale(.96); } to { opacity: 1; transform: none; } }
   .hero-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg), 0 0 0 1px var(--accent-glow); }
   @media (max-width: 640px) { .hero-card { flex: 0 0 90%; aspect-ratio: 16/10; border-radius: 14px; } }
+  /* 老版安卓内核不支持 aspect-ratio，退化为固定高度，避免横版海报高度错乱 */
+  @supports not (aspect-ratio: 16 / 8.2) {
+    .hero-card { height: 300px; }
+    @media (max-width: 640px) { .hero-card { height: 210px; } }
+  }
   .hero-card img { transition: transform .9s cubic-bezier(.4,0,.2,1); }
   .hero-card:hover img { transform: scale(1.07); }
   .hero-card::after { content: ""; position: absolute; inset: 0; background: var(--hero-mask); pointer-events: none; }
@@ -426,7 +431,8 @@
   .cont-scroll::-webkit-scrollbar { display: none; }
   .cont-card { flex: 0 0 128px; cursor: pointer; animation: fade-up .45s cubic-bezier(.34,1.56,.64,1) backwards; }
   .cont-poster {
-    position: relative; aspect-ratio: 3/4;
+    position: relative;
+    width: 128px; height: 171px;   /* 固定 3:4，兼容不支持 aspect-ratio 的内核 */
     border-radius: 12px; overflow: hidden;
     border: 1px solid var(--line);
     background: var(--sk-1);
@@ -517,7 +523,8 @@
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 14px;
   }
-  @media (max-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 10px; } }
+  /* minmax(0,1fr)：避免长标题/标签把某一列撑宽导致卡片大小不一 */
+  @media (max-width: 640px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } }
   @media (min-width: 900px) { .grid { grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 18px; } }
 
   .card { background: transparent; cursor: pointer; position: relative; animation: card-in .5s cubic-bezier(.34,1.56,.64,1) backwards; }
@@ -528,9 +535,12 @@
   .card:nth-child(n+10){animation-delay:.2s}
   .card:active { transform: scale(.97); }
 
+  /* 封面框固定 3:4：用 padding 撑高（padding 百分比按卡片列宽计算），
+     不依赖 aspect-ratio，老版安卓 WebView / X5 内核下尺寸同样一致 */
   .thumb {
     position: relative;
-    aspect-ratio: 3/4;
+    height: 0;
+    padding-top: 133.34%;
     background: var(--sk-1);
     border-radius: 12px; overflow: hidden;
     border: 1px solid var(--line);
@@ -541,7 +551,11 @@
     background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.3) 50%, rgba(0,0,0,.78) 100%);
     pointer-events: none; z-index: 2;
   }
-  .thumb img { transition: transform .6s cubic-bezier(.34,1.2,.64,1); }
+  .thumb img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform .6s cubic-bezier(.34,1.2,.64,1);
+  }
   @media (hover: hover) {
     .card:hover .thumb {
       transform: translateY(-4px);
@@ -589,7 +603,8 @@
     transition: color .25s; letter-spacing: .2px;
   }
   @media (max-width: 640px) { .card-title { font-size: 12px; } }
-  .card-tags { display: flex; gap: 5px; margin-top: 5px; overflow: hidden; }
+  /* 固定行高，保证有标签/无标签的卡片总高一致 */
+  .card-tags { display: flex; gap: 5px; margin-top: 5px; overflow: hidden; min-height: 23px; }
   .ctag {
     flex-shrink: 0;
     font-size: 10.5px; font-weight: 600;
@@ -738,12 +753,12 @@
     animation-delay: .08s;
   }
   .detail-head .poster {
-    width: 128px; flex-shrink: 0;
-    aspect-ratio: 3/4; border-radius: 16px; overflow: hidden;
+    width: 128px; height: 171px; flex-shrink: 0;
+    border-radius: 16px; overflow: hidden;
     background: var(--sk-1); border: 1px solid var(--line);
     box-shadow: var(--shadow-md), 0 0 26px var(--accent-glow-2);
   }
-  @media (max-width: 560px) { .detail-head .poster { width: 100px; } .detail-head { gap: 12px; } }
+  @media (max-width: 560px) { .detail-head .poster { width: 100px; height: 133px; } .detail-head { gap: 12px; } }
   .detail-info { min-width: 0; padding-top: 2px; }
   .detail-info h1 { font-size: 19px; line-height: 1.38; margin-bottom: 10px; font-weight: 800; letter-spacing: .3px; }
   @media (max-width: 560px) { .detail-info h1 { font-size: 16.5px; } }
@@ -1576,7 +1591,7 @@ function cardHtml(v, i, opts) {
         </div>` : ""}
       </div>
       <div class="card-title">${esc(v.vod_name)}</div>
-      ${tags ? `<div class="card-tags">${tags}</div>` : ""}
+      <div class="card-tags">${tags}</div>
       ${extra}
     </div>
   `;
