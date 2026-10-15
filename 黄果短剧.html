@@ -1047,18 +1047,30 @@ const HOSTS = [
 ];
 
 /* ============================================================
-   视频清单中转配置（解决黄果 CDN 对非白名单来源返回 53 秒宣传片的问题）
+   视频清单中转（解决黄果 CDN 对非白名单来源返回 53 秒宣传片的问题）
    - CDN 只给「官网域名 / 本机 127.0.0.1 / 服务器直连」返回真实清单，
-     GitHub Pages、file:// 等来源拿到的都是宣传片；
+     GitHub Pages、file:// 等来源拿到的是宣传片；且请求带 CF-Worker 头也会被拦；
    - 实测只有 m3u8 清单被替换，视频分片(.ts)与密钥(crypt.key)任意来源都正常，
-     所以只需要中转几 KB 的清单，带宽可忽略；
-   - 本机服务 _local_server.cjs 自带同源 /hg-media 路由，自动启用；
-   - 在线版（GitHub Pages 等）：部署 _cf_proxy_worker.js 到 Cloudflare Worker 后，
-     把地址（形如 "https://xxx.workers.dev/m?u="）填进下面的数组，按顺序尝试。
+     所以每个视频只需中转几 KB 的清单，带宽可忽略；
+   - 内置两家公共中转（见 PUBLIC_PROXIES），浏览器直接可用，无需任何部署；
+   - 本机服务 _local_server.cjs 自带同源 /hg-media 路由，打开 bat 时自动优先使用；
+   - 进阶（可选）：部署 _cf_proxy_worker.js 到 Cloudflare Worker（新版已用原始
+     socket 绕开 CF-Worker 头拦截），把地址（形如 "https://xxx.workers.dev/m?u="）
+     填进下面的数组即可作为专属中转，按顺序在公共中转之后尝试。
    ============================================================ */
 const HG_MANIFEST_PROXIES = [
-   "https://hg-proxy.fengying915.workers.dev/m?u=",   // 自建 Cloudflare Worker（推荐，见 _cf_proxy_worker.js）
-   "https://corsproxy.io/?key=78a3874d&url=",      // 备用：corsproxy.io（实测已封锁黄果视频域名，暂不可用）
+  // "https://hg-proxy.你的账号.workers.dev/m?u=",   // 可选：自建 Cloudflare Worker（见 _cf_proxy_worker.js）
+];
+
+/* 内置公共中转：build 生成请求地址，pick 从响应正文提取真实清单。
+   两家出口实测都不会被黄果 CDN 拦截（返回 56 段真清单），CORS 浏览器可用。 */
+const PUBLIC_PROXIES = [
+  { name: "allorigins",
+    build: (u) => "https://allorigins.hexlet.app/raw?url=" + encodeURIComponent(u),
+    pick: (t) => t },
+  { name: "jina",
+    build: (u) => "https://r.jina.ai/" + encodeURIComponent(u),
+    pick: (t) => { const i = t.indexOf("#EXTM3U"); return i >= 0 ? t.slice(i) : t; } },
 ];
 
 /* 本机/局域网主机判断（这些来源由 _local_server.cjs 提供同源中转） */
@@ -1572,46 +1584,59 @@ function isDecoyManifest(srcUrl, text) {
   return false;
 }
 
-/* 清单通道清单（按优先级） */
-let goodManifestPrefix = null; /* 上次成功的通道前缀；"" 表示直连 */
-function manifestPrefixes() {
+/* 清单通道（按优先级）：直连 / 本机服务 / 自定义中转 / 公共中转
+   通道 build(u) 生成请求地址，pick(t) 从响应正文提取清单文本。 */
+let goodManifestChannel = null; /* 上次成功的通道 */
+let manifestCache = null;        /* 已取到的真清单 {src, text, name}：播放直接用，避免重复走中转 */
+function manifestChannels() {
   const h = location.hostname;
   const httpPage = /^https?:$/.test(location.protocol);
   const loopback = h === "127.0.0.1" || h === "localhost" || h === "[::1]";
   const priv = httpPage && isLocalHostName(h);
-  const hg = HG_MANIFEST_PROXIES.slice();
+  const direct = { key: "direct", name: "直连", build: (u) => u, pick: (t) => t };
+  const same = { key: "same", name: "本机服务", build: (u) => "/hg-media?u=" + encodeURIComponent(u), pick: (t) => t };
+  const custom = HG_MANIFEST_PROXIES.map((p, i) => ({ key: "cfg" + i, name: "自定义中转", build: (u) => p + encodeURIComponent(u), pick: (t) => t }));
+  const pub = PUBLIC_PROXIES.map((p) => ({ key: "pub-" + p.name, name: p.name, build: p.build, pick: p.pick }));
   let list;
-  if (priv && loopback) {
-    list = ["", "/hg-media?u="].concat(hg);        /* 本机：直连优先（白名单），服务器中转兜底 */
-  } else if (priv) {
-    list = ["/hg-media?u="].concat(hg, [""]);      /* 局域网 IP：同源中转优先 */
-  } else {
-    list = hg.concat([""]);                        /* 在线/文件：配置的中转优先，最后直连 */
-  }
-  if (goodManifestPrefix !== null) {
-    const g = goodManifestPrefix;
-    list = [g].concat(list.filter(p => p !== g));
+  if (priv && loopback) list = [direct, same].concat(custom, pub);   /* 本机：直连优先（白名单），其余兜底 */
+  else if (priv) list = [same].concat(pub, custom, [direct]);        /* 局域网 IP：同源中转优先 */
+  else list = pub.concat(custom, [direct]);                          /* 在线/文件：公共中转优先，最后直连 */
+  if (goodManifestChannel) {
+    const g = goodManifestChannel;
+    list = [g].concat(list.filter((c) => c.key !== g.key));
   }
   return list;
 }
-function wrapManifest(prefix, u) {
-  return prefix ? prefix + encodeURIComponent(u) : u;
+/* 兜底：把清单里的相对地址补成绝对地址（当前黄果 CDN 返回的本就是绝对地址） */
+function absolutizeManifest(text, baseUrl) {
+  if (!text) return text;
+  const abs = (u) => { try { return new URL(u, baseUrl).href; } catch (e) { return u; } };
+  return text.split(/\r?\n/).map((line) => {
+    const s = line.trim();
+    if (!s) return line;
+    if (s.charAt(0) === "#") {
+      if (/^#EXT-X-(KEY|MAP|MEDIA)/i.test(s)) return s.replace(/URI="([^"]*)"/g, (m, u) => 'URI="' + abs(u) + '"');
+      return line;
+    }
+    return abs(s);
+  }).join("\n");
 }
 function manifestUrlFor(src) {
-  return wrapManifest(goodManifestPrefix || "", src);
+  return goodManifestChannel ? goodManifestChannel.build(src) : src;
 }
 
 async function verifyManifest(srcUrl) {
   const bust = srcUrl + (srcUrl.includes("?") ? "&" : "?") + "_hgv=" + Date.now();
   let sawDecoy = false;
-  for (const p of manifestPrefixes()) {
+  manifestCache = null;
+  for (const c of manifestChannels()) {
     try {
-      const r = await fetch(wrapManifest(p, bust), { cache: "no-store", referrerPolicy: "no-referrer" });
-      if (!r.ok) continue;
-      const t = await r.text();
-      if (t.indexOf("#EXTM3U") < 0) continue;
+      const raw = await fetchOnce(c.build(bust), 20000);
+      const t = c.pick(raw);
+      if (!t || t.indexOf("#EXTM3U") < 0) continue;
       if (isDecoyManifest(srcUrl, t)) { sawDecoy = true; continue; }
-      goodManifestPrefix = p;
+      goodManifestChannel = c;
+      manifestCache = { src: srcUrl, text: absolutizeManifest(t, srcUrl), name: c.name };
       return "ok";
     } catch (e) {}
   }
@@ -1624,13 +1649,12 @@ function playBlockMessage(vs) {
   const httpPage = /^https?:$/.test(location.protocol);
   const localLike = httpPage && isLocalHostName(h);
   if (vs === "decoy") {
-    if (location.protocol === "file:") return "视频被黄果 CDN 替换成了宣传片：file:// 来源会被拦截。请关闭本页，双击“启动黄果短剧.bat”重新打开。";
     if (localLike) return "视频被黄果 CDN 替换成了宣传片（本机中转未生效）。请确认“启动黄果短剧.bat”的窗口还开着，然后点重试。";
-    return "视频被黄果 CDN 替换成了宣传片：在线来源（如 GitHub Pages）不在 CDN 白名单。请部署 _cf_proxy_worker.js 并把地址填入 HG_MANIFEST_PROXIES 后重试。";
+    return "视频被黄果 CDN 拦截成了宣传片，公共中转暂时失效。请稍等片刻后点重试。";
   }
-  if (location.protocol === "file:") return "取不到视频清单（网络异常）。请检查网络后点重试，或改用“启动黄果短剧.bat”打开。";
   if (localLike) return "取不到视频清单（网络异常或本地服务已关闭），请点重试。";
-  return "取不到视频清单：网络异常，或中转失效/未配置。在线版请检查 HG_MANIFEST_PROXIES，本机请用“启动黄果短剧.bat”打开。";
+  if (location.protocol === "file:") return "取不到视频清单（网络异常或中转暂不可用）。请点重试，或改用“启动黄果短剧.bat”打开。";
+  return "取不到视频清单：网络异常或中转暂不可用，请检查网络后点重试。";
 }
 
 /* ---------- 搜索（SSR：/search/video/{关键词}/{页}/） ---------- */
@@ -2502,6 +2526,7 @@ function doSearchBack() { state.pg = 1; loadListPage("search"); }
 
 function destroyPlayer() {
   if (state.hls) { try { state.hls.destroy(); } catch (e) {} state.hls = null; }
+  if (state.manifestBlobUrl) { try { URL.revokeObjectURL(state.manifestBlobUrl); } catch (e) {} state.manifestBlobUrl = null; }
   const v = document.getElementById("video");
   if (v) {
     try { v.pause(); } catch (e) {}
@@ -2594,7 +2619,17 @@ function playVideo(src, seekTo) {
   if (isM3u8 && window.Hls && Hls.isSupported()) {
     const hls = new Hls({ maxBufferLength: 30, maxMaxBufferLength: 60, enableWorker: true, lowLatencyMode: false });
     state.hls = hls;
-    hls.loadSource(manifestUrlFor(src));
+    /* 优先用验证通过的清单（Blob 直供，避免再次走中转）；兜底再按通道地址加载 */
+    let source = null;
+    if (manifestCache && manifestCache.src === src) {
+      try {
+        if (state.manifestBlobUrl) URL.revokeObjectURL(state.manifestBlobUrl);
+        state.manifestBlobUrl = URL.createObjectURL(new Blob([manifestCache.text], { type: "application/vnd.apple.mpegurl" }));
+        source = state.manifestBlobUrl;
+      } catch (e) { source = null; }
+    }
+    if (!source) source = manifestUrlFor(src);
+    hls.loadSource(source);
     hls.attachMedia(v);
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
       doSeek();
@@ -2625,11 +2660,11 @@ window.addEventListener("pagehide", saveCurrentProgress);
 document.addEventListener("visibilitychange", () => { if (document.hidden) saveCurrentProgress(); });
 
 /* ---- 启动 ---- */
-/* file:// 直接打开时给出醒目提示（该来源会被黄果 CDN 返回宣传片）；
-   若已配置在线中转（HG_MANIFEST_PROXIES），file:// 也能正常播放，不再提示 */
+/* file:// 直接打开时给出醒目提示（历史版本会被黄果 CDN 返回宣传片）；
+   现在内置公共中转，file:// 也能正常播放，故默认不再提示 */
 (function originHint() {
   if (location.protocol !== "file:") return;
-  if (HG_MANIFEST_PROXIES.length > 0) return;
+  if (PUBLIC_PROXIES.length > 0 || HG_MANIFEST_PROXIES.length > 0) return;
   const b = document.getElementById("originBanner");
   if (!b) return;
   b.hidden = false;
