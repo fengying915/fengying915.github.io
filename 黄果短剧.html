@@ -943,38 +943,9 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* file:// 打开警告条：该来源会被黄果 CDN 返回宣传片，引导改用启动器 */
-  .origin-banner {
-    position: fixed; left: 50%; top: 12px;
-    transform: translateX(-50%);
-    z-index: 520;
-    width: min(92vw, 640px);
-    background: linear-gradient(135deg, rgba(158,32,32,.97), rgba(94,14,14,.97));
-    color: #ffe9e9;
-    border: 1px solid rgba(255,120,120,.5);
-    border-radius: 14px;
-    box-shadow: var(--shadow-lg);
-    padding: 12px 40px 12px 16px;
-    font-size: 13px; line-height: 1.7;
-    text-align: left;
-  }
-  .origin-banner .ob-title { font-weight: 800; color: #ffd21a; margin-bottom: 4px; }
-  .origin-banner b { color: #ffd21a; }
-  .origin-banner .ob-close {
-    position: absolute; top: 8px; right: 10px;
-    background: none; border: none; color: #ffb9b9;
-    font-size: 15px; cursor: pointer; padding: 2px 6px;
-  }
-  .origin-banner .ob-close:hover { color: #fff; }
 </style>
 </head>
 <body>
-
-<div class="origin-banner" id="originBanner" hidden>
-  <button class="ob-close" id="originBannerClose" title="关闭">✕</button>
-  <div class="ob-title">⚠️ 当前以 file:// 方式打开：所有视频都会变成 53 秒宣传片</div>
-  <div>黄果 CDN 会拦截 file:// 页面的视频请求，统一返回宣传片。请关闭本页，双击本文件夹里的 <b>启动黄果短剧.bat</b>（或用同目录的 _local_server.cjs 启动本地服务）重新打开，即可正常播放全部剧集。</div>
-</div>
 
 <div class="topbar" id="topbar"></div>
 <div class="toast" id="toast"></div>
@@ -1046,24 +1017,14 @@ const HOSTS = [
   "https://c3d4.ediayikma.cc"
 ];
 
-/* ============================================================
-   视频清单中转（解决黄果 CDN 对非白名单来源返回 53 秒宣传片的问题）
-   - CDN 只给「官网域名 / 本机 127.0.0.1 / 服务器直连」返回真实清单，
-     GitHub Pages、file:// 等来源拿到的是宣传片；且请求带 CF-Worker 头也会被拦；
-   - 实测只有 m3u8 清单被替换，视频分片(.ts)与密钥(crypt.key)任意来源都正常，
-     所以每个视频只需中转几 KB 的清单，带宽可忽略；
-   - 内置两家公共中转（见 PUBLIC_PROXIES），浏览器直接可用，无需任何部署；
-   - 本机服务 _local_server.cjs 自带同源 /hg-media 路由，打开 bat 时自动优先使用；
-   - 进阶（可选）：部署 _cf_proxy_worker.js 到 Cloudflare Worker（新版已用原始
-     socket 绕开 CF-Worker 头拦截），把地址（形如 "https://xxx.workers.dev/m?u="）
-     填进下面的数组即可作为专属中转，按顺序在公共中转之后尝试。
-   ============================================================ */
+/* 视频清单中转：黄果 CDN 只给白名单来源（官网 / 127.0.0.1 / 服务器直连）返回真清单，
+   其它来源会被换成 53 秒宣传片。清单只有几 KB，分片(.ts)和密钥直连 CDN 不受影响。
+   本机走 _local_server.cjs 的同源 /hg-media；在线/file:// 走内置公共中转（见下）。 */
 const HG_MANIFEST_PROXIES = [
-  // "https://hg-proxy.你的账号.workers.dev/m?u=",   // 可选：自建 Cloudflare Worker（见 _cf_proxy_worker.js）
+  // "https://你的中转/m?u=",   // 可选：自建中转（如按 _cf_proxy_worker.js 部署的 Worker）
 ];
 
-/* 内置公共中转：build 生成请求地址，pick 从响应正文提取真实清单。
-   两家出口实测都不会被黄果 CDN 拦截（返回 56 段真清单），CORS 浏览器可用。 */
+/* 内置公共中转：build 生成请求地址，pick 从响应正文提取清单文本（两家实测均可返回真清单） */
 const PUBLIC_PROXIES = [
   { name: "allorigins",
     build: (u) => "https://allorigins.hexlet.app/raw?url=" + encodeURIComponent(u),
@@ -2660,18 +2621,6 @@ window.addEventListener("pagehide", saveCurrentProgress);
 document.addEventListener("visibilitychange", () => { if (document.hidden) saveCurrentProgress(); });
 
 /* ---- 启动 ---- */
-/* file:// 直接打开时给出醒目提示（历史版本会被黄果 CDN 返回宣传片）；
-   现在内置公共中转，file:// 也能正常播放，故默认不再提示 */
-(function originHint() {
-  if (location.protocol !== "file:") return;
-  if (PUBLIC_PROXIES.length > 0 || HG_MANIFEST_PROXIES.length > 0) return;
-  const b = document.getElementById("originBanner");
-  if (!b) return;
-  b.hidden = false;
-  const c = document.getElementById("originBannerClose");
-  if (c) c.onclick = () => b.remove();
-})();
-
 document.getElementById("menuBtn").onclick = openDrawer;
 document.getElementById("drawerClose").onclick = closeDrawer;
 document.getElementById("drawerMask").onclick = closeDrawer;
