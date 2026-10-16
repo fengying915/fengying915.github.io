@@ -910,6 +910,145 @@
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  /* ============ 分段标签（专题 / 排行榜 / 黄果吃瓜 的分组切换） ============ */
+  .seg { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 2px 16px; animation: fade-up .4s cubic-bezier(.34,1.56,.64,1); }
+  .seg .seg-item {
+    padding: 8px 18px; border-radius: 20px;
+    background: var(--card); border: 1px solid var(--line);
+    color: var(--text-dim); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .25s; white-space: nowrap;
+  }
+  .seg .seg-item:hover { color: var(--text); border-color: var(--line-hi); }
+  .seg .seg-item.on {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: var(--on-accent); border-color: transparent; font-weight: 700;
+    box-shadow: 0 6px 18px var(--accent-glow);
+  }
+
+  /* ============ 专题 ============ */
+  .topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  @media (max-width: 640px) { .topic-grid { grid-template-columns: 1fr; gap: 12px; } }
+  .topic-card {
+    position: relative; border-radius: 16px; overflow: hidden;
+    border: 1px solid var(--line); background: var(--sk-1);
+    cursor: pointer; animation: card-in .5s cubic-bezier(.34,1.56,.64,1) backwards;
+    transition: border-color .3s, box-shadow .3s, transform .3s cubic-bezier(.34,1.4,.64,1);
+  }
+  .topic-cover { position: relative; height: 0; padding-top: 50%; overflow: hidden; }
+  .topic-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .7s cubic-bezier(.4,0,.2,1); }
+  .topic-cover::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,.5) 60%, rgba(0,0,0,.86) 100%);
+    pointer-events: none;
+  }
+  .topic-info { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 14px 16px; color: #fff; }
+  .topic-info h3 {
+    font-size: 15.5px; font-weight: 800; line-height: 1.35; margin-bottom: 5px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    text-shadow: 0 2px 10px rgba(0,0,0,.6);
+  }
+  .topic-info .cnt { font-size: 11.5px; font-weight: 600; opacity: .88; }
+  @media (hover: hover) {
+    .topic-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 18px 38px rgba(0,0,0,.35), 0 0 0 1px var(--accent-glow); }
+    .topic-card:hover .topic-cover img { transform: scale(1.06); }
+  }
+  .topic-card:active { transform: scale(.98); }
+  .topic-intro { font-size: 13px; line-height: 1.85; color: var(--sub); margin: 0 2px 14px; white-space: pre-line; }
+  .topic-rel { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 2px 16px; }
+
+  /* ============ 排行榜 ============ */
+  .rank-list { display: flex; flex-direction: column; gap: 10px; }
+  .rank-row {
+    display: flex; gap: 12px; padding: 10px;
+    border-radius: 15px; background: var(--card); border: 1px solid var(--line);
+    cursor: pointer; transition: all .28s;
+    animation: card-in .45s cubic-bezier(.34,1.56,.64,1) backwards;
+  }
+  .rank-row:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,.3), 0 0 0 1px var(--accent-glow); }
+  .rank-row:active { transform: scale(.985); }
+  .rank-no {
+    width: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 900; font-style: italic; color: var(--sub);
+  }
+  .rank-no.r1, .rank-no.r2, .rank-no.r3 { font-size: 21px; -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .rank-no.r1 { background-image: linear-gradient(135deg, var(--rank-1), #ff8fa3); }
+  .rank-no.r2 { background-image: linear-gradient(135deg, var(--rank-2), #ffc46b); }
+  .rank-no.r3 { background-image: linear-gradient(135deg, var(--rank-3), #ffe3a3); }
+  .rank-cover { width: 84px; height: 112px; flex-shrink: 0; border-radius: 11px; overflow: hidden; background: var(--sk-1); border: 1px solid var(--line); position: relative; }
+  .rank-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 2px 0; }
+  .rank-title {
+    font-size: 14.5px; font-weight: 700; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .rank-tags { display: flex; gap: 5px; flex-wrap: wrap; overflow: hidden; max-height: 25px; }
+  .rank-meta { margin-top: auto; display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-size: 11.5px; color: var(--sub); }
+  .rank-meta .heat { color: var(--accent); font-weight: 800; }
+  .rank-bar { height: 4px; border-radius: 3px; background: var(--chip-bg); overflow: hidden; }
+  .rank-bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 8px var(--accent-glow); }
+  .skel-rank { pointer-events: none; }
+  .skel-rank .rank-no { visibility: hidden; }
+  .skel-rank .rank-cover { background: linear-gradient(90deg, var(--sk-1), var(--sk-2), var(--sk-1)); background-size: 200% 100%; animation: sk 1.6s ease-in-out infinite; }
+  .skel-rank .card-title { background: var(--sk-1); color: transparent; border-radius: 5px; height: 16px; width: 62%; }
+  .skel-rank .rank-bar { visibility: hidden; }
+
+  /* ============ 黄果吃瓜 ============ */
+  .post-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  @media (max-width: 640px) { .post-grid { grid-template-columns: 1fr; gap: 12px; } }
+  .post-card {
+    border-radius: 16px; overflow: hidden;
+    background: var(--card); border: 1px solid var(--line);
+    cursor: pointer; transition: all .28s;
+    animation: card-in .5s cubic-bezier(.34,1.56,.64,1) backwards;
+  }
+  .post-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 18px 38px rgba(0,0,0,.35), 0 0 0 1px var(--accent-glow); }
+  .post-card:active { transform: scale(.98); }
+  .post-cover { position: relative; height: 0; padding-top: 50%; overflow: hidden; background: var(--sk-1); }
+  .post-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .7s cubic-bezier(.4,0,.2,1); }
+  .post-card:hover .post-cover img { transform: scale(1.05); }
+  .post-body { padding: 10px 13px 13px; }
+  .post-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 11px; color: var(--sub); margin-bottom: 6px; }
+  .post-meta .cat { color: var(--accent); font-weight: 700; }
+  .post-title {
+    font-size: 14.5px; font-weight: 700; line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .skel-post { pointer-events: none; }
+  .skel-post .post-cover { background: linear-gradient(90deg, var(--sk-1), var(--sk-2), var(--sk-1)); background-size: 200% 100%; animation: sk 1.6s ease-in-out infinite; }
+  .skel-post .post-title { background: var(--sk-1); border-radius: 5px; height: 16px; }
+
+  /* 吃瓜详情 */
+  .post-head h1 { font-size: 19px; line-height: 1.42; font-weight: 800; margin-bottom: 10px; letter-spacing: .3px; animation: fade-up .45s cubic-bezier(.34,1.56,.64,1); }
+  @media (max-width: 640px) { .post-head h1 { font-size: 16.5px; } }
+  .post-meta-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-size: 12px; color: var(--sub); margin-bottom: 16px; }
+  .post-cover.plain { border-radius: 16px; border: 1px solid var(--line); margin-bottom: 16px; }
+  #postCover { border-radius: 16px; border: 1px solid var(--line); margin-bottom: 16px; cursor: pointer; }
+  .post-play {
+    position: absolute; left: 50%; top: 50%; z-index: 3;
+    width: 62px; height: 62px; margin: -31px 0 0 -31px;
+    border-radius: 50%; background: rgba(0,0,0,.5);
+    border: 1px solid rgba(255,255,255,.35);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    transition: all .3s;
+  }
+  .post-play svg { width: 24px; height: 24px; margin-left: 3px; fill: currentColor; stroke: none; }
+  .post-play-tip {
+    position: absolute; left: 0; right: 0; bottom: 10px; z-index: 3;
+    text-align: center; font-size: 12px; font-weight: 600; color: #fff;
+    text-shadow: 0 1px 8px rgba(0,0,0,.8); pointer-events: none;
+  }
+  #postCover:hover .post-play { background: var(--accent); border-color: transparent; transform: scale(1.08); box-shadow: 0 10px 30px var(--accent-glow); }
+  .post-article { font-size: 14px; line-height: 1.9; color: var(--text-dim); animation: fade-up .5s cubic-bezier(.34,1.56,.64,1) backwards; animation-delay: .06s; }
+  .post-article p { margin: 0 0 12px; }
+  .post-article h1, .post-article h2, .post-article h3, .post-article h4 { font-size: 16.5px; font-weight: 800; color: var(--text); margin: 20px 0 10px; line-height: 1.4; }
+  .post-article h1 { font-size: 18px; }
+  .post-article img { width: 100%; height: auto; border-radius: 12px; margin: 4px 0 14px; border: 1px solid var(--line); }
+  .post-article blockquote { border-left: 3px solid var(--accent); padding: 2px 0 2px 12px; margin: 0 0 12px; color: var(--sub); }
+  .post-article a { color: var(--accent); }
+  .post-article ul, .post-article ol { padding-left: 22px; margin: 0 0 12px; }
+  .post-article div:empty { display: none; }
+  .post-tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 4px; }
+
 </style>
 </head>
 <body>
@@ -1027,6 +1166,19 @@ const CATS = [
   { id: "ai-mogai",    name: "AI魔改", mode: "api" },
 ];
 const PAGE_SIZE = 24;
+
+/* 官网导航的另外三大板块：专题 / 排行榜 / 黄果吃瓜 */
+const TOPIC_PAGE_SIZE = 12;   /* /api/topics 默认每页 9，这里固定 12 */
+const RANK_TABS = [
+  { id: "hot",       name: "热播榜", desc: "TOP 20 · 实时热力排行" },
+  { id: "recommend", name: "推荐榜", desc: "TOP 20 · 口碑推荐精选" },
+  { id: "potential", name: "潜力榜", desc: "TOP 20 · 潜力新剧预测" },
+];
+const CHIGUA_CATS = [
+  { id: "all",        name: "全部",     path: "chigua" },
+  { id: "remen",      name: "热门吃瓜", path: "chigua/remen" },
+  { id: "yuanchuang", name: "AI原创",   path: "chigua/yuanchuang" },
+];
 
 /* ---------- 底层请求：三域名容灾 + 粘住可用域名 + 并发限制 ----------
    源站回源不稳定（502 时有发生），首次请求三域名竞速并记住赢家，
@@ -1307,6 +1459,113 @@ function parseListHtml(html) {
     });
   }
   return out;
+}
+
+/* SSR 吃瓜列表解析（/chigua/、/chigua/remen/、/chigua/yuanchuang/ 共用）
+   卡片：<a class="hg-post-card" href="/archives/{id}/">；
+   工具栏"第 1/45 页 · 共 583 条"给出页码与总数 */
+function parseChiguaHtml(html, pg) {
+  if (!html) return { error: true, list: [], page: pg || 1, pagecount: 1, total: 0 };
+  const out = [];
+  const seen = new Set();
+  const blocks = html.split('<a class="hg-post-card"');
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i];
+    const idMatch = block.match(/href="\/archives\/(\d+)\/"/);
+    if (!idMatch) continue;
+    const id = idMatch[1];
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const picMatch = block.match(/data-src="([^"]+)"/);
+    let title = "";
+    const h3 = block.match(/<h3>([\s\S]*?)<\/h3>/);
+    if (h3) title = stripCardText(h3[1]);
+    if (!title) { const altM = block.match(/alt="([^"]+)"/); title = altM ? stripCardText(altM[1]) : ""; }
+    if (!title) continue;
+    const userM = block.match(/hg-post-card__user">([\s\S]*?)<\/span>/);
+    const dateM = block.match(/hg-post-card__date">([\s\S]*?)<\/span>/);
+    const catM  = block.match(/hg-post-card__cat">([\s\S]*?)<\/span>/);
+    out.push({
+      id,
+      title,
+      pic: picMatch ? picMatch[1] : "",
+      user: userM ? stripCardText(userM[1]) : "",
+      date: dateM ? stripCardText(dateM[1]) : "",
+      cat: catM ? stripCardText(catM[1]) : ""
+    });
+  }
+  const tm = html.match(/第\s*(\d+)\s*\/\s*(\d+)\s*页/);
+  const tt = html.match(/共\s*([\d,]+)\s*条/);
+  const page = tm ? (parseInt(tm[1]) || pg || 1) : (pg || 1);
+  const pagecount = tm ? (parseInt(tm[2]) || 1) : (out.length >= 12 ? (pg || 1) + 1 : (pg || 1));
+  const total = tt ? (parseInt(tt[1].replace(/,/g, ""), 10) || 0) : 0;
+  return { list: out, total, page, pagecount };
+}
+
+/* 吃瓜正文防 XSS 白名单渲染：
+   - 只保留常见排版标签，script/style/video/iframe 等一律丢弃
+   - 正文图统一改走加密图管线（data-enc + data-src），交给 hydrateImages 解密
+   - 链接只留 http(s)，强制 target=_blank + rel */
+const POST_TAGS = new Set(["P","BR","H1","H2","H3","H4","BLOCKQUOTE","STRONG","B","EM","I","U","S","DEL","UL","OL","LI","A","IMG","FIGURE","FIGCAPTION","HR","SPAN","DIV","CODE","PRE","SMALL","TABLE","THEAD","TBODY","TR","TD","TH"]);
+const POST_DROP = new Set(["SCRIPT","STYLE","VIDEO","AUDIO","SOURCE","TRACK","IFRAME","OBJECT","EMBED","FORM","INPUT","BUTTON","TEXTAREA","SELECT","OPTION","LINK","META","BASE","SVG","CANVAS","NOSCRIPT","TEMPLATE"]);
+
+function sanitizePostBody(html) {
+  if (!html) return "";
+  let doc;
+  try { doc = new DOMParser().parseFromString('<div id="__postRoot">' + String(html) + "</div>", "text/html"); } catch (e) { return ""; }
+  const root = doc.getElementById("__postRoot");
+  if (!root) return "";
+  cleanPostChildren(doc, root);
+  return root.innerHTML;
+}
+function cleanPostChildren(doc, parent) {
+  let node = parent.firstChild;
+  while (node) {
+    const next = node.nextSibling;
+    if (node.nodeType === 3) { node = next; continue; }               /* 文本保留 */
+    if (node.nodeType !== 1) { node.remove(); node = next; continue; } /* 注释等丢弃 */
+    const tag = node.tagName;
+    if (POST_DROP.has(tag)) { node.remove(); node = next; continue; }
+    if (tag === "IMG") {
+      const src = (node.getAttribute("data-src") || node.getAttribute("src") || "").trim();
+      if (!/^https?:\/\//i.test(src)) { node.remove(); node = next; continue; }
+      const img = doc.createElement("img");
+      img.setAttribute("alt", "");
+      img.setAttribute("referrerpolicy", "no-referrer");
+      if (isEncHost(src)) {
+        img.setAttribute("class", "pending");
+        img.setAttribute("data-enc", "1");
+        img.setAttribute("data-src", src);
+        img.setAttribute("data-w", "900");
+      } else {
+        img.setAttribute("src", src);
+        img.setAttribute("loading", "lazy");
+        img.setAttribute("decoding", "async");
+      }
+      parent.replaceChild(img, node);
+      node = next;
+      continue;
+    }
+    if (!POST_TAGS.has(tag)) {
+      /* 白名单外的标签拆壳保留文字（拆完从头再扫，杜绝嵌套夹带） */
+      while (node.firstChild) parent.insertBefore(node.firstChild, node);
+      node.remove();
+      node = parent.firstChild;
+      continue;
+    }
+    const attrs = Array.prototype.slice.call(node.attributes);
+    for (const a of attrs) {
+      const name = a.name.toLowerCase();
+      if (tag === "A" && name === "href") {
+        if (!/^https?:\/\//i.test(a.value.trim())) node.removeAttribute(a.name);
+        continue;
+      }
+      node.removeAttribute(a.name);
+    }
+    if (tag === "A") { node.setAttribute("target", "_blank"); node.setAttribute("rel", "noopener noreferrer"); }
+    cleanPostChildren(doc, node);
+    node = next;
+  }
 }
 
 /* ============================================================
@@ -1695,6 +1954,115 @@ async function dataTag(slug, pg) {
   return { list, total: 0, page: pg, pagecount: list.length >= 12 ? pg + 1 : pg };
 }
 
+/* ---------- 专题（官网 /topics/：JSON API） ---------- */
+function toTopic(it) {
+  if (!it) return null;
+  const slug = String(it.slug || "").trim();
+  const title = String(it.title || "").trim();
+  if (!slug || !title) return null;
+  return {
+    id: String(it.id === undefined || it.id === null ? "" : it.id),
+    slug,
+    title,
+    cover: String(it.cover || "").trim(),
+    intro: String(it.intro || "").trim(),
+    count: parseInt(it.video_count || 0) || 0
+  };
+}
+
+async function dataTopics(pg) {
+  const d = await apiGetJSON(`/api/topics?page=${pg}&size=${TOPIC_PAGE_SIZE}`);
+  if (!d) return { error: true, list: [], total: 0, page: pg, pagecount: 1 };
+  const inner = (d.data && typeof d.data === "object") ? d.data : {};
+  const items = Array.isArray(inner.items) ? inner.items : [];
+  const pgInfo = inner.pagination || {};
+  const total = Number(pgInfo.total) || 0;
+  const pages = Number(pgInfo.pages) || (total ? Math.ceil(total / TOPIC_PAGE_SIZE) : pg);
+  return { list: items.map(toTopic).filter(Boolean), total, page: pg, pagecount: Math.max(1, pages) };
+}
+
+async function dataTopicDetail(slug, pg) {
+  if (!slug) return { error: true, list: [], page: pg, pagecount: 1, total: 0 };
+  const d = await apiGetJSON(`/api/topics/${encodeURIComponent(slug)}?page=${pg}&size=${PAGE_SIZE}`);
+  const inner = (d && d.data && typeof d.data === "object") ? d.data : null;
+  if (!inner || !inner.topic) return { error: true, list: [], page: pg, pagecount: 1, total: 0 };
+  const vids = (inner.videos && typeof inner.videos === "object") ? inner.videos : {};
+  const items = Array.isArray(vids.items) ? vids.items : [];
+  const pgInfo = vids.pagination || {};
+  const topic = toTopic(inner.topic) || { slug, title: "", cover: "", intro: "", count: 0 };
+  const total = Number(pgInfo.total) || topic.count || 0;
+  const pages = Number(pgInfo.pages) || (total ? Math.ceil(total / PAGE_SIZE) : pg);
+  const related = Array.isArray(inner.related) ? inner.related.map(toTopic).filter(Boolean).slice(0, 6) : [];
+  return { topic, related, list: items.map(toVod).filter(Boolean), total, page: pg, pagecount: Math.max(1, pages) };
+}
+
+/* ---------- 排行榜（/api/ranks/{hot|recommend|potential}，TOP20 无分页） ---------- */
+async function dataRank(tab) {
+  const t = RANK_TABS.find(x => x.id === tab) || RANK_TABS[0];
+  const d = await apiGetJSON(`/api/ranks/${t.id}`);
+  const inner = (d && d.data && typeof d.data === "object") ? d.data : {};
+  const items = Array.isArray(inner.items) ? inner.items : [];
+  const list = items.map(it => {
+    const vid = String(it.video_id === undefined || it.video_id === null ? "" : it.video_id).trim();
+    const title = String(it.title || "").trim();
+    if (!vid || !title) return null;
+    const epTotal = parseInt(it.episode_count || 0) || 0;
+    const finished = it.is_finished === true || it.is_finished === 1;
+    return {
+      vod_id: vid,
+      vod_name: title,
+      vod_pic: String(it.cover || "").trim(),
+      vod_remarks: finished ? "已完结" : (epTotal ? `更新至${epTotal}集` : ""),
+      vod_tags: Array.isArray(it.tags) ? it.tags.slice(0, 3).map(x => String(x).trim()).filter(Boolean) : [],
+      rank: parseInt(it.rank || 0) || 0,
+      cate: String(it.cate_name || "").trim(),
+      score: it.score === undefined || it.score === null ? "" : String(it.score),
+      metricLabel: String(it.metric_label || "热度").trim(),
+      metricValue: parseInt(it.metric_value || 0) || 0
+    };
+  }).filter(Boolean);
+  return { error: !list.length, list, tab: t.id };
+}
+
+/* ---------- 黄果吃瓜列表（SSR：/chigua/、/chigua/remen/、/chigua/yuanchuang/） ---------- */
+async function dataChigua(cat, pg) {
+  const c = CHIGUA_CATS.find(x => x.id === cat) || CHIGUA_CATS[0];
+  const path = pg > 1 ? `/${c.path}/${pg}/` : `/${c.path}/`;
+  const html = await fetchText(path);
+  if (html === null) return { error: true, list: [], page: pg, pagecount: 1, total: 0 };
+  return parseChiguaHtml(html, pg);
+}
+
+/* ---------- 吃瓜详情（/api/posts/{id}） ----------
+   正文含 <img data-src>；视频在顶层 video_url（完整 m3u8 签名链，播放前同样防宣传片校验） */
+async function dataPost(id) {
+  if (!id) return null;
+  const d = await apiGetJSON(`/api/posts/${encodeURIComponent(id)}`);
+  const inner = (d && d.data && typeof d.data === "object") ? d.data : null;
+  if (!inner || !inner.title) return null;
+  const tags = [];
+  if (Array.isArray(inner.tags)) {
+    for (const raw of inner.tags) {
+      for (const one of String(raw || "").split(/\s+/)) {
+        if (one.charAt(0) === "#" && one.length > 1 && tags.indexOf(one) < 0) tags.push(one);
+        if (tags.length >= 12) break;
+      }
+      if (tags.length >= 12) break;
+    }
+  }
+  return {
+    id: String(inner.id || id),
+    title: String(inner.title).trim(),
+    content: String(inner.content || ""),
+    cover: String(inner.cover || "").trim(),
+    author: (inner.author && String(inner.author.name || "").trim()) || "",
+    date: String(inner.created_at || inner.publish_time || "").slice(0, 10),
+    reads: (inner.counts && parseInt(inner.counts.hot || 0)) || 0,
+    video_url: cleanPlayUrl(inner.video_url || ""),
+    tags
+  };
+}
+
 /* ============================================================
    收藏 / 历史（localStorage）
    ============================================================ */
@@ -1786,6 +2154,31 @@ const state = {
   hls: null,
   savedScrollY: 0,
   backTo: "category",
+  /* 专题 */
+  topicsList: [],
+  topicsPg: 1,
+  topicsPages: 1,
+  topicsTotal: 0,
+  topicSlug: "",
+  topicTitle: "",
+  topicIntro: "",
+  topicCount: 0,
+  topicRelated: [],
+  topicList: [],
+  topicPg: 1,
+  topicPages: 1,
+  topicTotal: 0,
+  /* 排行榜 */
+  rankTab: "hot",
+  rankList: [],
+  /* 黄果吃瓜 */
+  chiguaCat: "all",
+  chiguaList: [],
+  chiguaPg: 1,
+  chiguaPages: 1,
+  chiguaTotal: 0,
+  postId: "",
+  postData: null,
 };
 
 async function api(path, params) {
@@ -1797,6 +2190,11 @@ async function api(path, params) {
     case "/play":     return dataPlay(p.id || "");
     case "/search":   return dataSearch(p.wd || p.key || state.keyword, parseInt(p.pg || "1"));
     case "/tag":      return dataTag(state.tagName, parseInt(p.pg || "1"));
+    case "/topics":   return dataTopics(parseInt(p.pg || "1"));
+    case "/topic":    return dataTopicDetail(state.topicSlug, parseInt(p.pg || "1"));
+    case "/rank":     return dataRank(state.rankTab);
+    case "/chigua":   return dataChigua(state.chiguaCat, parseInt(p.pg || "1"));
+    case "/post":     return dataPost(p.id || state.postId);
     default:          return {};
   }
 }
@@ -1879,10 +2277,21 @@ const ICONS = {
   home: '<svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>',
   fav:  '<svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
   hist: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',
+  topics: '<svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>',
+  rank:   '<svg viewBox="0 0 24 24"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M17 5h3a3 3 0 0 1-3 3"/><path d="M7 5H4a3 3 0 0 0 3 3"/><path d="M7 4h10v6a5 5 0 0 1-10 0z"/></svg>',
+  chigua: '<svg viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
 };
 
 function activeQuick() {
-  if (state.mode === "detail") return state.backTo === "home" ? "" : state.backTo;
+  if (state.mode === "detail") {
+    const b = state.backTo || "";
+    if (b === "topic") return "topics";
+    if (b === "post") return "chigua";
+    return b === "home" ? "" : b;
+  }
+  if (state.mode === "topics" || state.mode === "topic") return "topics";
+  if (state.mode === "rank") return "rank";
+  if (state.mode === "chigua" || state.mode === "post") return "chigua";
   return ["home", "fav", "hist"].includes(state.mode) ? state.mode : "";
 }
 
@@ -1892,6 +2301,11 @@ function renderNav() {
     { key: "home", name: "首页", fn: "goHome()" },
     { key: "fav",  name: "我的收藏", fn: "goFav()", cnt: favCnt },
     { key: "hist", name: "观看历史", fn: "goHist()", cnt: histCnt },
+  ];
+  const find = [
+    { key: "topics", name: "专题",     fn: "goTopics()" },
+    { key: "rank",   name: "排行榜",   fn: "goRank()" },
+    { key: "chigua", name: "黄果吃瓜", fn: "goChigua()" },
   ];
   const act = activeQuick();
   const cntTxt = c => (c > 99 ? "99+" : c);
@@ -1904,23 +2318,33 @@ function renderNav() {
   `).join("");
 
   document.getElementById("drawerGroups").innerHTML =
+    `<div class="drawer-label">发现</div>` +
+    find.map(q => `
+      <div class="nav-item ${act === q.key ? "active" : ""}" onclick="${q.fn}">
+        <span style="display:flex;width:17px;height:17px;flex-shrink:0">${ICONS[q.key]}</span>
+        <span>${q.name}</span>
+      </div>`).join("") +
     `<div class="drawer-label">分类</div>` +
     CATS.map(c => {
       const on = state.mode === "category" && state.catId === c.id;
       return `<div class="nav-item ${on ? "active" : ""}" onclick="switchCategory('${c.id}','${esc(c.name)}')"><span>${esc(c.name)}</span></div>`;
     }).join("");
 
-  document.getElementById("navrow").innerHTML = quick.map(q => `
+  document.getElementById("navrow").innerHTML = quick.concat(find).map(q => `
     <span class="nlink ${act === q.key ? "active" : ""}" onclick="${q.fn}">${q.name}${q.cnt ? `（${cntTxt(q.cnt)}）` : ""}</span>
   `).join("");
 
-  document.getElementById("bottomNav").innerHTML = quick.map(q => `
-    <div class="bnav-item ${act === q.key ? "on" : ""}" onclick="${q.fn}">
-      ${ICONS[q.key]}
-      <span>${q.key === "fav" ? "收藏" : q.key === "hist" ? "历史" : q.name}</span>
-      ${q.cnt ? `<span class="bdot">${cntTxt(q.cnt)}</span>` : ""}
-    </div>
-  `).join("");
+  const all = quick.concat(find);
+  const shortName = { home: "首页", topics: "专题", rank: "排行", chigua: "吃瓜", fav: "收藏", hist: "历史" };
+  document.getElementById("bottomNav").innerHTML = ["home", "topics", "rank", "chigua", "fav", "hist"].map(k => {
+    const q = all.find(x => x.key === k);
+    return `
+      <div class="bnav-item ${act === k ? "on" : ""}" onclick="${q.fn}">
+        ${ICONS[k]}
+        <span>${shortName[k]}</span>
+        ${q.cnt ? `<span class="bdot">${cntTxt(q.cnt)}</span>` : ""}
+      </div>`;
+  }).join("");
 }
 
 function openDrawer() {
@@ -2237,6 +2661,33 @@ function renderHome() {
 }
 
 /* ---- 列表页 ---- */
+/* 通用分页条：pagerHtml 出结构，bindPager 绑事件（短剧列表 / 专题 / 吃瓜共用） */
+function pagerHtml(pg, pagecount, total, unit) {
+  pg = Math.max(1, pg); pagecount = Math.max(1, pagecount);
+  unit = unit || "部";
+  return pagecount > 1 ? `
+    <div class="pager">
+      <button id="pgFirst" ${pg <= 1 ? "disabled" : ""}>首页</button>
+      <button id="pgPrev" ${pg <= 1 ? "disabled" : ""}>上一页</button>
+      <div class="pg-info">第 <b>${pg}</b> ${total ? `/ ${pagecount} 页 · 共${total}${unit}` : ""}</div>
+      <button id="pgNext" ${pg >= pagecount ? "disabled" : ""}>下一页</button>
+      <button id="pgLast" ${pg >= pagecount ? "disabled" : ""}>末页</button>
+      <div class="goto"><input type="number" id="pgInput" min="1" max="${pagecount}" placeholder="页码"></div>
+    </div>
+  ` : (total ? `<div class="pager"><div class="pg-info">共 ${total} ${unit}</div></div>` : "");
+}
+function bindPager(pg, pagecount, jumpFn) {
+  pg = Math.max(1, pg); pagecount = Math.max(1, pagecount);
+  const $ = (id) => document.getElementById(id);
+  if ($("pgFirst")) $("pgFirst").onclick = () => jumpFn(1);
+  if ($("pgPrev")) $("pgPrev").onclick = () => jumpFn(pg - 1);
+  if ($("pgNext")) $("pgNext").onclick = () => jumpFn(pg + 1);
+  if ($("pgLast")) $("pgLast").onclick = () => jumpFn(pagecount);
+  if ($("pgInput")) $("pgInput").onkeydown = (e) => {
+    if (e.key === "Enter") { const v = parseInt($("pgInput").value); if (v) jumpFn(v); }
+  };
+}
+
 function renderListPage(apiPath) {
   const app = document.getElementById("app");
   if (!state.list.length) { renderEmpty("暂无内容"); return; }
@@ -2248,16 +2699,6 @@ function renderListPage(apiPath) {
 
   const pg = state.pg;
   const pagecount = Math.max(1, state.pagecount);
-  const pagerHtml = pagecount > 1 ? `
-    <div class="pager">
-      <button id="pgFirst" ${pg <= 1 ? "disabled" : ""}>首页</button>
-      <button id="pgPrev" ${pg <= 1 ? "disabled" : ""}>上一页</button>
-      <div class="pg-info">第 <b>${pg}</b> ${state.total ? `/ ${pagecount} 页 · 共${state.total}部` : ""}</div>
-      <button id="pgNext" ${pg >= pagecount ? "disabled" : ""}>下一页</button>
-      <button id="pgLast" ${pg >= pagecount ? "disabled" : ""}>末页</button>
-      <div class="goto"><input type="number" id="pgInput" min="1" max="${pagecount}" placeholder="页码"></div>
-    </div>
-  ` : (state.total ? `<div class="pager"><div class="pg-info">共 ${state.total} 部</div></div>` : "");
 
   const title = isSearch ? `搜索：${esc(state.keyword)}`
     : isTag ? `<span class="hash">#</span>${esc(state.tagDisplay)}`
@@ -2266,27 +2707,19 @@ function renderListPage(apiPath) {
   app.innerHTML = `
     <div class="list-tools"><span class="bar"></span><div><h2>${title}</h2>${state.total ? `<div class="total">${isTag ? "该标签下共 " : "共 "}${state.total} 部作品</div>` : ""}</div></div>
     <div class="grid" id="listGrid">${cards}</div>
-    ${pagerHtml}
+    ${pagerHtml(pg, pagecount, state.total, "部")}
   `;
 
   bindCards(document.getElementById("listGrid"), state.list, (v) => openDetail(v));
 
-  const jumpTo = (p) => {
+  bindPager(pg, pagecount, (p) => {
     p = Math.min(Math.max(1, p), pagecount);
     if (p === state.pg) return;
     state.pg = p;
     window.scrollTo({ top: 0, behavior: "smooth" });
     renderListSkeleton();
     loadListPage(apiPath);
-  };
-  const $ = (id) => document.getElementById(id);
-  if ($("pgFirst")) $("pgFirst").onclick = () => jumpTo(1);
-  if ($("pgPrev")) $("pgPrev").onclick = () => jumpTo(pg - 1);
-  if ($("pgNext")) $("pgNext").onclick = () => jumpTo(pg + 1);
-  if ($("pgLast")) $("pgLast").onclick = () => jumpTo(pagecount);
-  if ($("pgInput")) $("pgInput").onkeydown = (e) => {
-    if (e.key === "Enter") { const v = parseInt($("pgInput").value); if (v) jumpTo(v); }
-  };
+  });
 }
 
 /* ---- 收藏 ---- */
@@ -2348,6 +2781,475 @@ function renderHist() {
       toast("已清空历史");
     }
   };
+}
+
+/* ============================================================
+   专题 / 排行榜 / 黄果吃瓜（官网导航板块）
+   各自独立视图：用请求令牌丢弃过期响应，不占用 state.loading 全局锁
+   ============================================================ */
+let topicsReq = 0, topicReq = 0, rankReq = 0, chiguaReq = 0, postReq = 0;
+
+/* ---- 专题列表 ---- */
+function goTopics() {
+  resetView();
+  state.mode = "topics";
+  state.backTo = "topics";
+  state.savedScrollY = 0;
+  closeDrawer();
+  renderNav();
+  window.scrollTo(0, 0);
+  if (state.topicsList.length) { renderTopicsPage(); return; }
+  renderListSkeleton();
+  loadTopicsPage(state.topicsPg || 1);
+}
+async function loadTopicsPage(pg) {
+  const req = ++topicsReq;
+  progress(true);
+  const data = await api("/topics", { pg });
+  if (req !== topicsReq || state.mode !== "topics") { progress(false); return; }
+  if (data.error || (!data.list.length && pg > 1)) {
+    if (!state.topicsList.length) renderEmpty("加载失败，请重试", "重试", "retryTopics()");
+    else toast("加载失败，请重试");
+  } else if (!data.list.length) {
+    renderEmpty("暂无专题");
+  } else {
+    state.topicsList = data.list;
+    state.topicsTotal = data.total || 0;
+    state.topicsPages = data.pagecount || 1;
+    state.topicsPg = data.page || pg;
+    renderTopicsPage();
+  }
+  progress(false);
+}
+function retryTopics() { renderListSkeleton(); loadTopicsPage(state.topicsPg || 1); }
+
+function renderTopicsPage() {
+  const app = document.getElementById("app");
+  if (!state.topicsList.length) { renderEmpty("暂无专题"); return; }
+  const cards = state.topicsList.map((t, i) => `
+    <div class="topic-card" data-i="${i}">
+      <div class="topic-cover">
+        <img${imgAttrs(t.cover, 640, true)} alt="" referrerpolicy="no-referrer">
+      </div>
+      <div class="topic-info">
+        <h3>${esc(t.title)}</h3>
+        <div class="cnt">🎬 ${t.count} 部作品</div>
+      </div>
+    </div>
+  `).join("");
+  app.innerHTML = `
+    <div class="list-tools"><span class="bar"></span><div><h2>专题</h2><div class="total">${state.topicsTotal ? "共 " + state.topicsTotal + " 个专题" : "精选合集 · 一键看全"}</div></div></div>
+    <div class="topic-grid" id="topicGrid">${cards}</div>
+    ${pagerHtml(state.topicsPg, state.topicsPages, state.topicsTotal, "个")}
+  `;
+  document.getElementById("topicGrid").querySelectorAll(".topic-card").forEach(node => {
+    node.onclick = () => goTopic(state.topicsList[+node.dataset.i]);
+  });
+  bindPager(state.topicsPg, state.topicsPages, jumpTopicsPage);
+}
+function jumpTopicsPage(p) {
+  p = Math.min(Math.max(1, p), Math.max(1, state.topicsPages));
+  if (p === state.topicsPg && state.topicsList.length) return;
+  state.topicsPg = p;
+  state.topicsList = [];
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  renderListSkeleton();
+  loadTopicsPage(p);
+}
+
+/* ---- 专题详情 ---- */
+function goTopic(t) {
+  if (!t || !t.slug) return;
+  resetView();
+  state.mode = "topic";
+  state.backTo = "topic";
+  state.topicSlug = t.slug;
+  state.topicTitle = t.title || "专题";
+  state.topicIntro = t.intro || "";
+  state.topicCount = t.count || 0;
+  state.topicRelated = [];
+  state.topicList = [];
+  state.topicPg = 1;
+  state.topicPages = 1;
+  state.topicTotal = 0;
+  closeDrawer();
+  renderNav();
+  window.scrollTo(0, 0);
+  renderTopicSkeleton();
+  loadTopicPage(1);
+}
+function renderTopicSkeleton() {
+  document.getElementById("app").innerHTML = `
+    <div class="player-toolbar"><div class="back-btn" id="topicBack">← 专题列表</div></div>
+    <div class="list-tools"><span class="bar"></span><div><h2>${esc(state.topicTitle || "专题")}</h2><div class="total">加载中…</div></div></div>
+    <div class="grid">${Array.from({ length: 12 }).map(skelCard).join("")}</div>
+  `;
+  document.getElementById("topicBack").onclick = goTopics;
+}
+async function loadTopicPage(pg) {
+  const req = ++topicReq;
+  progress(true);
+  const slug = state.topicSlug;
+  const data = await api("/topic", { pg });
+  if (req !== topicReq || state.mode !== "topic" || slug !== state.topicSlug) { progress(false); return; }
+  if (data.error) {
+    renderEmpty("加载失败，请重试", "重试", "retryTopic()");
+  } else {
+    if (data.topic) {
+      state.topicTitle = data.topic.title || state.topicTitle;
+      state.topicIntro = data.topic.intro || state.topicIntro;
+      state.topicCount = data.topic.count || state.topicCount;
+      state.topicSlug = data.topic.slug || state.topicSlug;
+    }
+    state.topicRelated = data.related || [];
+    state.topicList = data.list || [];
+    state.topicTotal = data.total || 0;
+    state.topicPages = data.pagecount || 1;
+    state.topicPg = data.page || pg;
+    if (!state.topicList.length) renderEmpty("该专题暂无作品");
+    else renderTopicPage();
+  }
+  progress(false);
+}
+function retryTopic() { renderTopicSkeleton(); loadTopicPage(state.topicPg || 1); }
+
+function renderTopicPage() {
+  const app = document.getElementById("app");
+  if (!state.topicList.length) { renderEmpty("该专题暂无作品"); return; }
+  const pg = state.topicPg, pagecount = Math.max(1, state.topicPages);
+  const rel = (state.topicRelated || []).map(r =>
+    `<span class="tag tg" data-slug="${esc(r.slug)}">${esc(r.title)}</span>`).join("");
+  app.innerHTML = `
+    <div class="player-toolbar"><div class="back-btn" id="topicBack">← 专题列表</div></div>
+    <div class="list-tools"><span class="bar"></span><div><h2>${esc(state.topicTitle)}</h2><div class="total">${state.topicCount ? "共 " + state.topicCount + " 部作品" : ""}</div></div></div>
+    ${state.topicIntro ? `<div class="topic-intro">${esc(state.topicIntro)}</div>` : ""}
+    ${rel ? `<div class="topic-rel">${rel}</div>` : ""}
+    <div class="grid" id="topicVideoGrid">${state.topicList.map((v, i) => cardHtml(v, i, { w: 300 })).join("")}</div>
+    ${pagerHtml(pg, pagecount, state.topicTotal, "部")}
+  `;
+  document.getElementById("topicBack").onclick = goTopics;
+  bindCards(document.getElementById("topicVideoGrid"), state.topicList, (v) => openDetail(v, null, "topic"));
+  app.querySelectorAll(".topic-rel .tag.tg").forEach(el => {
+    el.onclick = () => {
+      const rt = (state.topicRelated || []).find(x => x.slug === el.dataset.slug);
+      if (rt) goTopic(rt);
+    };
+  });
+  bindPager(pg, pagecount, jumpTopicPage);
+}
+function jumpTopicPage(p) {
+  p = Math.min(Math.max(1, p), Math.max(1, state.topicPages));
+  if (p === state.topicPg && state.topicList.length) return;
+  state.topicPg = p;
+  state.topicList = [];
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  renderTopicSkeleton();
+  loadTopicPage(p);
+}
+
+/* ---- 排行榜 ---- */
+function bindSegs(containerId, dataKey, handler) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  box.querySelectorAll(".seg-item").forEach(el => {
+    el.onclick = () => handler(el.dataset[dataKey]);
+  });
+}
+
+function goRank() {
+  resetView();
+  state.mode = "rank";
+  state.backTo = "rank";
+  state.savedScrollY = 0;
+  closeDrawer();
+  renderNav();
+  window.scrollTo(0, 0);
+  if (state.rankList.length) { renderRankPage(); return; }
+  renderRankSkeleton();
+  loadRank();
+}
+async function loadRank() {
+  const req = ++rankReq;
+  progress(true);
+  const tab = state.rankTab;
+  const data = await api("/rank");
+  if (req !== rankReq || state.mode !== "rank" || tab !== state.rankTab) { progress(false); return; }
+  if (data.error) {
+    renderEmpty("榜单加载失败，请重试", "重试", "retryRank()");
+  } else {
+    state.rankList = data.list || [];
+    renderRankPage();
+  }
+  progress(false);
+}
+function retryRank() { renderRankSkeleton(); loadRank(); }
+
+function renderRankSkeleton() {
+  const segs = RANK_TABS.map(t => `<span class="seg-item ${state.rankTab === t.id ? "on" : ""}" data-tab="${t.id}">${t.name}</span>`).join("");
+  document.getElementById("app").innerHTML = `
+    <div class="list-tools"><span class="bar"></span><div><h2>排行榜</h2><div class="total">TOP 20 · 每日更新</div></div></div>
+    <div class="seg" id="rankSeg">${segs}</div>
+    <div class="rank-list">${Array.from({ length: 8 }).map(() => `
+      <div class="rank-row skel-rank">
+        <div class="rank-no"></div>
+        <div class="rank-cover"></div>
+        <div class="rank-main"><div class="card-title"></div><div class="card-tags"></div><div class="rank-bar"></div></div>
+      </div>`).join("")}</div>
+  `;
+  bindSegs("rankSeg", "tab", switchRankTab);
+}
+function switchRankTab(id) {
+  id = (RANK_TABS.find(t => t.id === id) || RANK_TABS[0]).id;
+  if (id === state.rankTab && state.rankList.length) return;
+  state.rankTab = id;
+  state.rankList = [];
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  renderRankSkeleton();
+  loadRank();
+}
+function renderRankPage() {
+  const app = document.getElementById("app");
+  if (!state.rankList.length) { renderEmpty("榜单暂无数据"); return; }
+  const segs = RANK_TABS.map(t => `<span class="seg-item ${state.rankTab === t.id ? "on" : ""}" data-tab="${t.id}">${t.name}</span>`).join("");
+  const max = state.rankList.reduce((m, x) => Math.max(m, x.metricValue || 0), 1);
+  const rows = state.rankList.map((v, i) => `
+    <div class="rank-row" data-i="${i}">
+      <div class="rank-no ${v.rank >= 1 && v.rank <= 3 ? "r" + v.rank : ""}">${v.rank}</div>
+      <div class="rank-cover"><img${imgAttrs(v.vod_pic, 260, true)} alt="" referrerpolicy="no-referrer"></div>
+      <div class="rank-main">
+        <div class="rank-title">${esc(v.vod_name)}</div>
+        <div class="rank-tags">${(v.vod_tags || []).map(t => `<span class="ctag" style="cursor:default">${esc(t)}</span>`).join("")}</div>
+        <div class="rank-meta">
+          <span class="heat">🔥 ${esc(v.metricLabel)} ${fmtPlays(v.metricValue)}</span>
+          ${v.score ? `<span>评分 ${esc(v.score)}</span>` : ""}
+          ${v.vod_remarks ? `<span>${esc(v.vod_remarks)}</span>` : ""}
+          ${v.cate ? `<span>${esc(v.cate)}</span>` : ""}
+        </div>
+        <div class="rank-bar"><i style="width:${Math.max(6, Math.round((v.metricValue || 0) / max * 100))}%"></i></div>
+      </div>
+    </div>
+  `).join("");
+  const tabDef = RANK_TABS.find(t => t.id === state.rankTab) || RANK_TABS[0];
+  app.innerHTML = `
+    <div class="list-tools"><span class="bar"></span><div><h2>排行榜</h2><div class="total">${esc(tabDef.desc)}</div></div></div>
+    <div class="seg" id="rankSeg">${segs}</div>
+    <div class="rank-list" id="rankList">${rows}</div>
+  `;
+  bindSegs("rankSeg", "tab", switchRankTab);
+  app.querySelectorAll(".rank-row").forEach(node => {
+    node.onclick = () => openDetail(state.rankList[+node.dataset.i], null, "rank");
+  });
+}
+
+/* ---- 黄果吃瓜列表 ---- */
+function chiguaSegHtml() {
+  return CHIGUA_CATS.map(c => `<span class="seg-item ${state.chiguaCat === c.id ? "on" : ""}" data-cat="${c.id}">${c.name}</span>`).join("");
+}
+function goChigua() {
+  resetView();
+  state.mode = "chigua";
+  state.backTo = "chigua";
+  state.savedScrollY = 0;
+  closeDrawer();
+  renderNav();
+  window.scrollTo(0, 0);
+  if (state.chiguaList.length) { renderChiguaPage(); return; }
+  renderChiguaSkeleton();
+  loadChiguaPage(state.chiguaPg || 1);
+}
+function renderChiguaSkeleton() {
+  document.getElementById("app").innerHTML = `
+    <div class="list-tools"><span class="bar"></span><div><h2>黄果吃瓜</h2><div class="total">每日更新</div></div></div>
+    <div class="seg" id="chiguaSeg">${chiguaSegHtml()}</div>
+    <div class="post-grid">${Array.from({ length: 6 }).map(() => `
+      <div class="post-card skel-post">
+        <div class="post-cover"></div>
+        <div class="post-body"><div class="post-meta"></div><div class="post-title"></div></div>
+      </div>`).join("")}</div>
+  `;
+  bindSegs("chiguaSeg", "cat", switchChiguaTab);
+}
+async function loadChiguaPage(pg) {
+  const req = ++chiguaReq;
+  progress(true);
+  const cat = state.chiguaCat;
+  const data = await api("/chigua", { pg });
+  if (req !== chiguaReq || state.mode !== "chigua" || cat !== state.chiguaCat) { progress(false); return; }
+  if (data.error) {
+    if (!state.chiguaList.length) renderEmpty("加载失败，请重试", "重试", "retryChigua()");
+    else toast("加载失败，请重试");
+  } else {
+    state.chiguaList = data.list || [];
+    state.chiguaTotal = data.total || 0;
+    state.chiguaPages = data.pagecount || 1;
+    state.chiguaPg = data.page || pg;
+    if (!state.chiguaList.length && pg === 1) renderEmpty("暂无内容");
+    else renderChiguaPage();
+  }
+  progress(false);
+}
+function retryChigua() { renderChiguaSkeleton(); loadChiguaPage(state.chiguaPg || 1); }
+function switchChiguaTab(id) {
+  id = (CHIGUA_CATS.find(c => c.id === id) || CHIGUA_CATS[0]).id;
+  if (id === state.chiguaCat && state.chiguaList.length) return;
+  state.chiguaCat = id;
+  state.chiguaPg = 1;
+  state.chiguaList = [];
+  state.chiguaTotal = 0;
+  state.chiguaPages = 1;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  renderChiguaSkeleton();
+  loadChiguaPage(1);
+}
+function jumpChiguaPage(p) {
+  p = Math.min(Math.max(1, p), Math.max(1, state.chiguaPages));
+  if (p === state.chiguaPg && state.chiguaList.length) return;
+  state.chiguaPg = p;
+  state.chiguaList = [];
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  renderChiguaSkeleton();
+  loadChiguaPage(p);
+}
+function renderChiguaPage() {
+  const app = document.getElementById("app");
+  if (!state.chiguaList.length) { renderEmpty("暂无内容"); return; }
+  const cards = state.chiguaList.map((p, i) => `
+    <div class="post-card" data-i="${i}">
+      <div class="post-cover"><img${imgAttrs(p.pic, 640, true)} alt="" referrerpolicy="no-referrer"></div>
+      <div class="post-body">
+        <div class="post-meta">
+          ${p.cat ? `<span class="cat">${esc(p.cat)}</span>` : ""}
+          ${p.user ? `<span>${esc(p.user)}</span>` : ""}
+          ${p.date ? `<span>${esc(p.date)}</span>` : ""}
+        </div>
+        <div class="post-title">${esc(p.title)}</div>
+      </div>
+    </div>
+  `).join("");
+  app.innerHTML = `
+    <div class="list-tools"><span class="bar"></span><div><h2>黄果吃瓜</h2><div class="total">${state.chiguaTotal ? "共 " + state.chiguaTotal + " 条爆料" : "每日更新"}</div></div></div>
+    <div class="seg" id="chiguaSeg">${chiguaSegHtml()}</div>
+    <div class="post-grid" id="postGrid">${cards}</div>
+    ${pagerHtml(state.chiguaPg, state.chiguaPages, state.chiguaTotal, "条")}
+  `;
+  bindSegs("chiguaSeg", "cat", switchChiguaTab);
+  document.getElementById("postGrid").querySelectorAll(".post-card").forEach(node => {
+    node.onclick = () => openPost(state.chiguaList[+node.dataset.i]);
+  });
+  bindPager(state.chiguaPg, state.chiguaPages, jumpChiguaPage);
+}
+
+/* ---- 吃瓜帖子详情 ---- */
+const postCache = new Map();   /* 帖 id → 数据，返回/再进不走重复请求 */
+function openPost(p) {
+  if (!p || !p.id) return;
+  state.savedScrollY = window.scrollY || 0;
+  state.mode = "post";
+  state.postId = String(p.id);
+  state.detail = null;
+  state.episodes = [];
+  state.currentEp = 0;
+  state.resume = null;
+  destroyPlayer();
+  renderNav();
+  window.scrollTo(0, 0);
+  const cached = postCache.get(state.postId);
+  if (cached) { state.postData = cached; renderPostPage(); return; }
+  state.postData = { id: state.postId, title: p.title || "吃瓜详情", cover: p.pic || "", author: p.user || "", date: p.date || "", content: "", video_url: "", tags: [] };
+  renderPostSkeleton();
+  loadPost(state.postId);
+}
+async function loadPost(id) {
+  const req = ++postReq;
+  progress(true);
+  const data = await api("/post", { id });
+  if (req !== postReq || state.mode !== "post" || String(id) !== String(state.postId)) { progress(false); return; }
+  if (!data) {
+    renderEmpty("加载失败，请重试", "重试", "retryPost()");
+  } else {
+    if (data.id) state.postId = data.id;
+    state.postData = data;
+    if (postCache.size > 30) postCache.clear();
+    postCache.set(state.postId, data);
+    renderPostPage();
+  }
+  progress(false);
+}
+function retryPost() { renderPostSkeleton(); loadPost(state.postId); }
+
+function bindPostToolbar() {
+  const b = document.getElementById("postBack");
+  if (b) b.onclick = closePost;
+  const c = document.getElementById("postClose");
+  if (c) c.onclick = closePost;
+}
+function renderPostSkeleton() {
+  document.getElementById("app").innerHTML = `
+    <div class="player-toolbar">
+      <div class="back-btn" id="postBack">← 返回</div>
+      <div class="toolbar-right"><button class="close-btn" id="postClose" title="关闭">✕</button></div>
+    </div>
+    <div class="post-head"><h1>${esc((state.postData && state.postData.title) || "吃瓜详情")}</h1></div>
+    <div class="post-article"><p style="color:var(--sub)">正在加载吃瓜内容…</p></div>
+  `;
+  bindPostToolbar();
+}
+function renderPostPage() {
+  const app = document.getElementById("app");
+  const d = state.postData || {};
+  const body = sanitizePostBody(d.content || "");
+  const tags = (d.tags || []).slice(0, 12).map(t => `<span class="tag">${esc(t)}</span>`).join("");
+  const hasVideo = !!d.video_url;
+  app.innerHTML = `
+    <div class="player-toolbar">
+      <div class="back-btn" id="postBack">← 返回</div>
+      <div class="toolbar-right"><button class="close-btn" id="postClose" title="关闭">✕</button></div>
+    </div>
+    ${hasVideo ? `<div class="player-wrap" id="playerWrap" style="display:none"><video id="video" controls playsinline preload="metadata"></video></div>` : ""}
+    <div class="post-head">
+      <h1>${esc(d.title || "吃瓜详情")}</h1>
+      <div class="post-meta-row">
+        <span class="tag accent">黄果吃瓜</span>
+        ${d.author ? `<span>${esc(d.author)}</span>` : ""}
+        ${d.date ? `<span>${esc(d.date)}</span>` : ""}
+        ${d.reads ? `<span>${esc(fmtPlays(d.reads))} 阅读</span>` : ""}
+      </div>
+    </div>
+    ${hasVideo ? `
+      <div class="post-cover" id="postCover" title="点击播放视频">
+        <img${imgAttrs(d.cover, 900)} alt="" referrerpolicy="no-referrer">
+        <span class="post-play"><svg viewBox="0 0 24 24"><path d="M8 5.14v14l11-7-11-7z"/></svg></span>
+        <span class="post-play-tip">点击播放视频</span>
+      </div>` : (d.cover ? `<div class="post-cover plain"><img${imgAttrs(d.cover, 900)} alt="" referrerpolicy="no-referrer"></div>` : "")}
+    <div class="post-article">${body || '<p style="color:var(--sub)">暂无正文</p>'}</div>
+    ${tags ? `<div class="post-tags">${tags}</div>` : ""}
+  `;
+  bindPostToolbar();
+  const cover = document.getElementById("postCover");
+  if (cover && hasVideo) cover.onclick = startPostVideo;
+}
+async function startPostVideo() {
+  const d = state.postData || {};
+  if (!d.video_url) { toast("该内容没有视频"); return; }
+  const wrap = document.getElementById("playerWrap");
+  const cover = document.getElementById("postCover");
+  if (wrap) wrap.style.display = "";
+  if (cover) cover.style.display = "none";
+  showPlayerLoading("正在加载视频…");
+  const vs = await verifyManifest(d.video_url);
+  if (state.mode !== "post" || !state.postData || state.postData.video_url !== d.video_url) return;
+  if (vs !== "ok") { showPlayerError(playBlockMessage(vs), startPostVideo); return; }
+  playVideo(d.video_url, 0, startPostVideo);
+}
+function closePost() {
+  destroyPlayer();
+  state.mode = "chigua";
+  state.postId = "";
+  state.postData = null;
+  renderNav();
+  window.scrollTo(0, state.savedScrollY || 0);
+  if (state.chiguaList.length) renderChiguaPage();
+  else goChigua();
 }
 
 /* ---- 详情 & 播放 ---- */
@@ -2537,6 +3439,10 @@ function closePlayer() {
   else if (back === "search") { if (state.list.length) renderListPage("search"); else doSearchBack(); }
   else if (back === "tag") { if (state.list.length) renderListPage("tag"); else goTag(state.tagDisplay, state.tagName); }
   else if (back === "category") { if (state.list.length) renderListPage("category"); else switchCategory(state.catId || "recommend", state.catTitle); }
+  else if (back === "topics") { if (state.topicsList.length) renderTopicsPage(); else goTopics(); }
+  else if (back === "topic") { if (state.topicList.length) renderTopicPage(); else goTopics(); }
+  else if (back === "rank") { if (state.rankList.length) renderRankPage(); else goRank(); }
+  else if (back === "chigua") { if (state.chiguaList.length) renderChiguaPage(); else goChigua(); }
   else goHome();
 }
 function doSearchBack() { state.pg = 1; loadListPage("search"); }
@@ -2572,7 +3478,7 @@ function showPlayerLoading(msg) {
   div.innerHTML = `<div>${esc(msg)}</div>`;
   wrap.appendChild(div);
 }
-function showPlayerError(msg) {
+function showPlayerError(msg, onRetry) {
   const wrap = document.getElementById("playerWrap");
   if (!wrap) return;
   wrap.querySelectorAll(".player-error").forEach(n => n.remove());
@@ -2580,7 +3486,10 @@ function showPlayerError(msg) {
   div.className = "player-error";
   div.innerHTML = `<div>⚠️ ${esc(msg)}</div><button id="retryPlay">重试</button>`;
   wrap.appendChild(div);
-  div.querySelector("#retryPlay").onclick = () => { div.remove(); playEpisode(state.currentEp); };
+  div.querySelector("#retryPlay").onclick = () => {
+    div.remove();
+    if (onRetry) onRetry(); else playEpisode(state.currentEp);
+  };
 }
 function showPlayerLoadingHide() {
   const wrap = document.getElementById("playerWrap");
@@ -2598,7 +3507,7 @@ function showFinishedOverlay() {
   wrap.appendChild(div);
 }
 
-function playVideo(src, seekTo) {
+function playVideo(src, seekTo, onRetry) {
   destroyPlayer();
   const v = document.getElementById("video");
   if (!v) return;
@@ -2614,6 +3523,8 @@ function playVideo(src, seekTo) {
 
   v.onended = () => {
     saveCurrentProgress();
+    /* 吃瓜帖视频不在选集体系里，播完不弹"最后一集"浮层 */
+    if (state.mode === "post") return;
     const next = state.currentEp + 1;
     if (next < state.episodes.length) {
       playEpisode(next);
@@ -2656,9 +3567,9 @@ function playVideo(src, seekTo) {
     hls.on(Hls.Events.ERROR, (e, data) => {
       if (data && data.fatal) {
         switch (data.type) {
-          case Hls.ErrorTypes.NETWORK_ERROR: showPlayerError("网络错误，播放失败"); break;
-          case Hls.ErrorTypes.MEDIA_ERROR: try { hls.recoverMediaError(); } catch (err) { showPlayerError("媒体解码失败"); } break;
-          default: showPlayerError("播放失败：" + (data.details || "未知错误"));
+          case Hls.ErrorTypes.NETWORK_ERROR: showPlayerError("网络错误，播放失败", onRetry); break;
+          case Hls.ErrorTypes.MEDIA_ERROR: try { hls.recoverMediaError(); } catch (err) { showPlayerError("媒体解码失败", onRetry); } break;
+          default: showPlayerError("播放失败：" + (data.details || "未知错误"), onRetry);
         }
       }
     });
@@ -2669,7 +3580,7 @@ function playVideo(src, seekTo) {
       showPlayerLoadingHide();
       v.play().catch(() => {});
     }, { once: true });
-    v.addEventListener("error", () => showPlayerError("播放失败"), { once: true });
+    v.addEventListener("error", () => showPlayerError("播放失败", onRetry), { once: true });
   }
 }
 
