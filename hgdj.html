@@ -43,8 +43,6 @@
     --bg: #0e0e12;
     --bg-grad-1: #2b2005;
     --card: #17181d;
-    --card-hi: #1e2027;
-    --panel: #17181d;
     --panel-solid: #1a1b21;
     --line: rgba(255,255,255,.07);
     --line-hi: rgba(255,255,255,.16);
@@ -65,8 +63,6 @@
     --bg: #f5f6fa;
     --bg-grad-1: #ffe9b8;
     --card: #ffffff;
-    --card-hi: #ffffff;
-    --panel: #ffffff;
     --panel-solid: #ffffff;
     --line: rgba(20,20,40,.08);
     --line-hi: rgba(20,20,40,.18);
@@ -337,7 +333,6 @@
     transition: all .25s; margin-bottom: 1px;
     position: relative;
   }
-  .nav-item .nico { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
   .nav-item:hover { background: var(--hover); color: var(--text); }
   .nav-item.active {
     background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -509,34 +504,6 @@
   }
   .sec-head .more:hover { color: var(--accent); background: var(--hover); }
   .sec-head .more svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; }
-
-  /* ============ 筛选条 ============ */
-  .filters { display: flex; flex-direction: column; gap: 9px; margin: 4px 0 16px; }
-  .frow { display: flex; align-items: center; gap: 8px; }
-  .frow .flabel { font-size: 12px; font-weight: 700; color: var(--sub); flex-shrink: 0; width: 34px; }
-  .frow .fchips {
-    display: flex; gap: 7px;
-    overflow-x: auto; scrollbar-width: none;
-    padding: 2px 0;
-  }
-  .frow .fchips::-webkit-scrollbar { display: none; }
-  .fchip {
-    flex-shrink: 0;
-    padding: 6px 13px; border-radius: 18px;
-    background: var(--chip-bg);
-    border: 1px solid var(--line);
-    font-size: 12.5px; font-weight: 500;
-    color: var(--text-dim);
-    cursor: pointer; user-select: none;
-    transition: all .22s cubic-bezier(.34,1.4,.64,1);
-    white-space: nowrap;
-  }
-  .fchip:hover { color: var(--text); border-color: var(--line-hi); transform: translateY(-1px); }
-  .fchip.on {
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    color: var(--on-accent); border-color: transparent; font-weight: 700;
-    box-shadow: 0 5px 16px var(--accent-glow);
-  }
 
   /* ============ 卡片网格 ============ */
   .grid {
@@ -1066,7 +1033,8 @@ const PAGE_SIZE = 24;
    后续直接走赢家域名，失败再整体竞速 + 重试两次。 */
 let goodHost = null;
 let goodApiRelay = null;   /* 官网被墙时命中的公共中转（优先复用） */
-let relayOnlyUntil = 0;    /* 直连全挂后的 5 分钟内，数据请求直接走中转，不再空等直连 */
+let apiMode = null;        /* 最近命中的通道："direct"（直连）/ "relay"（公共中转） */
+let apiModeUntil = 0;      /* 通道有效期：5 分钟内沿用，过期待下次竞速重新判定 */
 let fetchActive = 0;
 const fetchQueue = [];
 const FETCH_CONCURRENCY = 3;
@@ -1085,9 +1053,29 @@ function pumpFetch() {
   }
 }
 
-async function fetchOnce(url, timeoutMs) {
+/* 中转请求走独立并发池：直连被墙时会挂住占满主池，不能挡住中转的路 */
+let relayActive = 0;
+const relayQueue = [];
+const RELAY_CONCURRENCY = 3;
+function relayLimit(task) {
+  return new Promise((resolve, reject) => {
+    relayQueue.push({ task, resolve, reject });
+    pumpRelay();
+  });
+}
+function pumpRelay() {
+  while (relayActive < RELAY_CONCURRENCY && relayQueue.length) {
+    const { task, resolve, reject } = relayQueue.shift();
+    relayActive++;
+    task().then(resolve, reject).finally(() => { relayActive--; pumpRelay(); });
+  }
+}
+
+async function fetchOnce(url, timeoutMs, extSignal) {
+  if (extSignal && extSignal.aborted) throw new Error("aborted");
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs || 12000);
+  if (extSignal) extSignal.addEventListener("abort", () => ctrl.abort(), { once: true });
   try {
     const r = await fetch(url, { signal: ctrl.signal, referrerPolicy: "no-referrer", cache: "no-store" });
     if (!r.ok) throw new Error("HTTP " + r.status);
@@ -1099,67 +1087,101 @@ async function fetchOnce(url, timeoutMs) {
   }
 }
 
-async function fetchText(path, attempt) {
-  attempt = attempt || 0;
-  const tryHost = async (h) => {
+/* ---------- 取数据：直连 / 公共中转 双通道，自动竞速切换 ----------
+   直连（官网三域名）快就用直连；官网被墙时直连会挂，自动切公共中转。
+   命中的通道沿用 5 分钟：期间不再在失败的一侧浪费时间（挂梯/不挂梯都不空等）。 */
+
+/* 直连：并发竞速三个官网域名，谁先成功用谁；quick=true 时先只试粘住的域名 */
+async function fetchDirect(path, signal, quick) {
+  if (quick && goodHost) {
     try {
-      const t = await fetchOnce(h + path);
+      const t = await fetchLimit(() => fetchOnce(goodHost + path, 12000, signal));
+      if (t) return t;
+    } catch (e) {}
+  }
+  try {
+    return await Promise.any(HOSTS.map(h => fetchLimit(async () => {
+      const t = await fetchOnce(h + path, 12000, signal);
       goodHost = h;
       return t;
-    } catch (e) { return null; }
+    })));
+  } catch (e) { return null; }
+}
+
+/* 直连 + 中转竞速：直连先行，1.2 秒内没成功才启动中转；先成功者胜，另一方立即中止 */
+async function fetchRace(path) {
+  const ctrl = new AbortController();
+  let settled = false, text = null, kind = null, resolveWin = null, resolveAll = null, remaining = 2;
+  const won = new Promise(r => { resolveWin = r; });
+  const all = new Promise(r => { resolveAll = r; });
+  const win = (k) => (t) => {
+    if (settled || t === null) return t;
+    settled = true; text = t; kind = k;
+    ctrl.abort();
+    resolveWin();
+    return t;
   };
-  /* 官网被墙（直连全挂）后的 5 分钟内，跳过无谓的直连等待，直接走中转 */
-  if (Date.now() < relayOnlyUntil) {
-    const t = await fetchViaRelay(path);
+  const failed = () => { if (!settled && --remaining === 0) resolveAll(); };
+  fetchDirect(path, ctrl.signal).then(win("direct")).then(failed, failed);
+  (async () => {
+    await new Promise(s => setTimeout(s, 1200));
+    if (settled) return null;
+    return fetchViaRelay(path, ctrl.signal).then(win("relay"));
+  })().then(failed, failed);
+  await Promise.race([won, all]);
+  if (text !== null) { apiMode = kind; apiModeUntil = Date.now() + 5 * 60 * 1000; }
+  return text;
+}
+
+async function fetchText(path, attempt) {
+  attempt = attempt || 0;
+  /* 已确认的通道：5 分钟内直接沿用（挂梯=直连，不挂梯=中转），不再每笔都竞速 */
+  if (apiMode && Date.now() < apiModeUntil) {
+    const t = apiMode === "relay" ? await fetchViaRelay(path) : await fetchDirect(path, null, true);
     if (t !== null) return t;
-    relayOnlyUntil = 0;
+    apiMode = null;
   }
-  let text = goodHost ? await fetchLimit(() => tryHost(goodHost)) : null;
-  if (text === null) {
-    try {
-      text = await Promise.any(HOSTS.map(h =>
-        fetchLimit(() => tryHost(h)).then(t => { if (t === null) throw new Error("fail"); return t; })
-      ));
-    } catch (e) { text = null; }
-  }
-  if (text === null) {
-    const t = await fetchViaRelay(path);
-    if (t !== null) { relayOnlyUntil = Date.now() + 5 * 60 * 1000; return t; }
-  }
-  if (text !== null) return text;
+  const t = await fetchRace(path);
+  if (t !== null) return t;
   if (attempt < 2) {
     await new Promise(s => setTimeout(s, 600 * (attempt + 1)));
     return fetchText(path, attempt + 1);
   }
-  console.log("[fetchText] all hosts failed:", path);
+  console.log("[fetchText] all failed:", path);
   return null;
 }
 
-/* 直连全挂（官网被墙）时经公共中转取数据；命中组合会记住，后续优先复用 */
-async function fetchViaRelay(path) {
+/* 经公共中转取数据（优先复用上次命中的中转组合） */
+async function fetchViaRelay(path, signal) {
   const relays = PUBLIC_PROXIES.concat(HG_MANIFEST_PROXIES.map(p => ({ name: "自定义中转", build: (u) => p + encodeURIComponent(u), pick: (t) => t })));
   const hosts = goodHost ? [goodHost].concat(HOSTS.filter(x => x !== goodHost)) : HOSTS.slice();
   if (goodApiRelay) {
-    const t = await relayRace(goodApiRelay, hosts.slice(0, 1), path);
+    const t = await relayRace(goodApiRelay, hosts.slice(0, 1), path, signal);
     if (t !== null) return t;
     goodApiRelay = null; /* 失效则重新挑 */
   }
   for (const r of relays) {
-    const t = await relayRace(r, hosts, path);
+    if (signal && signal.aborted) return null;
+    const t = await relayRace(r, hosts, path, signal);
     if (t !== null) { goodApiRelay = r; return t; }
   }
   return null;
 }
 
-/* 用指定中转并发竞速多个官网域名，取第一个成功 */
-async function relayRace(relay, hosts, path) {
+/* 用指定中转取数据：先试第一个域名（最常见情况一次就中），失败再并发竞速其余 */
+async function relayRace(relay, hosts, path, signal) {
+  const tryHost = (h) => relayLimit(async () => {
+    const x = await fetchOnce(relay.build(h + path), 15000, signal);
+    const o = relay.pick(x);
+    if (!o || o.length < 50) throw new Error("empty");
+    return o;
+  });
   try {
-    return await Promise.any(hosts.map(h => fetchLimit(async () => {
-      const x = await fetchOnce(relay.build(h + path), 20000);
-      const o = relay.pick(x);
-      if (!o || o.length < 50) throw new Error("empty");
-      return o;
-    })));
+    return await tryHost(hosts[0]);
+  } catch (e) {}
+  if (hosts.length < 2) return null;
+  try {
+    return await Promise.any(hosts.slice(1).map(tryHost));
   } catch (e) { return null; }
 }
 
@@ -1177,31 +1199,12 @@ function sanitizeKeyword(q) {
   return s.replace(/\//g, " ").split(/\s+/).filter(Boolean).join(" ");
 }
 
-/* 统一解析官方列表接口：{ data: { items, pagination } } */
-async function fetchVideoList(basePath, pg, size) {
-  const n = size || PAGE_SIZE;
-  const url = basePath + (basePath.indexOf("?") >= 0 ? "&" : "?") + "page=" + pg + "&size=" + n;
-  const d = await apiGetJSON(url);
-  const items = Array.isArray(d?.data?.items) ? d.data.items : [];
-  const p = d?.data?.pagination || {};
-  const total = Number(p.total) || 0;
-  const pages = Number(p.pages) || (total ? Math.ceil(total / n) : 1);
-  return { list: items.map(toVod).filter(Boolean), total, page: pg, pagecount: Math.max(1, pages), failed: !d };
-}
-
 function fmtPlays(n) {
   n = Number(n) || 0;
   if (n >= 100000000) return (n / 100000000).toFixed(1).replace(/\.0$/, "") + "亿";
   if (n >= 10000) return Math.round(n / 10000) + "W";
   if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
   return String(n);
-}
-
-function base64ToBytes(b64) {
-  const bin = atob(b64);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
 }
 
 async function aesCbcDecrypt(cipherBytes, keyBytes, ivBytes) {
@@ -1239,6 +1242,13 @@ function stripCardText(s) {
     .replace(/<[^>]+>/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/* 首页/搜索/标签等页面顶部都带一份隐藏的“猜你喜欢”下拉推荐（固定 4 张卡片），
+   真列表统一放在 hg-card-grid 容器里：从这里开始解析，避免推荐卡混进列表 */
+function htmlFromResults(html) {
+  const i = html.indexOf("hg-card-grid");
+  return i >= 0 ? html.slice(i) : html;
 }
 
 /* SSR 列表页卡片解析（精选推荐 / 最近上新 / 搜索 / 标签共用）
@@ -1428,8 +1438,8 @@ function hydrateImages(root) {
 /* ---------- 首页：精选推荐 / 最近上新（HTML） + AI 四分类（API） ---------- */
 async function dataHome() {
   const [recHtml, nwHtml, ...apiMods] = await Promise.all([
-    fetchText(`/${CATS[0].id}/`).then(t => t ? parseListHtml(t) : null),
-    fetchText(`/${CATS[1].id}/`).then(t => t ? parseListHtml(t) : null),
+    fetchText(`/${CATS[0].id}/`).then(t => t ? parseListHtml(htmlFromResults(t)) : null),
+    fetchText(`/${CATS[1].id}/`).then(t => t ? parseListHtml(htmlFromResults(t)) : null),
     ...CATS.filter(c => c.mode === "api").map(c =>
       apiGetJSON(`/api/videos/category/${c.id}?sort=hot&page=1&size=12`).then(d => {
         const inner = (d && d.data && typeof d.data === "object") ? d.data : {};
@@ -1463,7 +1473,7 @@ async function dataCategory(catId, pg) {
   const path = pg > 1 ? `/${cat.id}/${pg}/` : `/${cat.id}/`;
   const html = await fetchText(path);
   if (html === null) return { error: true, list: [], total: 0, page: pg, pagecount: 1 };
-  const list = parseListHtml(html);
+  const list = parseListHtml(htmlFromResults(html));
   /* HTML 分页没有总数：本页还有内容就允许翻下一页 */
   return { list, total: 0, page: pg, pagecount: list.length >= 12 ? pg + 1 : pg };
 }
@@ -1667,8 +1677,12 @@ async function dataSearch(wd, pg) {
   const path = pg > 1 ? `/search/video/${kw}/${pg}/` : `/search/video/${kw}/`;
   const html = await fetchText(path);
   if (html === null) return { error: true, list: [], page: pg, pagecount: 1, total: 0 };
-  const list = parseListHtml(html);
-  return { list, total: 0, page: pg, pagecount: list.length >= 12 ? pg + 1 : pg };
+  const list = parseListHtml(htmlFromResults(html));
+  /* 页面标注了“共 x 部”总数，能拿到就精确分页 */
+  const totM = html.match(/<strong>([\d,]+)<\/strong>\s*部/);
+  const total = totM ? (parseInt(totM[1].replace(/,/g, ""), 10) || 0) : 0;
+  const pagecount = total ? Math.max(1, Math.ceil(total / Math.max(1, list.length))) : (list.length >= 12 ? pg + 1 : pg);
+  return { list, total, page: pg, pagecount };
 }
 
 /* ---------- 标签列表（SSR：/tag/{slug}/page/{n}/） ---------- */
@@ -1677,7 +1691,7 @@ async function dataTag(slug, pg) {
   const path = pg > 1 ? `/tag/${slug}/page/${pg}/` : `/tag/${slug}/`;
   const html = await fetchText(path);
   if (html === null) return { error: true, list: [], page: pg, pagecount: 1, total: 0 };
-  const list = parseListHtml(html);
+  const list = parseListHtml(htmlFromResults(html));
   return { list, total: 0, page: pg, pagecount: list.length >= 12 ? pg + 1 : pg };
 }
 
