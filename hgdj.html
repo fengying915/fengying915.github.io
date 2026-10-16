@@ -6,6 +6,8 @@
 <title>黄果短剧</title>
 <!-- 预连接：提前建立 TLS，首屏接口与封面图更快 -->
 <link rel="preconnect" href="https://huangguoai.com" crossorigin>
+<link rel="preconnect" href="https://a1b2.ediayikma.cc" crossorigin>
+<link rel="preconnect" href="https://c3d4.ediayikma.cc" crossorigin>
 <link rel="preconnect" href="https://pic.drleao.cn" crossorigin>
 <script>
 /* hls.js 多 CDN 依次回退加载；四个源文件字节一致，用同一份 SRI 校验防篡改 */
@@ -1181,15 +1183,26 @@ const CHIGUA_CATS = [
 ];
 
 /* ---------- 底层请求：三域名容灾 + 粘住可用域名 + 并发限制 ----------
-   源站回源不稳定（502 时有发生），首次请求三域名竞速并记住赢家，
-   后续直接走赢家域名，失败再整体竞速 + 重试两次。 */
+   源站回源不稳定（502 时有发生），优先用记忆/竞速选出的域名，
+   失败再整体对冲竞速 + 重试两次。 */
+/* 上次会话可用的直连域名（localStorage 记忆，重开页面直接复用，省掉首轮竞速） */
 let goodHost = null;
+let goodHostVerified = false;   /* 本会话是否已实测成功（未实测先用短超时探一次） */
+try {
+  const savedHost = localStorage.getItem("hguo_host_v1");
+  if (savedHost && HOSTS.includes(savedHost)) goodHost = savedHost;
+} catch (e) {}
+function rememberHost(h) {
+  goodHost = h;
+  goodHostVerified = true;
+  try { localStorage.setItem("hguo_host_v1", h); } catch (e) {}
+}
 let goodApiRelay = null;   /* 官网被墙时命中的公共中转（优先复用） */
 let apiMode = null;        /* 最近命中的通道："direct"（直连）/ "relay"（公共中转） */
 let apiModeUntil = 0;      /* 通道有效期：5 分钟内沿用，过期待下次竞速重新判定 */
 let fetchActive = 0;
 const fetchQueue = [];
-const FETCH_CONCURRENCY = 3;
+const FETCH_CONCURRENCY = 6;
 
 function fetchLimit(task) {
   return new Promise((resolve, reject) => {
@@ -1243,21 +1256,60 @@ async function fetchOnce(url, timeoutMs, extSignal) {
    直连（官网三域名）快就用直连；官网被墙时直连会挂，自动切公共中转。
    命中的通道沿用 5 分钟：期间不再在失败的一侧浪费时间（挂梯/不挂梯都不空等）。 */
 
-/* 直连：并发竞速三个官网域名，谁先成功用谁；quick=true 时先只试粘住的域名 */
+/* 直连取数据：
+   - 粘住的域名先单独试（quick 通道，绝大多数请求只走这一条）；
+   - 没有粘住时"对冲竞速"：第 1 个域名先发，HEDGE_MS 内没回来才发第 2 个，
+     硬失败（连不上/4xx）则立即换下一个，谁先成功用谁。
+   相比三路齐发，正常网络下只打 1 个域名，省带宽、降首屏延迟。 */
+const HEDGE_MS = 900;
 async function fetchDirect(path, signal, quick) {
   if (quick && goodHost) {
+    /* 未实测的域名先用短超时试探，避免记忆失效时白等 8 秒 */
+    const timeout = goodHostVerified ? 8000 : 4000;
     try {
-      const t = await fetchLimit(() => fetchOnce(goodHost + path, 12000, signal));
-      if (t) return t;
+      const t = await fetchLimit(() => fetchOnce(goodHost + path, timeout, signal));
+      if (t) { goodHostVerified = true; return t; }
     } catch (e) {}
+    goodHost = null;
+    goodHostVerified = false;
+    return await fetchDirect(path, signal, false);
   }
-  try {
-    return await Promise.any(HOSTS.map(h => fetchLimit(async () => {
-      const t = await fetchOnce(h + path, 12000, signal);
-      goodHost = h;
-      return t;
-    })));
-  } catch (e) { return null; }
+
+  const ordered = goodHost ? [goodHost].concat(HOSTS.filter(h => h !== goodHost)) : HOSTS.slice();
+  return await new Promise((resolve) => {
+    let idx = 0, failed = 0, done = false;
+    const timers = [];
+    const finish = (t) => {
+      if (done) return;
+      done = true;
+      timers.forEach(id => clearTimeout(id));
+      resolve(t === undefined || t === null ? null : t);
+    };
+    if (signal) signal.addEventListener("abort", () => finish(null), { once: true });
+    const maybeFail = () => {
+      /* 全部域名都已发起且失败：判定直连不可用 */
+      if (!done && failed >= ordered.length) finish(null);
+    };
+    const launch = () => {
+      if (done || (signal && signal.aborted) || idx >= ordered.length) return;
+      const h = ordered[idx++];
+      timers.push(setTimeout(launch, HEDGE_MS));
+      fetchLimit(() => fetchOnce(h + path, 12000, signal)).then(
+        (t) => {
+          if (!t) { failed++; maybeFail(); return; }
+          if (done) return;
+          rememberHost(h);
+          finish(t);
+        },
+        () => {
+          failed++;
+          maybeFail();
+          launch();   /* 硬失败：不等对冲窗口，立即试下一个域名 */
+        }
+      );
+    };
+    launch();
+  });
 }
 
 /* 直连 + 中转竞速：直连先行，1.2 秒内没成功才启动中转；先成功者胜，另一方立即中止 */
@@ -1285,22 +1337,44 @@ async function fetchRace(path) {
   return text;
 }
 
+/* 页面/接口数据短时缓存（90 秒）：来回切分类、重进板块走缓存秒开；
+   视频页(/video/…)、吃瓜详情(/api/posts/…)、搜索(/search/…)带实时签名或需即时性，不进缓存 */
+const DATA_CACHE = new Map();
+const DATA_CACHE_TTL = 90000;
+const DATA_CACHE_MAX = 80;
+function dataCacheable(path) { return !/\/video\/|\/posts\/|\/search\//.test(path); }
+
 async function fetchText(path, attempt) {
   attempt = attempt || 0;
+  const cacheable = dataCacheable(path);
+  const hit = cacheable ? DATA_CACHE.get(path) : null;
+  if (hit && Date.now() - hit.ts < DATA_CACHE_TTL) return hit.t;
+
+  let text = null;
   /* 已确认的通道：5 分钟内直接沿用（挂梯=直连，不挂梯=中转），不再每笔都竞速 */
   if (apiMode && Date.now() < apiModeUntil) {
-    const t = apiMode === "relay" ? await fetchViaRelay(path) : await fetchDirect(path, null, true);
-    if (t !== null) return t;
-    apiMode = null;
+    text = apiMode === "relay" ? await fetchViaRelay(path) : await fetchDirect(path, null, true);
+    if (text === null) apiMode = null;
   }
-  const t = await fetchRace(path);
-  if (t !== null) return t;
-  if (attempt < 2) {
+  if (text === null) text = await fetchRace(path);
+  if (text === null && attempt < 2) {
     await new Promise(s => setTimeout(s, 600 * (attempt + 1)));
     return fetchText(path, attempt + 1);
   }
-  console.log("[fetchText] all failed:", path);
-  return null;
+  if (text === null) {
+    console.log("[fetchText] all failed:", path);
+    return hit ? hit.t : null;   /* 网络失败时退回旧缓存，好过白屏 */
+  }
+  if (cacheable && text.length < 800000) {
+    DATA_CACHE.set(path, { ts: Date.now(), t: text });
+    if (DATA_CACHE.size > DATA_CACHE_MAX) {
+      for (const k of DATA_CACHE.keys()) {
+        if (DATA_CACHE.size <= Math.floor(DATA_CACHE_MAX * 0.75)) break;
+        DATA_CACHE.delete(k);
+      }
+    }
+  }
+  return text;
 }
 
 /* 经公共中转取数据（优先复用上次命中的中转组合） */
@@ -1595,7 +1669,7 @@ function imgAttrs(pic, w, lazy) {
 const imgBlobCache = new Map();
 const imgQueue = [];
 let imgActive = 0;
-const IMG_CONCURRENCY = 4;
+const IMG_CONCURRENCY = 6;
 const IMG_CACHE_MAX = 260;
 
 /* 缓存解码后的 blob URL；超上限时回收最早的，且在页面上仍在用的不回收 */
