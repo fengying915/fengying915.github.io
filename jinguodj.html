@@ -1,0 +1,2708 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>禁果短剧</title>
+<meta name="theme-color" content="#0e0e12">
+<meta name="description" content="禁果短剧 · 热门短剧每日更新，禁果剧场在线观看。">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="禁果短剧">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff2e63'/%3E%3Cstop offset='1' stop-color='%23b041ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M32 15c-6.5-5-16-1-16 8.5 0 11.5 9.5 27 16 27s16-15.5 16-27C48 14 38.5 10 32 15z'/%3E%3Cpath fill='%23ffd166' d='M33 13c1-4.5 5-7 8.5-7-1 4.5-4.5 7.5-8.5 7.5z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://jinguoduanju.me" crossorigin>
+<link rel="preconnect" href="https://images.weserv.nl" crossorigin>
+<link rel="preconnect" href="https://api-r8x4n6pk.rt3wjw6.com" crossorigin>
+<script>
+/* hls.js 多 CDN 依次回退加载；四个源文件字节一致，用同一份 SRI 校验防篡改 */
+(function loadHls() {
+  const HLS_SRI = "sha384-w6Gb3fXHb5e1LUYa/hYA5Q41bEDglN5ZPCG7Jvnoo8/X90oGnlPqBlBJCe38mEMm";
+  const sources = [
+    "https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js",
+    "https://registry.npmmirror.com/hls.js/1.5.13/files/dist/hls.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js",
+    "https://unpkg.com/hls.js@1.5.13/dist/hls.min.js"
+  ];
+  let i = 0;
+  (function next() {
+    if (i >= sources.length) return;
+    const s = document.createElement("script");
+    s.src = sources[i++];
+    s.integrity = HLS_SRI;
+    s.crossOrigin = "anonymous";
+    s.onerror = () => { s.remove(); next(); };
+    document.head.appendChild(s);
+  })();
+})();
+</script>
+<style>
+
+  :root {
+    --accent: #ff2e63;
+    --accent-2: #ff7a59;
+    --accent-3: #b041ff;
+    --accent-glow: rgba(255,46,99,.42);
+    --accent-glow-2: rgba(176,65,255,.26);
+    --rank-1: #ff4d6d; --rank-2: #ffa23a; --rank-3: #ffd166;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e0e12;
+    --bg-grad-1: #3a1030;
+    --card: #17181d;
+    --card-hi: #1e2027;
+    --panel: #17181d;
+    --panel-solid: #1a1b21;
+    --line: rgba(255,255,255,.07);
+    --line-hi: rgba(255,255,255,.16);
+    --text: #f2f3f7;
+    --text-dim: #b9bdcb;
+    --sub: #7d8296;
+    --hover: rgba(255,255,255,.06);
+    --header-bg: rgba(14,14,18,.82);
+    --drawer-bg: rgba(19,20,26,.94);
+    --mask: rgba(0,0,0,.55);
+    --sk-1: #16171c; --sk-2: #23242c;
+    --shadow-md: 0 12px 32px rgba(0,0,0,.5);
+    --shadow-lg: 0 24px 56px rgba(0,0,0,.6);
+    --hero-mask: linear-gradient(180deg, rgba(0,0,0,.02) 20%, rgba(0,0,0,.55) 62%, rgba(0,0,0,.92) 100%);
+    --chip-bg: rgba(255,255,255,.06);
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f6fa;
+    --bg-grad-1: #ffe0e6;
+    --card: #ffffff;
+    --card-hi: #ffffff;
+    --panel: #ffffff;
+    --panel-solid: #ffffff;
+    --line: rgba(20,20,40,.08);
+    --line-hi: rgba(20,20,40,.18);
+    --text: #17181d;
+    --text-dim: #3a3e4e;
+    --sub: #6b7085;
+    --hover: rgba(20,20,40,.05);
+    --header-bg: rgba(255,255,255,.88);
+    --drawer-bg: rgba(255,255,255,.98);
+    --mask: rgba(30,30,50,.35);
+    --sk-1: #eceef4; --sk-2: #f8f9fc;
+    --shadow-md: 0 10px 30px rgba(90,95,140,.12);
+    --shadow-lg: 0 20px 50px rgba(90,95,140,.16);
+    --hero-mask: linear-gradient(180deg, rgba(0,0,0,.02) 20%, rgba(0,0,0,.45) 62%, rgba(0,0,0,.82) 100%);
+    --chip-bg: rgba(20,20,40,.05);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    min-height: 100vh; overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    transition: background .4s ease, color .4s ease;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: -30% -30% auto -30%; height: 75vh;
+    background:
+      radial-gradient(50% 80% at 20% 0%, var(--bg-grad-1) 0%, transparent 60%),
+      radial-gradient(45% 70% at 88% 5%, var(--accent-glow-2) 0%, transparent 60%);
+    pointer-events: none; z-index: 0; opacity: .5;
+  }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  img.pending { opacity: 0; }
+  img[data-enc] { transition: opacity .35s ease; }
+  button { font-family: inherit; }
+
+  /* 老内核不支持毛玻璃时改用不透明底色，避免半透明栏背面穿透看不清 */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :root[data-theme="dark"] {
+      --header-bg: #0e0e12;
+      --drawer-bg: #13141a;
+      --mask: rgba(0,0,0,.72);
+    }
+    :root[data-theme="light"] {
+      --header-bg: #ffffff;
+      --drawer-bg: #ffffff;
+      --mask: rgba(30,30,50,.45);
+    }
+  }
+
+  /* ============ 顶栏 ============ */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--header-bg);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--line);
+    padding: 12px 16px 10px;
+  }
+  .top {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+    align-items: center;
+    gap: 12px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .icon-btn {
+    width: 44px; height: 44px;
+    border-radius: 13px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    color: var(--text);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all .25s cubic-bezier(.34,1.56,.64,1);
+    padding: 0; position: relative; overflow: hidden;
+  }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 8px 22px var(--accent-glow); transform: translateY(-2px); }
+  .icon-btn:active { transform: translateY(0) scale(.9); }
+  .icon-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  .brand {
+    display: flex; align-items: center; justify-content: flex-start;
+    min-width: 0; cursor: pointer; user-select: none;
+  }
+  .brand .logo {
+    font-size: 27px; font-weight: 900;
+    background: linear-gradient(110deg, var(--accent) 0%, var(--accent-2) 40%, var(--accent-3) 70%, var(--accent) 100%);
+    background-size: 300% auto;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    letter-spacing: 1.5px; white-space: nowrap;
+    animation: logo-shine 4s linear infinite;
+    line-height: 1.1;
+  }
+  @keyframes logo-shine { 0% { background-position: 0% center; } 100% { background-position: 300% center; } }
+  @media (max-width: 480px) {
+    .brand .logo { font-size: 22px; letter-spacing: .5px; }
+    .icon-btn { width: 40px; height: 40px; border-radius: 11px; }
+    .top { grid-template-columns: 40px minmax(0, 1fr) 40px 40px; gap: 8px; }
+  }
+
+  /* 桌面导航行 */
+  .navrow { display: none; max-width: 1280px; margin: 10px auto 0; gap: 4px; }
+  .navrow .nlink {
+    padding: 7px 16px; border-radius: 20px;
+    font-size: 13.5px; font-weight: 600;
+    color: var(--text-dim); cursor: pointer;
+    transition: all .25s; white-space: nowrap;
+  }
+  .navrow .nlink:hover { color: var(--text); background: var(--hover); }
+  .navrow .nlink.active { color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 6px 18px var(--accent-glow); }
+  @media (min-width: 900px) { .navrow { display: flex; } }
+
+  .theme-btn { position: relative; }
+  .theme-btn .sun, .theme-btn .moon { position: absolute; transition: opacity .4s, transform .55s cubic-bezier(.34,1.56,.64,1); }
+  :root[data-theme="dark"] .theme-btn .sun { opacity: 1; transform: rotate(0) scale(1); }
+  :root[data-theme="dark"] .theme-btn .moon { opacity: 0; transform: rotate(90deg) scale(.3); }
+  :root[data-theme="light"] .theme-btn .sun { opacity: 0; transform: rotate(-90deg) scale(.3); }
+  :root[data-theme="light"] .theme-btn .moon { opacity: 1; transform: rotate(0) scale(1); }
+
+  /* ============ 搜索（弹层） ============ */
+  .search-pop {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 220;
+    background: var(--header-bg);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    border-bottom: 1px solid var(--line);
+    padding: 12px 16px calc(14px + env(safe-area-inset-top));
+    padding-top: calc(12px + env(safe-area-inset-top));
+    transform: translateY(-102%);
+    transition: transform .38s cubic-bezier(.34,1.2,.64,1);
+    box-shadow: var(--shadow-lg);
+  }
+  .search-pop.show { transform: translateY(0); }
+  .search-pop .sp-row {
+    display: flex; align-items: center; gap: 10px;
+    max-width: 1280px; margin: 0 auto;
+  }
+  .search-pop .search { flex: 1; }
+  .search-cancel {
+    background: transparent; border: none; color: var(--sub);
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    padding: 10px 4px; white-space: nowrap; flex-shrink: 0;
+    transition: color .25s;
+  }
+  .search-cancel:hover { color: var(--accent); }
+  .sp-hist {
+    max-width: 1280px; margin: 12px auto 0;
+    display: none; flex-wrap: wrap; align-items: center; gap: 8px;
+  }
+  .sp-hist.show { display: flex; }
+  .sp-hist .sp-label { font-size: 12px; font-weight: 700; color: var(--sub); }
+  .sp-hist .sp-chip {
+    position: relative;
+    padding: 5px 22px 5px 12px; border-radius: 16px;
+    background: var(--chip-bg); border: 1px solid var(--line);
+    color: var(--text-dim); font-size: 12.5px; font-weight: 500;
+    cursor: pointer; transition: all .22s; white-space: nowrap;
+  }
+  .sp-hist .sp-chip:hover { color: var(--text); border-color: var(--line-hi); }
+  .sp-hist .sp-x {
+    position: absolute; top: -5px; right: -5px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--panel-solid); border: 1px solid var(--line-hi);
+    color: var(--sub); font-size: 9px; font-style: normal; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+  }
+  .sp-hist .sp-x:hover { background: #e5484d; color: #fff; border-color: transparent; transform: scale(1.15); }
+  .sp-hist .sp-chip:hover .sp-x { opacity: 1; }
+  @media (hover: hover) { .sp-hist .sp-x { opacity: .65; } .sp-hist .sp-chip:hover .sp-x { opacity: 1; } }
+  .search-mask {
+    position: fixed; inset: 0; z-index: 219;
+    background: var(--mask);
+    opacity: 0; pointer-events: none;
+    transition: opacity .35s;
+  }
+  .search-mask.show { opacity: 1; pointer-events: auto; }
+
+  .search {
+    display: flex;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color .3s, box-shadow .4s;
+    min-width: 0;
+  }
+  .search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
+  .search input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text); padding: 12px 15px; font-size: 14px; font-weight: 500; min-width: 0;
+  }
+  .search input::placeholder { color: var(--sub); }
+  .search button {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border: none; color: #fff;
+    padding: 0 22px; font-size: 14px; font-weight: 700;
+    cursor: pointer; letter-spacing: .5px;
+    transition: filter .3s;
+    white-space: nowrap;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .search .sico { display: none; width: 17px; height: 17px; stroke: #fff; fill: none; stroke-width: 2.6; stroke-linecap: round; }
+  .search button:hover { filter: brightness(1.1); }
+  .search button:active { filter: brightness(.94); transform: scale(.97); }
+
+  /* ============ 抽屉 ============ */
+  .drawer-mask {
+    position: fixed; inset: 0; z-index: 200;
+    background: var(--mask);
+    opacity: 0; pointer-events: none;
+    transition: opacity .4s;
+  }
+  .drawer-mask.show { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed;
+    top: 0; left: 0; bottom: 0; z-index: 201;
+    width: 250px; max-width: 82vw;
+    background: var(--drawer-bg);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-right: 1px solid var(--line);
+    transform: translateX(calc(-100% - 16px));
+    transition: transform .45s cubic-bezier(.34,1.2,.64,1);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .drawer.show { transform: translateX(0); }
+  .drawer-head {
+    padding: 16px 16px 14px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .drawer-head .info { flex: 1; min-width: 0; }
+  .drawer-head .name {
+    font-size: 15px; font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .drawer-head .close {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: transparent; border: none; color: var(--sub);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all .3s; flex-shrink: 0;
+  }
+  .drawer-head .close:hover { background: var(--hover); color: var(--accent); transform: rotate(90deg); }
+  .drawer-body { flex: 1; overflow-y: auto; padding: 6px 10px 20px; }
+  .drawer-body::-webkit-scrollbar { width: 3px; }
+  .drawer-body::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+  .drawer-label {
+    font-size: 10px; font-weight: 800; letter-spacing: 1.6px;
+    color: var(--sub); text-transform: uppercase;
+    padding: 14px 10px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 12px; border-radius: 10px;
+    font-size: 13.5px; font-weight: 500;
+    color: var(--text-dim); cursor: pointer;
+    transition: all .25s; margin-bottom: 1px;
+    position: relative;
+  }
+  .nav-item .nico { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .nav-item:hover { background: var(--hover); color: var(--text); }
+  .nav-item.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; font-weight: 700;
+    box-shadow: 0 6px 18px var(--accent-glow);
+  }
+  .nav-item .cnt { margin-left: auto; font-size: 11px; color: var(--sub); font-weight: 600; }
+  .nav-item.active .cnt { color: rgba(255,255,255,.85); }
+
+  /* ============ 主内容 ============ */
+  main {
+    max-width: 1280px; margin: 0 auto;
+    padding: 16px 16px 40px;
+    position: relative; z-index: 1;
+  }
+  @media (max-width: 768px) {
+    main { padding: 12px 12px calc(76px + env(safe-area-inset-bottom)); }
+  }
+
+  /* ============ Hero 轮播 ============ */
+  .hero-scroll {
+    display: flex; gap: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 4px 2px 16px;
+    margin: 0 -2px 8px;
+    scrollbar-width: none;
+  }
+  .hero-scroll::-webkit-scrollbar { display: none; }
+  .hero-card {
+    flex: 0 0 72%; max-width: 620px;
+    scroll-snap-align: start;
+    aspect-ratio: 16/8.2;
+    border-radius: 18px; overflow: hidden; position: relative;
+    background: var(--sk-1);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    transition: transform .4s cubic-bezier(.34,1.4,.64,1), box-shadow .4s;
+    animation: hero-in .6s cubic-bezier(.34,1.4,.64,1) backwards;
+  }
+  @keyframes hero-in { from { opacity: 0; transform: translateY(20px) scale(.96); } to { opacity: 1; transform: none; } }
+  .hero-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg), 0 0 0 1px var(--accent-glow); }
+  @media (max-width: 640px) { .hero-card { flex: 0 0 90%; aspect-ratio: 16/10; border-radius: 14px; } }
+  /* 老版安卓内核不支持 aspect-ratio，退化为固定高度，避免横版海报高度错乱 */
+  @supports not (aspect-ratio: 16 / 8.2) {
+    .hero-card { height: 300px; }
+    @media (max-width: 640px) { .hero-card { height: 210px; } }
+  }
+  .hero-card img { transition: transform .9s cubic-bezier(.4,0,.2,1); }
+  .hero-card:hover img { transform: scale(1.07); }
+  .hero-card::after { content: ""; position: absolute; inset: 0; background: var(--hero-mask); pointer-events: none; }
+  .hero-info {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 18px 20px; color: #fff; z-index: 3;
+    display: flex; flex-direction: column; gap: 7px;
+  }
+  @media (max-width: 640px) { .hero-info { padding: 12px 14px; } }
+  .hero-badges { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .hero-rank {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; font-size: 11px; font-weight: 800;
+    padding: 4px 11px; border-radius: 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.3);
+    letter-spacing: .5px;
+  }
+  .hero-chip {
+    background: rgba(0,0,0,.45);
+    border: 1px solid rgba(255,255,255,.22);
+    color: #fff; font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .hero-title {
+    font-size: 21px; font-weight: 800; line-height: 1.3;
+    text-shadow: 0 2px 14px rgba(0,0,0,.7);
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  @media (max-width: 640px) { .hero-title { font-size: 17px; } }
+  .hero-desc {
+    font-size: 12.5px; opacity: .9; font-weight: 500;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    text-shadow: 0 1px 8px rgba(0,0,0,.6);
+  }
+  .hero-play {
+    position: absolute; top: 16px; right: 16px; z-index: 3;
+    width: 42px; height: 42px; border-radius: 50%;
+    background: rgba(0,0,0,.45);
+    border: 1px solid rgba(255,255,255,.3);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; transition: all .3s;
+  }
+  .hero-play svg { width: 16px; height: 16px; margin-left: 2px; fill: currentColor; stroke: none; }
+  .hero-card:hover .hero-play { background: var(--accent); border-color: transparent; transform: scale(1.08); box-shadow: 0 8px 22px var(--accent-glow); }
+  .hero-dots { display: flex; justify-content: center; gap: 6px; margin: -4px 0 18px; }
+  .hero-dots .dot-item {
+    width: 6px; height: 6px; border-radius: 3px;
+    background: var(--line-hi);
+    transition: all .4s cubic-bezier(.34,1.56,.64,1); cursor: pointer;
+  }
+  .hero-dots .dot-item.on { width: 22px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 10px var(--accent-glow); }
+
+  /* ============ 继续观看 ============ */
+  .cont-scroll {
+    display: flex; gap: 12px;
+    overflow-x: auto; padding: 2px 2px 12px;
+    margin: 0 -2px 6px;
+    scrollbar-width: none;
+  }
+  .cont-scroll::-webkit-scrollbar { display: none; }
+  .cont-card { flex: 0 0 128px; cursor: pointer; animation: fade-up .45s cubic-bezier(.34,1.56,.64,1) backwards; }
+  .cont-poster {
+    position: relative;
+    width: 128px; height: 171px;   /* 固定 3:4，兼容不支持 aspect-ratio 的内核 */
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--sk-1);
+    box-shadow: 0 4px 14px rgba(0,0,0,.25);
+  }
+  .cont-poster .pbadge {
+    position: absolute; top: 7px; left: 7px;
+    background: rgba(0,0,0,.6); color: #fff;
+    font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 12px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    z-index: 2;
+  }
+  .cont-poster .pmask { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,.72)); }
+  .cont-poster .presume {
+    position: absolute; bottom: 8px; left: 8px; right: 8px;
+    display: flex; align-items: center; gap: 6px;
+    color: #fff; font-size: 11px; font-weight: 600;
+  }
+  .presume .picon {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,.4);
+  }
+  .presume .picon svg { width: 10px; height: 10px; fill: #fff; stroke: none; margin-left: 1px; }
+  .cont-title {
+    margin-top: 7px; font-size: 12.5px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cont-sub { font-size: 11px; color: var(--sub); margin-top: 1px; }
+
+  /* ============ 区块标题 ============ */
+  .sec-head {
+    display: flex; align-items: center; gap: 10px;
+    margin: 8px 2px 14px;
+    animation: fade-up .45s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .sec-head .bar {
+    width: 4px; height: 19px; border-radius: 3px; flex-shrink: 0;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+  .sec-head h2 { font-size: 17px; font-weight: 800; letter-spacing: .3px; color: var(--text); white-space: nowrap; }
+  .sec-head .sub { font-size: 12px; color: var(--sub); white-space: nowrap; margin-top: 2px; }
+  .sec-head .more {
+    margin-left: auto; font-size: 13px; font-weight: 600;
+    color: var(--sub); cursor: pointer; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 5px 10px; border-radius: 18px;
+    transition: all .25s;
+  }
+  .sec-head .more:hover { color: var(--accent); background: var(--hover); }
+  .sec-head .more svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; }
+
+  /* ============ 筛选条 ============ */
+  .filters { display: flex; flex-direction: column; gap: 9px; margin: 4px 0 16px; }
+  .frow { display: flex; align-items: center; gap: 8px; }
+  .frow .flabel { font-size: 12px; font-weight: 700; color: var(--sub); flex-shrink: 0; width: 34px; }
+  .frow .fchips {
+    display: flex; gap: 7px;
+    overflow-x: auto; scrollbar-width: none;
+    padding: 2px 0;
+  }
+  .frow .fchips::-webkit-scrollbar { display: none; }
+  .fchip {
+    flex-shrink: 0;
+    padding: 6px 13px; border-radius: 18px;
+    background: var(--chip-bg);
+    border: 1px solid var(--line);
+    font-size: 12.5px; font-weight: 500;
+    color: var(--text-dim);
+    cursor: pointer; user-select: none;
+    transition: all .22s cubic-bezier(.34,1.4,.64,1);
+    white-space: nowrap;
+  }
+  .fchip:hover { color: var(--text); border-color: var(--line-hi); transform: translateY(-1px); }
+  .fchip.on {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; border-color: transparent; font-weight: 700;
+    box-shadow: 0 5px 16px var(--accent-glow);
+  }
+
+  /* ============ 卡片网格 ============ */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+  }
+  /* minmax(0,1fr)：避免长标题/标签把某一列撑宽导致卡片大小不一 */
+  @media (max-width: 640px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } }
+  @media (min-width: 900px) { .grid { grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 18px; } }
+
+  .card { background: transparent; cursor: pointer; position: relative; animation: card-in .5s cubic-bezier(.34,1.56,.64,1) backwards; }
+  @keyframes card-in { from { opacity: 0; transform: translateY(16px) scale(.95); } to { opacity: 1; transform: none; } }
+  .card:nth-child(1){animation-delay:.02s}.card:nth-child(2){animation-delay:.04s}.card:nth-child(3){animation-delay:.06s}
+  .card:nth-child(4){animation-delay:.08s}.card:nth-child(5){animation-delay:.1s}.card:nth-child(6){animation-delay:.12s}
+  .card:nth-child(7){animation-delay:.14s}.card:nth-child(8){animation-delay:.16s}.card:nth-child(9){animation-delay:.18s}
+  .card:nth-child(n+10){animation-delay:.2s}
+  .card:active { transform: scale(.97); }
+
+  /* 封面框固定 3:4：用 padding 撑高（padding 百分比按卡片列宽计算），
+     不依赖 aspect-ratio，老版安卓 WebView / X5 内核下尺寸同样一致 */
+  .thumb {
+    position: relative;
+    height: 0;
+    padding-top: 133.34%;
+    background: var(--sk-1);
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--line);
+    transition: box-shadow .35s, border-color .35s, transform .35s cubic-bezier(.34,1.4,.64,1);
+  }
+  .thumb::after {
+    content: ""; position: absolute; inset: auto 0 0 0; height: 55%;
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,.3) 50%, rgba(0,0,0,.78) 100%);
+    pointer-events: none; z-index: 2;
+  }
+  .thumb img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform .6s cubic-bezier(.34,1.2,.64,1);
+  }
+  @media (hover: hover) {
+    .card:hover .thumb {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 18px 38px rgba(0,0,0,.4), 0 0 0 1px var(--accent-glow), 0 0 34px var(--accent-glow);
+      z-index: 4;
+    }
+    .card:hover .thumb img { transform: scale(1.08); }
+    .card:hover .card-title { color: var(--accent); }
+  }
+
+  .badge-new, .badge-hot, .badge-rank {
+    position: absolute; top: 8px; z-index: 3;
+    font-size: 10.5px; font-weight: 800;
+    padding: 3px 9px; border-radius: 14px;
+    letter-spacing: .5px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.35);
+  }
+  .badge-new { left: 8px; background: linear-gradient(135deg, #22c55e, #4ade80); color: #fff; }
+  .badge-hot { left: 8px; background: linear-gradient(135deg, #ff4d6d, #ff7a45); color: #fff; }
+  .badge-rank {
+    left: 8px; min-width: 26px; text-align: center;
+    background: rgba(0,0,0,.62); color: #fff;
+    border: 1px solid rgba(255,255,255,.25);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .badge-rank.r1 { background: linear-gradient(135deg, var(--rank-1), #ff8fa3); border: none; }
+  .badge-rank.r2 { background: linear-gradient(135deg, var(--rank-2), #ffc46b); border: none; }
+  .badge-rank.r3 { background: linear-gradient(135deg, var(--rank-3), #ffe3a3); border: none; color: #5c4300; }
+
+  .thumb-plays {
+    position: absolute; bottom: 8px; left: 9px; right: 9px; z-index: 3;
+    display: flex; align-items: center; gap: 4px;
+    color: #fff; font-size: 11px; font-weight: 600;
+    text-shadow: 0 1px 6px rgba(0,0,0,.6);
+  }
+  .thumb-plays svg { width: 11px; height: 11px; fill: currentColor; stroke: none; flex-shrink: 0; }
+  .thumb-plays .rem { margin-left: auto; font-size: 10.5px; opacity: .95; }
+
+  .card-title {
+    padding: 8px 2px 0;
+    font-size: 13px; line-height: 1.42; font-weight: 600;
+    color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: color .25s; letter-spacing: .2px;
+  }
+  @media (max-width: 640px) { .card-title { font-size: 12px; } }
+  /* 固定行高，保证有标签/无标签的卡片总高一致 */
+  .card-tags { display: flex; gap: 5px; margin-top: 5px; overflow: hidden; min-height: 23px; }
+  .ctag {
+    flex-shrink: 0;
+    font-size: 10.5px; font-weight: 600;
+    padding: 2.5px 8px; border-radius: 10px;
+    background: var(--chip-bg);
+    color: var(--sub);
+    border: 1px solid var(--line);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .ctag:hover { color: var(--accent); border-color: var(--accent); background: var(--hover); }
+  @media (max-width: 640px) { .card-tags .ctag:nth-child(n+3) { display: none; } }
+
+  .card-del {
+    position: absolute; top: 6px; right: 6px; z-index: 5;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(0,0,0,.55); color: #fff;
+    border: 1px solid rgba(255,255,255,.28);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 12px; line-height: 1;
+    opacity: 0; transition: all .25s;
+  }
+  .card:hover .card-del, .card-del.always { opacity: 1; }
+  .card-del:hover { background: #e5484d; transform: scale(1.1); }
+  @media (hover: none) { .card-del { opacity: 1; } }
+
+  .hist-prog { height: 4px; border-radius: 3px; background: var(--chip-bg); margin-top: 7px; overflow: hidden; }
+  .hist-prog i {
+    display: block; height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    border-radius: 3px;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  .card-sub { font-size: 11px; color: var(--sub); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .skel .thumb { background: linear-gradient(90deg, var(--sk-1), var(--sk-2), var(--sk-1)); background-size: 200% 100%; animation: sk 1.6s ease-in-out infinite; }
+  .skel .card-title { background: var(--sk-1); color: transparent; border-radius: 5px; height: 16px; margin-top: 8px; }
+  .skel .card-tags { visibility: hidden; }
+  @keyframes sk { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ============ 分页 ============ */
+  .pager {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 26px 0 6px; flex-wrap: wrap;
+  }
+  .pager button, .pager .pg-info {
+    min-width: 42px; height: 42px; padding: 0 15px;
+    border-radius: 11px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    color: var(--text); font-size: 13.5px; font-weight: 600;
+    cursor: pointer; transition: all .28s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pager button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); box-shadow: 0 6px 18px var(--accent-glow); transform: translateY(-2px); }
+  .pager button:active:not(:disabled) { transform: scale(.94); }
+  .pager button:disabled { opacity: .3; cursor: not-allowed; }
+  .pager .pg-info { background: transparent; border: none; cursor: default; color: var(--sub); font-weight: 500; }
+  .pager .pg-info b { color: var(--accent); margin: 0 3px; font-size: 15px; font-weight: 800; }
+  .pager .goto input {
+    width: 62px; height: 42px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 11px;
+    color: var(--text); text-align: center;
+    font-size: 13.5px; font-weight: 600; outline: none;
+    transition: all .28s; font-family: inherit;
+  }
+  .pager .goto input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
+  .pager .goto input::-webkit-outer-spin-button,
+  .pager .goto input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  /* ============ 列表页工具行 ============ */
+  .list-tools {
+    display: flex; align-items: center; gap: 10px;
+    margin: 2px 2px 14px;
+    animation: fade-up .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .list-tools .bar { width: 4px; height: 19px; border-radius: 3px; background: linear-gradient(180deg, var(--accent), var(--accent-2)); box-shadow: 0 0 12px var(--accent-glow); flex-shrink: 0; align-self: flex-start; margin-top: 2px; }
+  .list-tools h2 { font-size: 17px; font-weight: 800; letter-spacing: .3px; }
+  .list-tools .total { font-size: 12px; color: var(--sub); margin-top: 2px; }
+  .list-tools .act {
+    margin-left: auto;
+    padding: 7px 14px; border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--card); color: var(--sub);
+    font-size: 12.5px; font-weight: 600;
+    cursor: pointer; transition: all .25s;
+    white-space: nowrap;
+  }
+  .list-tools .act:hover { color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; box-shadow: 0 6px 18px var(--accent-glow); }
+
+  /* ============ 详情 & 播放器 ============ */
+  .player-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; gap: 10px;
+    animation: fade-up .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .toolbar-right { display: flex; gap: 8px; align-items: center; }
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 600; color: var(--text-dim);
+    padding: 9px 15px; cursor: pointer; border-radius: 11px;
+    background: var(--card); border: 1px solid var(--line);
+    transition: all .28s;
+    white-space: nowrap;
+  }
+  .back-btn:hover { color: var(--accent); border-color: var(--accent); transform: translateX(-3px); box-shadow: 0 6px 18px var(--accent-glow); }
+  .fav-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600;
+    padding: 9px 14px; border-radius: 11px;
+    background: var(--card); border: 1px solid var(--line);
+    color: var(--text-dim); cursor: pointer; transition: all .28s;
+    white-space: nowrap;
+  }
+  .fav-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .fav-btn:hover { color: var(--accent); border-color: var(--accent); box-shadow: 0 6px 18px var(--accent-glow); }
+  .fav-btn.on { color: var(--accent); border-color: var(--accent); background: var(--hover); }
+  .fav-btn.on svg { fill: var(--accent); stroke: var(--accent); }
+  .close-btn {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--card); color: var(--sub);
+    border: 1px solid var(--line);
+    font-size: 16px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .35s; padding: 0; flex-shrink: 0;
+  }
+  .close-btn:hover { background: var(--hover); color: var(--accent); border-color: var(--accent); transform: rotate(90deg) scale(1.08); }
+
+  .player-wrap {
+    position: relative; width: 100%;
+    background: #000;
+    border-radius: 18px; overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-lg), 0 0 50px var(--accent-glow-2);
+    border: 1px solid var(--line);
+    animation: fade-up .45s cubic-bezier(.34,1.56,.64,1);
+  }
+  video { width: 100%; display: block; background: #000; max-height: 76vh; }
+
+  .detail-head {
+    display: flex; gap: 16px;
+    margin-bottom: 18px;
+    animation: fade-up .5s cubic-bezier(.34,1.56,.64,1) backwards;
+    animation-delay: .08s;
+  }
+  .detail-head .poster {
+    width: 128px; height: 171px; flex-shrink: 0;
+    border-radius: 16px; overflow: hidden;
+    background: var(--sk-1); border: 1px solid var(--line);
+    box-shadow: var(--shadow-md), 0 0 26px var(--accent-glow-2);
+  }
+  @media (max-width: 560px) { .detail-head .poster { width: 100px; height: 133px; } .detail-head { gap: 12px; } }
+  .detail-info { min-width: 0; padding-top: 2px; }
+  .detail-info h1 { font-size: 19px; line-height: 1.38; margin-bottom: 10px; font-weight: 800; letter-spacing: .3px; }
+  @media (max-width: 560px) { .detail-info h1 { font-size: 16.5px; } }
+  .detail-info .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
+  .tag {
+    font-size: 12px; font-weight: 600;
+    padding: 5px 11px; border-radius: 20px;
+    background: var(--chip-bg); color: var(--sub);
+    border: 1px solid var(--line);
+  }
+  .tag.tg { cursor: pointer; transition: all .22s; }
+  .tag.tg:hover {
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-color: transparent;
+    box-shadow: 0 5px 16px var(--accent-glow);
+    transform: translateY(-1px);
+  }
+  .hash { color: var(--accent); font-weight: 900; }
+  .tag.accent {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; border-color: transparent; font-weight: 700;
+    box-shadow: 0 4px 14px var(--accent-glow);
+  }
+  .desc {
+    font-size: 12.5px; line-height: 1.75; color: var(--sub);
+    display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+    cursor: pointer; transition: color .25s;
+    white-space: pre-line;
+  }
+  .desc.open { display: block; }
+  .desc:hover { color: var(--text-dim); }
+
+  .ep-section-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 800;
+    margin: 20px 0 12px; letter-spacing: .3px;
+  }
+  .ep-section-title::before {
+    content: ""; width: 4px; height: 17px; border-radius: 3px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 10px var(--accent-glow); flex-shrink: 0;
+  }
+  .episodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 9px; }
+  @media (max-width: 640px) { .episodes { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; } }
+  .ep {
+    background: var(--panel-solid);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 5px;
+    font-size: 12px; font-weight: 600;
+    color: var(--sub); text-align: center;
+    cursor: pointer; transition: all .25s;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    user-select: none;
+  }
+  .ep:hover { color: var(--text); border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 16px var(--accent-glow); }
+  .ep.on {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; border-color: transparent; font-weight: 800;
+    box-shadow: 0 6px 20px var(--accent-glow);
+  }
+
+  .empty { text-align: center; padding: 80px 20px; color: var(--sub); font-size: 14px; font-weight: 500; }
+  .empty .ico { font-size: 50px; margin-bottom: 16px; opacity: .45; }
+  .empty .eact {
+    display: inline-block; margin-top: 16px;
+    padding: 9px 22px; border-radius: 20px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; font-size: 13px; font-weight: 700;
+    cursor: pointer; box-shadow: 0 8px 22px var(--accent-glow);
+    transition: transform .25s;
+  }
+  .empty .eact:hover { transform: translateY(-2px); }
+
+  .player-error {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,.82);
+    color: #fff; gap: 16px;
+    font-size: 14px; font-weight: 500;
+    padding: 24px; text-align: center;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    z-index: 5;
+  }
+  .player-error button {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border: none; color: #fff;
+    padding: 11px 26px; border-radius: 11px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 10px 26px var(--accent-glow);
+    transition: all .3s;
+  }
+  .player-error button:hover { transform: translateY(-2px) scale(1.04); }
+
+  .topbar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent));
+    background-size: 200% 100%;
+    width: 0; z-index: 999;
+    transition: width .3s cubic-bezier(.34,1.4,.64,1);
+    box-shadow: 0 0 14px var(--accent-glow);
+    border-radius: 0 3px 3px 0;
+    animation: topbar-shine 2s linear infinite;
+  }
+  @keyframes topbar-shine { 0%{background-position:0% 0} 100%{background-position:200% 0} }
+
+  /* ============ 手机底部导航 ============ */
+  .bottom-nav {
+    display: none;
+    position: fixed;
+    left: 0; right: 0; bottom: 0; z-index: 150;
+    background: var(--header-bg);
+    backdrop-filter: saturate(180%) blur(22px);
+    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    border-top: 1px solid var(--line);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    justify-content: space-around;
+  }
+  .bnav-item {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    padding: 5px 2px;
+    color: var(--sub); font-size: 10.5px; font-weight: 600;
+    cursor: pointer; user-select: none;
+    border-radius: 12px;
+    transition: color .25s, background .25s;
+    position: relative;
+  }
+  .bnav-item svg { width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+  .bnav-item.on { color: var(--accent); }
+  .bnav-item.on svg { transform: translateY(-1.5px) scale(1.12); }
+  .bnav-item:active svg { transform: scale(.85); }
+  .bnav-item .bdot {
+    position: absolute; top: 2px; right: 50%; margin-right: -24px;
+    min-width: 16px; height: 15px; padding: 0 4px;
+    border-radius: 8px;
+    background: var(--accent); color: #fff;
+    font-size: 9.5px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px var(--accent-glow);
+  }
+  @media (max-width: 768px) { .bottom-nav { display: flex; } }
+
+  /* toast */
+  .toast {
+    position: fixed;
+    left: 50%; bottom: calc(90px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(20px);
+    background: var(--panel-solid);
+    color: var(--text);
+    border: 1px solid var(--line-hi);
+    box-shadow: var(--shadow-lg);
+    padding: 10px 18px; border-radius: 13px;
+    font-size: 13px; font-weight: 600;
+    z-index: 400; opacity: 0; pointer-events: none;
+    transition: all .35s cubic-bezier(.34,1.56,.64,1);
+    max-width: 80vw; text-align: center;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+
+  /* ============ 禁果短剧定制 ============ */
+  .badge-vip {
+    position: absolute; top: 8px; left: 8px; z-index: 3;
+    font-size: 10.5px; font-weight: 800;
+    padding: 3px 9px; border-radius: 14px;
+    letter-spacing: .5px;
+    background: linear-gradient(135deg, #f6b73c, #ffd76a);
+    color: #3a2900;
+    box-shadow: 0 3px 10px rgba(0,0,0,.35);
+  }
+  .site-foot {
+    position: relative; z-index: 1;
+    max-width: 1280px; margin: 0 auto;
+    padding: 8px 16px calc(30px + env(safe-area-inset-bottom));
+    text-align: center; font-size: 11.5px; line-height: 1.8;
+    color: var(--sub); opacity: .72;
+  }
+  @media (max-width: 768px) {
+    .site-foot { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
+  }
+  .navrow { overflow-x: auto; scrollbar-width: none; }
+  .navrow::-webkit-scrollbar { display: none; }
+  .frow .flabel { width: auto; min-width: 34px; white-space: nowrap; }
+  .boot-error {
+    max-width: 520px; margin: 12vh auto; padding: 28px 22px;
+    text-align: center; color: var(--text);
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 20px; box-shadow: var(--shadow-lg);
+    font-size: 14px; line-height: 1.9;
+  }
+  .boot-error .ico { font-size: 46px; margin-bottom: 6px; }
+  .boot-error h1 {
+    font-size: 22px; margin-bottom: 12px; font-weight: 900;
+    background: linear-gradient(110deg, var(--accent), var(--accent-2), var(--accent-3));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .boot-error p { color: var(--text-dim); margin: 8px 0; }
+  .boot-error b { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="topbar" id="topbar"></div>
+<div class="toast" id="toast"></div>
+
+<div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div class="info"><div class="name">禁果短剧</div></div>
+    <button class="close" id="drawerClose" title="关闭">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-label">快捷</div>
+    <div id="drawerQuick"></div>
+    <div id="drawerGroups"></div>
+  </div>
+</aside>
+
+<div class="search-mask" id="searchMask"></div>
+<div class="search-pop" id="searchPop">
+  <div class="sp-row">
+    <div class="search">
+      <input id="wd" type="search" placeholder="搜索禁果短剧…" autocomplete="off"
+             onkeydown="if(event.key==='Enter')doSearch()">
+      <button onclick="doSearch()">
+        <svg class="sico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span class="stxt">搜索</span>
+      </button>
+    </div>
+    <button class="search-cancel" id="searchCancel">取消</button>
+  </div>
+  <div class="sp-hist" id="spHist"></div>
+</div>
+
+<header>
+  <div class="top">
+    <button class="icon-btn" id="menuBtn" title="菜单">
+      <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div class="brand" onclick="goHome()">
+      <div class="logo">禁果短剧</div>
+    </div>
+    <button class="icon-btn" id="searchBtn" title="搜索">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    </button>
+    <button class="icon-btn theme-btn" id="themeBtn" title="切换主题">
+      <svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+  <nav class="navrow" id="navrow"></nav>
+</header>
+
+<main id="app"></main>
+
+<footer class="site-foot">禁果短剧 · 内容仅供 18 岁以上成年人浏览</footer>
+
+<nav class="bottom-nav" id="bottomNav"></nav>
+
+<script>
+/* ============================================================
+   禁果短剧 · 单文件版
+   打开 HTML 即用：登录、数据、视频全部经 CORS 代理转发
+   默认代理：https://jsnzkpg4.pages.dev/（netnr/workers 风格）
+   可用 ?proxy=https://你的代理/ 或侧边栏“更换代理”覆盖
+   ============================================================ */
+"use strict";
+
+const API_ORIGIN   = "https://jinguoduanju.me";
+const API_TARGET   = API_ORIGIN + "/api/v1";
+const DEFAULT_PROXY = "https://jsnzkpg4.pages.dev/";
+const LS_PROXY     = "jinguo_proxy";
+const LS_TOKEN     = "jinguo_token_v1";
+const LS_DEVICE    = "jinguo_device_v1";
+
+const _QS = new URLSearchParams(location.search);
+
+function normalizeProxy(v) {
+  v = String(v || "").trim();
+  if (!v) return DEFAULT_PROXY;
+  if (!/^https?:\/\//i.test(v)) v = "https://" + v;
+  return v.replace(/\/+$/, "") + "/";
+}
+
+function readStoredProxy() {
+  try { return localStorage.getItem(LS_PROXY) || ""; } catch (e) { return ""; }
+}
+
+const PROXY_BASE = normalizeProxy(_QS.get("proxy") || readStoredProxy() || DEFAULT_PROXY);
+const API_ROOT   = PROXY_BASE + API_TARGET;
+
+const PAGE_SIZE   = 24;
+const SEARCH_SIZE = 30;
+const RANK_LIMIT  = 100;
+const TAG_ROWS    = ["都市", "校园", "古装", "NTR", "绿帽", "后宫", "穿越"];
+
+const NAV_FALLBACK = [
+  { id: 2, frontendName: "全部" },
+  { id: 7, frontendName: "原创精品" },
+  { id: 3, frontendName: "单体作品" },
+  { id: 6, frontendName: "动漫改编" },
+  { id: 5, frontendName: "影视改编" }
+];
+
+const LS_FAV    = "jinguo_fav_v1";
+const LS_HIST   = "jinguo_hist_v1";
+const LS_SEARCH = "jinguo_search_v1";
+const LS_THEME  = "jinguo_theme";
+
+const state = {
+  mode: "home",
+  navId: "2",
+  sort: "latest",
+  tags: [],
+  catTitle: "全部片库",
+  pg: 1,
+  pageSize: PAGE_SIZE,
+  fullList: [],
+  list: [],
+  pagecount: 1,
+  total: 0,
+  heroList: [],
+  modules: [],
+  keyword: "",
+  tagName: "",
+  loading: false,
+  detail: null,
+  episodes: [],
+  currentEp: 0,
+  resume: null,
+  hls: null,
+  hlsWait: 0,
+  savedScrollY: 0,
+  backTo: "home",
+  navs: NAV_FALLBACK.slice(),
+  filterGroups: []
+};
+
+const CAT = {
+  latest: [],
+  hot: [],
+  popular: [],
+  byNav: new Map(),
+  navs: [],
+  filters: [],
+  newIds: new Set(),
+  ready: null
+};
+
+/* ============================ 基础工具 ============================ */
+function $(id) { return document.getElementById(id); }
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+function fmtPlays(n) {
+  n = Number(n) || 0;
+  if (n >= 100000000) return (n / 100000000).toFixed(1).replace(/\.0$/, "") + "亿";
+  if (n >= 10000) return Math.round(n / 10000) + "W";
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+  return String(n);
+}
+
+function fmtTime(sec) {
+  sec = Math.floor(sec || 0);
+  return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+}
+
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return "刚刚";
+  if (s < 3600) return Math.floor(s / 60) + "分钟前";
+  if (s < 86400) return Math.floor(s / 3600) + "小时前";
+  if (s < 2592000) return Math.floor(s / 86400) + "天前";
+  return new Date(ts).toLocaleDateString("zh-CN");
+}
+
+function mediaUrl(u) {
+  u = String(u || "").trim();
+  if (!u) return "";
+  if (/^https?:\/\//i.test(u)) return u;
+  return API_ORIGIN + (u.charAt(0) === "/" ? u : "/" + u);
+}
+
+function coverUrl(u, w) {
+  if (!u) return "";
+  if (!/^https?:\/\//i.test(u)) return u;
+  const width = Math.round(w || 300);
+  const height = Math.round(width * 4 / 3);
+  return "https://images.weserv.nl/?url=" + encodeURIComponent(u) +
+         "&w=" + width + "&h=" + height + "&fit=cover&output=webp&q=72";
+}
+
+function imgAttrs(pic, w, lazy) {
+  if (!pic) return ' src=""';
+  const src = coverUrl(pic, w);
+  const fallback = src !== pic
+    ? ' data-fb="' + esc(pic) + '" onerror="if(this.dataset.fb){this.onerror=null;this.src=this.dataset.fb}"'
+    : ' onerror="this.style.opacity=0"';
+  return ' src="' + esc(src) + '"' + fallback +
+         (lazy ? ' loading="lazy"' : "") +
+         ' decoding="async" referrerpolicy="no-referrer" alt=""';
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const t = $("toast");
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.classList.remove("show"); }, 1900);
+}
+
+function progress(on) {
+  const bar = $("topbar");
+  if (!bar) return;
+  if (on) { bar.style.width = "70%"; bar.style.opacity = "1"; }
+  else {
+    bar.style.width = "100%";
+    setTimeout(function () { bar.style.opacity = "0"; bar.style.width = "0"; }, 300);
+  }
+}
+
+/* ============================ 本地存储 ============================ */
+function lsGet(k, fb) {
+  try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; }
+  catch (e) { return fb; }
+}
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+function getFav() { const v = lsGet(LS_FAV, []); return Array.isArray(v) ? v : []; }
+function isFav(id) { return getFav().some(function (x) { return x.id === String(id); }); }
+function toggleFav(rec) {
+  let fav = getFav();
+  const id = String(rec.id);
+  if (fav.some(function (x) { return x.id === id; })) {
+    lsSet(LS_FAV, fav.filter(function (x) { return x.id !== id; }));
+    return false;
+  }
+  fav.unshift({ id: id, name: rec.name, pic: rec.pic, remark: rec.remark || "", tags: rec.tags || [], ts: Date.now() });
+  if (fav.length > 300) fav.length = 300;
+  lsSet(LS_FAV, fav);
+  return true;
+}
+function removeFav(id) { lsSet(LS_FAV, getFav().filter(function (x) { return x.id !== String(id); })); }
+
+function getHist() { const v = lsGet(LS_HIST, []); return Array.isArray(v) ? v : []; }
+function upsertHist(rec) {
+  let h = getHist().filter(function (x) { return x.id !== String(rec.id); });
+  h.unshift(Object.assign({ ts: Date.now() }, rec, { id: String(rec.id) }));
+  if (h.length > 100) h.length = 100;
+  lsSet(LS_HIST, h);
+}
+function saveProgress(id, ep, epTitle, pos, dur) {
+  const h = getHist();
+  const item = h.find(function (x) { return x.id === String(id); });
+  if (!item) return;
+  item.ep = ep;
+  item.epTitle = epTitle || item.epTitle;
+  item.pos = Math.floor(pos || 0);
+  item.dur = Math.floor(dur || 0);
+  item.ts = Date.now();
+  lsSet(LS_HIST, h);
+}
+function removeHist(id) { lsSet(LS_HIST, getHist().filter(function (x) { return x.id !== String(id); })); }
+
+/* ============================ 登录 / 数据层 ============================ */
+let AUTH_PENDING = null;
+
+function getDeviceId() {
+  try {
+    let d = localStorage.getItem(LS_DEVICE);
+    if (!d) {
+      const uuid = (window.crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2));
+      d = "h5:jinguo-web-" + uuid;
+      localStorage.setItem(LS_DEVICE, d);
+    }
+    return d;
+  } catch (e) {
+    return "h5:jinguo-web-3f7c2a90-5d1b-4e8a-9c63-2b7d4f1a6e08";
+  }
+}
+
+function getToken() {
+  try { return localStorage.getItem(LS_TOKEN) || ""; } catch (e) { return ""; }
+}
+function setToken(t) {
+  try { if (t) localStorage.setItem(LS_TOKEN, t); else localStorage.removeItem(LS_TOKEN); } catch (e) {}
+}
+
+async function authDevice() {
+  if (AUTH_PENDING) return AUTH_PENDING;
+  AUTH_PENDING = (async function () {
+    const res = await fetch(API_ROOT + "/auth/device", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ deviceId: getDeviceId() }),
+      cache: "no-store"
+    });
+    const text = await res.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (e) {}
+    if (!res.ok || !data || !data.token) {
+      const msg = (data && (data.message || data.error)) || ("设备登录失败（HTTP " + res.status + "）");
+      throw new Error(msg);
+    }
+    setToken(data.token);
+    return data.token;
+  })();
+  try { return await AUTH_PENDING; }
+  finally { AUTH_PENDING = null; }
+}
+
+async function ensureToken(force) {
+  if (!force) {
+    const t = getToken();
+    if (t) return t;
+  }
+  return authDevice();
+}
+
+async function jget(path, retried) {
+  const token = await ensureToken(false);
+  let res;
+  try {
+    res = await fetch(API_ROOT + path, {
+      headers: { "Accept": "application/json", "Authorization": "Bearer " + token },
+      cache: "default"
+    });
+  } catch (e) {
+    throw new Error("网络请求失败，请检查 CORS 代理是否可用");
+  }
+  if (res.status === 401 && !retried) {
+    setToken("");
+    return jget(path, true);
+  }
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; }
+  catch (e) {
+    if (res.status === 429) throw new Error("代理请求过于频繁，请稍后重试或更换代理");
+    throw new Error("接口返回格式异常（HTTP " + res.status + "），请检查代理地址");
+  }
+  if (!res.ok) {
+    let msg = (data && (data.message || data.error)) || ("请求失败 " + res.status);
+    if (res.status === 401) msg = "登录状态已失效，请重试";
+    else if (res.status === 429) msg = "代理请求过于频繁，请稍后重试";
+    else if (res.status >= 500) msg = "上游服务暂时不可用，请稍后重试";
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+function toVod(it) {
+  if (!it || it.id == null) return null;
+  const eps = Number(it.episodeCount) || 0;
+  const tags = Array.isArray(it.tags) ? it.tags.map(String).filter(Boolean) : [];
+  const vip = it.filmType === "VIP";
+  return {
+    vod_id: String(it.id),
+    vod_name: String(it.title || ("短剧 " + it.id)),
+    vod_pic: mediaUrl(it.coverUrl),
+    vod_remarks: eps > 1 ? ("全" + eps + "集") : (vip ? "VIP" : "单集"),
+    vod_plays: it.likeCount ? (fmtPlays(it.likeCount) + "赞")
+             : (it.followCount ? (fmtPlays(it.followCount) + "收藏") : ""),
+    vod_badge: vip ? "vip" : (CAT.newIds.has(String(it.id)) ? "new" : ""),
+    vod_tags: tags.slice(0, 3),
+    _tags: tags,
+    vod_intro: String(it.subtitle || "").trim(),
+    vod_episodes: eps,
+    vod_likes: Number(it.likeCount) || 0,
+    vod_follows: Number(it.followCount) || 0
+  };
+}
+
+async function bootstrapData() {
+  if (CAT.ready) return CAT.ready;
+  CAT.ready = (async function () {
+    const latest = await jget("/dramas?sort=latest&navigationId=2");
+    const side = await Promise.all([
+      jget("/top-navigation").catch(function () { return []; }),
+      jget("/filter-config").catch(function () { return []; })
+    ]);
+    const navs = side[0];
+    const filters = side[1];
+
+    if (!Array.isArray(latest) || !latest.length) throw new Error("片库暂时为空");
+
+    CAT.newIds = new Set(latest.slice(0, 18).map(function (d) { return String(d.id); }));
+    CAT.latest = latest.map(toVod).filter(Boolean);
+    CAT.popular = CAT.latest.slice().sort(function (a, b) {
+      const sa = a.vod_follows * 4 + a.vod_likes * 2;
+      const sb = b.vod_follows * 4 + b.vod_likes * 2;
+      return sb - sa || (Number(b.vod_id) - Number(a.vod_id));
+    });
+    if (!CAT.popular.some(function (v) { return v.vod_follows || v.vod_likes; })) {
+      CAT.popular = CAT.latest.slice();
+    }
+    CAT.hot = CAT.popular;
+    CAT.navs = (Array.isArray(navs) ? navs : []).filter(function (n) {
+      return n && n.active !== false && n.id != null;
+    });
+    CAT.filters = (Array.isArray(filters) ? filters : []).filter(function (g) {
+      return g && g.active !== false && g.frontendVisible !== false && Array.isArray(g.tags) && g.tags.length;
+    });
+
+    state.navs = CAT.navs.length ? CAT.navs : NAV_FALLBACK.slice();
+    state.filterGroups = CAT.filters.map(function (g) {
+      const seen = new Set();
+      const tags = g.tags.filter(function (t) {
+        if (!t || t.active === false || t.frontendVisible === false || !t.name) return false;
+        if (seen.has(t.name)) return false;
+        seen.add(t.name);
+        return true;
+      }).map(function (t) { return t.name; });
+      return { name: g.name || "标签", tags: tags };
+    }).filter(function (g) { return g.tags.length; });
+
+    renderNav();
+  })();
+
+  try { await CAT.ready; }
+  catch (e) { CAT.ready = null; throw e; }
+  return CAT.ready;
+}
+
+async function navData(navId, sort) {
+  navId = String(navId || "2");
+  sort = sort || "latest";
+  if (navId === "2") {
+    await bootstrapData();
+    if (sort === "hot") return CAT.popular.length ? CAT.popular : CAT.hot;
+    return CAT.latest;
+  }
+  const key = navId + "|" + sort;
+  if (CAT.byNav.has(key)) return CAT.byNav.get(key);
+  let arr;
+  try {
+    arr = await jget("/dramas?sort=" + encodeURIComponent(sort) + "&navigationId=" + encodeURIComponent(navId));
+  } catch (e) {
+    arr = await jget("/dramas?sort=latest&navigationId=" + encodeURIComponent(navId));
+  }
+  let list = (Array.isArray(arr) ? arr : []).map(toVod).filter(Boolean);
+  if (sort === "hot") {
+    list = list.slice().sort(function (a, b) {
+      const sa = a.vod_follows * 4 + a.vod_likes * 2;
+      const sb = b.vod_follows * 4 + b.vod_likes * 2;
+      return sb - sa || (Number(b.vod_id) - Number(a.vod_id));
+    });
+  }
+  CAT.byNav.set(key, list);
+  return list;
+}
+
+function buildHome() {
+  const latest = CAT.latest;
+  const hot = CAT.popular.length ? CAT.popular : CAT.hot;
+  const heroes = hot.slice(0, 6);
+  const modules = [
+    { code: "latest", title: "最新上线", list: latest.slice(0, 12), total: latest.length },
+    { code: "hot", title: "人气热播", list: hot.slice(0, 12), total: hot.length }
+  ];
+
+  const multiAll = latest.filter(function (v) { return v.vod_episodes > 1; });
+  if (multiAll.length >= 4) {
+    modules.push({ code: "multi", title: "多集连播", list: multiAll.slice(0, 12), total: multiAll.length });
+  }
+
+  TAG_ROWS.forEach(function (tag) {
+    const all = latest.filter(function (v) { return v._tags.indexOf(tag) >= 0; });
+    if (all.length >= 4) {
+      modules.push({ code: "tag:" + tag, title: tag + "精选", list: all.slice(0, 12), total: all.length });
+    }
+  });
+  return { hero: heroes, modules: modules };
+}
+
+async function dataSearch(kw) {
+  let arr = null;
+  try {
+    arr = await jget("/dramas?q=" + encodeURIComponent(kw) + "&sort=latest&navigationId=2");
+  } catch (e) { arr = null; }
+  let list = (Array.isArray(arr) ? arr : []).map(toVod).filter(Boolean);
+
+  if (!list.length) {
+    try { await bootstrapData(); } catch (e) {}
+    const k = String(kw).toLowerCase();
+    list = CAT.latest.filter(function (v) {
+      return v.vod_name.toLowerCase().indexOf(k) >= 0 ||
+             v._tags.some(function (t) { return t.toLowerCase().indexOf(k) >= 0; });
+    });
+  }
+
+  const seen = new Set();
+  return list.filter(function (v) {
+    if (seen.has(v.vod_id)) return false;
+    seen.add(v.vod_id);
+    return true;
+  });
+}
+
+async function dataDetail(id) {
+  const raw = await jget("/dramas/" + encodeURIComponent(id));
+  const drama = raw.drama || {};
+  let eps = Array.isArray(raw.episodes) ? raw.episodes.slice() : [];
+  eps.sort(function (a, b) { return (Number(a.number) || 0) - (Number(b.number) || 0); });
+
+  const base = toVod(drama) || { vod_id: String(id), vod_name: "短剧", vod_tags: [] };
+  const episodes = eps.map(function (e, i) {
+    const num = Number(e.number) || (i + 1);
+    return {
+      id: e.id,
+      num: num,
+      title: String(e.title || ("第" + num + "集")).trim(),
+      locked: !!e.locked,
+      duration: Number(e.durationSeconds) || 0
+    };
+  });
+
+  return {
+    detail: Object.assign({}, base, {
+      vod_content: String(raw.description || drama.subtitle || "").trim(),
+      vod_remarks: episodes.length > 1 ? ("全" + episodes.length + "集") : "单集",
+      vod_play_from: "禁果专线"
+    }),
+    episodes: episodes
+  };
+}
+
+async function dataPlay(epId) {
+  const d = await jget("/episodes/" + encodeURIComponent(epId) + "/play");
+  const url = d && (d.videoUrl || d.url);
+  if (!url) throw new Error("未获取到播放地址");
+  if (d.allowance && d.allowance.allowed === false) throw new Error("本集暂不可播放");
+  return { url: String(url), resume: Number(d.resumeSeconds) || 0 };
+}
+
+/* ============================ 视图工具 ============================ */
+function cardHtml(v, i, opts) {
+  opts = opts || {};
+  const rank = opts.rank;
+  const badgeHtml = rank
+    ? '<span class="badge-rank r' + Math.min(rank, 3) + '">' + (rank <= 3 ? "TOP" : "") + rank + "</span>"
+    : (v.vod_badge === "new" ? '<span class="badge-new">新</span>'
+      : (v.vod_badge === "vip" ? '<span class="badge-vip">VIP</span>'
+        : (v.vod_badge === "hot" ? '<span class="badge-hot">热</span>' : "")));
+  const tags = (v.vod_tags || []).slice(0, 2).map(function (t) {
+    return '<span class="ctag" data-tag="' + esc(t) + '">' + esc(t) + "</span>";
+  }).join("");
+  const del = opts.del ? '<span class="card-del' + (opts.delAlways ? " always" : "") + '" data-del="1" title="移除">✕</span>' : "";
+  const extra = opts.hist
+    ? '<div class="hist-prog"><i style="width:' + Math.min(100, Math.round((v.pos || 0) / (v.dur || 1) * 100)) + '%"></i></div>' +
+      '<div class="card-sub">' + esc(v.epTitle || ("第" + (v.ep || 1) + "集")) + " · " + fmtTime(v.pos || 0) +
+      (v.dur ? " / " + fmtTime(v.dur) : "") + "</div>"
+    : (opts.sub ? '<div class="card-sub">' + esc(opts.sub) + "</div>" : "");
+  return '' +
+    '<div class="card" data-i="' + i + '">' +
+      '<div class="thumb">' +
+        badgeHtml + del +
+        "<img" + imgAttrs(v.vod_pic, opts.w || 300, true) + ">" +
+        ((v.vod_plays || v.vod_remarks) ? '<div class="thumb-plays">' +
+          (v.vod_plays ? '<svg viewBox="0 0 24 24"><path d="M8 5.14v14l11-7-11-7z"/></svg>' + esc(v.vod_plays) : "") +
+          (v.vod_remarks ? '<span class="rem">' + esc(v.vod_remarks) + "</span>" : "") +
+        "</div>" : "") +
+      "</div>" +
+      '<div class="card-title">' + esc(v.vod_name) + "</div>" +
+      '<div class="card-tags">' + tags + "</div>" +
+      extra +
+    "</div>";
+}
+
+function bindCards(gridEl, list, onOpen, onDel) {
+  if (!gridEl) return;
+  gridEl.querySelectorAll(".card").forEach(function (node) {
+    node.onclick = function (e) {
+      const i = +node.dataset.i;
+      const tagEl = e.target.closest(".ctag");
+      if (tagEl) { e.stopPropagation(); goTag(tagEl.dataset.tag); return; }
+      if (e.target.closest(".card-del")) {
+        e.stopPropagation();
+        if (onDel) onDel(list[i], i);
+        return;
+      }
+      if (onOpen) onOpen(list[i], i);
+    };
+  });
+}
+
+function skelCard() {
+  return '<div class="card skel"><div class="thumb"></div><div class="card-title"></div><div class="card-tags"></div></div>';
+}
+function renderSkeletonHome() {
+  $("app").innerHTML =
+    '<div class="hero-scroll">' + Array.from({ length: 3 }).map(function () {
+      return '<div class="hero-card" style="animation:none"></div>';
+    }).join("") + "</div>" +
+    '<div class="grid">' + Array.from({ length: 9 }).map(skelCard).join("") + "</div>";
+}
+function renderListSkeleton() {
+  $("app").innerHTML = '<div class="grid">' + Array.from({ length: 12 }).map(skelCard).join("") + "</div>";
+}
+function renderEmpty(msg, actLabel, actFn) {
+  $("app").innerHTML = '<div class="empty"><div class="ico">🎬</div><div>' + (msg || "暂无内容") + "</div>" +
+    (actLabel ? '<span class="eact" onclick="' + actFn + '">' + actLabel + "</span>" : "") + "</div>";
+}
+
+function navName(id) {
+  const n = (state.navs || []).find(function (x) { return String(x.id) === String(id); });
+  return n ? (n.frontendName || n.name || "全部") : "全部";
+}
+
+function changeProxy() {
+  const v = prompt(
+    "输入 CORS 代理地址（netnr/workers 风格，末尾带 /）\n例如：https://jsnzkpg4.pages.dev/",
+    PROXY_BASE
+  );
+  if (!v) return;
+  try { localStorage.setItem(LS_PROXY, normalizeProxy(v)); } catch (e) {}
+  location.reload();
+}
+
+/* ============================ 导航 ============================ */
+const ICONS = {
+  home: '<svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>',
+  rank: '<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  fav:  '<svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+  hist: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>'
+};
+
+function activeQuick() {
+  if (state.mode === "detail") return state.backTo;
+  return ["home", "rank", "fav", "hist"].indexOf(state.mode) >= 0 ? state.mode : "";
+}
+
+function renderNav() {
+  const favCnt = getFav().length;
+  const histCnt = getHist().length;
+  const quick = [
+    { key: "home", name: "首页", fn: "goHome()" },
+    { key: "rank", name: "排行榜", fn: "goRank()" },
+    { key: "fav",  name: "我的收藏", fn: "goFav()", cnt: favCnt },
+    { key: "hist", name: "观看历史", fn: "goHist()", cnt: histCnt }
+  ];
+  const act = activeQuick();
+  const cntTxt = function (c) { return c > 99 ? "99+" : c; };
+
+  const dq = $("drawerQuick");
+  if (dq) {
+    dq.innerHTML = quick.map(function (q) {
+      return '<div class="nav-item ' + (act === q.key ? "active" : "") + '" onclick="' + q.fn + '">' +
+        '<span style="display:flex;width:17px;height:17px;flex-shrink:0">' + ICONS[q.key] + "</span>" +
+        "<span>" + q.name + "</span>" +
+        (q.cnt ? '<span class="cnt">' + cntTxt(q.cnt) + "</span>" : "") + "</div>";
+    }).join("");
+  }
+
+  const dg = $("drawerGroups");
+  if (dg) {
+    let html = "";
+    if (state.navs.length) {
+      html += '<div class="drawer-label">分类</div>' + state.navs.map(function (n) {
+        const on = state.mode === "category" && String(state.navId) === String(n.id);
+        return '<div class="nav-item ' + (on ? "active" : "") + '" onclick="switchNav(' + n.id + ')">' +
+          "<span>" + esc(n.frontendName || n.name || "全部") + "</span></div>";
+      }).join("");
+    }
+    (state.filterGroups || []).forEach(function (g) {
+      html += '<div class="drawer-label">' + esc(g.name) + "</div>" +
+        g.tags.map(function (t) {
+          const on = state.tags.indexOf(t) >= 0;
+          return '<div class="nav-item ' + (on ? "active" : "") + '" onclick="goTag(\'' + esc(t).replace(/'/g, "\\'") + '\')"><span>' + esc(t) + "</span></div>";
+        }).join("");
+    });
+    const proxyHost = (function () {
+      try { return new URL(PROXY_BASE).host; } catch (e) { return PROXY_BASE; }
+    })();
+    html += '<div class="drawer-label">说明</div>' +
+      '<div style="padding:8px 12px;font-size:11.5px;line-height:1.8;color:var(--sub)">禁果短剧<br>内容仅供 18 岁以上成年人浏览<br>代理：' + esc(proxyHost) + "</div>" +
+      '<div class="nav-item" onclick="changeProxy()"><span>更换代理</span></div>';
+    dg.innerHTML = html;
+  }
+
+  const navrow = $("navrow");
+  if (navrow) {
+    navrow.innerHTML = quick.map(function (q) {
+      return '<span class="nlink ' + (act === q.key ? "active" : "") + '" onclick="' + q.fn + '">' +
+        q.name + (q.cnt ? "（" + cntTxt(q.cnt) + "）" : "") + "</span>";
+    }).join("") + (state.navs || []).map(function (n) {
+      const on = state.mode === "category" && String(state.navId) === String(n.id);
+      return '<span class="nlink ' + (on ? "active" : "") + '" onclick="switchNav(' + n.id + ')">' +
+        esc(n.frontendName || n.name || "全部") + "</span>";
+    }).join("");
+  }
+
+  const bn = $("bottomNav");
+  if (bn) {
+    bn.innerHTML = quick.map(function (q) {
+      return '<div class="bnav-item ' + (act === q.key ? "on" : "") + '" onclick="' + q.fn + '">' +
+        ICONS[q.key] +
+        "<span>" + (q.key === "fav" ? "收藏" : q.key === "hist" ? "历史" : q.name) + "</span>" +
+        (q.cnt ? '<span class="bdot">' + cntTxt(q.cnt) + "</span>" : "") + "</div>";
+    }).join("");
+  }
+}
+
+function openDrawer() {
+  $("drawer").classList.add("show");
+  $("drawerMask").classList.add("show");
+  document.body.style.overflow = "hidden";
+}
+function closeDrawer() {
+  $("drawer").classList.remove("show");
+  $("drawerMask").classList.remove("show");
+  document.body.style.overflow = "";
+}
+
+/* ============================ 视图切换 ============================ */
+function resetView() {
+  saveCurrentProgress();
+  destroyPlayer();
+  closeSearch();
+  closeDrawer();
+  state.detail = null;
+  state.episodes = [];
+  state.resume = null;
+}
+
+function goHome() {
+  resetView();
+  state.mode = "home";
+  state.backTo = "home";
+  state.savedScrollY = 0;
+  const wd = $("wd"); if (wd) wd.value = "";
+  renderNav();
+  const hasCache = (state.modules || []).length > 0;
+  if (hasCache) renderHome(); else renderSkeletonHome();
+  window.scrollTo(0, 0);
+  if (!hasCache) progress(true);
+  bootstrapData().then(function () {
+    if (state.mode !== "home") return;
+    const home = buildHome();
+    state.heroList = home.hero;
+    state.modules = home.modules;
+    renderHome();
+  }).catch(function (e) {
+    if (!hasCache) renderEmpty("加载失败：" + esc(e.message || "网络错误"), "重试", "goHome()");
+  }).finally(function () { progress(false); });
+}
+
+function goRank() {
+  resetView();
+  state.mode = "rank";
+  state.backTo = "rank";
+  state.catTitle = "排行榜";
+  state.pg = 1;
+  state.savedScrollY = 0;
+  state.fullList = [];
+  closeDrawer();
+  renderNav();
+  renderListSkeleton();
+  window.scrollTo(0, 0);
+  progress(true);
+  bootstrapData().then(function () {
+    state.fullList = (CAT.popular.length ? CAT.popular : CAT.hot).slice(0, RANK_LIMIT);
+    state.pageSize = PAGE_SIZE;
+    state.total = state.fullList.length;
+    state.pagecount = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
+    renderListPage();
+  }).catch(function (e) {
+    renderEmpty("加载失败：" + esc(e.message || "网络错误"), "重试", "goRank()");
+  }).finally(function () { progress(false); });
+}
+
+function goFav() {
+  resetView();
+  state.mode = "fav";
+  closeDrawer();
+  renderNav();
+  renderFav();
+  window.scrollTo(0, 0);
+}
+function goHist() {
+  resetView();
+  state.mode = "hist";
+  closeDrawer();
+  renderNav();
+  renderHist();
+  window.scrollTo(0, 0);
+}
+
+function switchNav(id) {
+  openCategory({ navId: String(id), title: navName(id) });
+}
+
+function openCategory(opts) {
+  opts = opts || {};
+  resetView();
+  state.mode = "category";
+  state.backTo = "category";
+  if (opts.navId != null) state.navId = String(opts.navId);
+  if (opts.sort) state.sort = opts.sort;
+  if (opts.tags) state.tags = opts.tags.slice();
+  state.catTitle = opts.title || (state.tags.length ? state.tags.join(" · ") : navName(state.navId));
+  state.pg = 1;
+  state.fullList = [];
+  state.savedScrollY = 0;
+  closeDrawer();
+  renderNav();
+  renderListSkeleton();
+  window.scrollTo(0, 0);
+  loadCategory();
+}
+
+async function loadCategory() {
+  if (state.loading) return;
+  state.loading = true;
+  progress(true);
+  try {
+    await bootstrapData();
+    if (state.mode !== "category") return;
+    let full = await navData(state.navId, state.sort);
+    if (state.tags.length) {
+      full = full.filter(function (v) {
+        return state.tags.every(function (t) { return v._tags.indexOf(t) >= 0; });
+      });
+    }
+    state.fullList = full;
+    state.pageSize = PAGE_SIZE;
+    state.total = full.length;
+    state.pagecount = Math.max(1, Math.ceil(full.length / PAGE_SIZE));
+    state.pg = Math.min(state.pg, state.pagecount);
+    renderListPage();
+  } catch (e) {
+    renderEmpty("加载失败：" + esc(e.message || "网络错误"), "重试", "loadCategory()");
+  } finally {
+    state.loading = false;
+    progress(false);
+  }
+}
+
+function goTag(tag) {
+  if (!tag) return;
+  resetView();
+  state.mode = "tag";
+  state.backTo = "tag";
+  state.tagName = String(tag);
+  state.pg = 1;
+  state.fullList = [];
+  state.total = 0;
+  state.savedScrollY = 0;
+  closeDrawer();
+  closeSearch();
+  renderNav();
+  renderListSkeleton();
+  window.scrollTo(0, 0);
+  loadTag();
+}
+
+async function loadTag() {
+  progress(true);
+  try {
+    await bootstrapData();
+    if (state.mode !== "tag") return;
+    state.fullList = CAT.latest.filter(function (v) { return v._tags.indexOf(state.tagName) >= 0; });
+    state.pageSize = PAGE_SIZE;
+    state.total = state.fullList.length;
+    state.pagecount = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
+    state.pg = 1;
+    renderListPage();
+  } catch (e) {
+    renderEmpty("加载失败：" + esc(e.message || "网络错误"), "重试", "loadTag()");
+  } finally {
+    progress(false);
+  }
+}
+
+function openCustomList(title, list) {
+  resetView();
+  state.mode = "custom";
+  state.backTo = "custom";
+  state.catTitle = title;
+  state.fullList = list || [];
+  state.pageSize = PAGE_SIZE;
+  state.total = state.fullList.length;
+  state.pagecount = Math.max(1, Math.ceil(state.total / PAGE_SIZE));
+  state.pg = 1;
+  state.savedScrollY = 0;
+  renderNav();
+  renderListPage();
+  window.scrollTo(0, 0);
+}
+
+function openModule(code) {
+  if (!code) return;
+  if (code === "latest") return openCategory({ navId: "2", sort: "latest", title: "最新上线" });
+  if (code === "hot") return openCategory({ navId: "2", sort: "hot", title: "人气热播" });
+  if (code === "multi") {
+    return openCustomList("多集连播", CAT.latest.filter(function (v) { return v.vod_episodes > 1; }));
+  }
+  if (code.indexOf("tag:") === 0) return goTag(code.slice(4));
+}
+
+/* ============================ 首页 ============================ */
+function renderHome() {
+  const app = $("app");
+  const heroes = state.heroList || [];
+
+  const heroCards = heroes.map(function (h, i) {
+    const desc = h.vod_intro || ((h.vod_episodes > 1 ? "全" + h.vod_episodes + "集" : "单集") +
+      (h.vod_tags && h.vod_tags.length ? " · " + h.vod_tags.join(" / ") : ""));
+    return '<div class="hero-card" data-i="' + i + '">' +
+      "<img" + imgAttrs(h.vod_pic, 760, i > 1) + ">" +
+      '<span class="hero-play"><svg viewBox="0 0 24 24"><path d="M8 5.14v14l11-7-11-7z"/></svg></span>' +
+      '<div class="hero-info">' +
+        '<div class="hero-badges">' +
+          '<span class="hero-rank">🔥 人气 TOP' + (i + 1) + "</span>" +
+          (h.vod_remarks ? '<span class="hero-chip">' + esc(h.vod_remarks) + "</span>" : "") +
+          (h.vod_tags || []).slice(0, 2).map(function (t) {
+            return '<span class="hero-chip">' + esc(t) + "</span>";
+          }).join("") +
+        "</div>" +
+        '<div class="hero-title">' + esc(h.vod_name) + "</div>" +
+        '<div class="hero-desc">' + esc(desc) + "</div>" +
+      "</div>" +
+    "</div>";
+  }).join("");
+  const dots = heroes.map(function (_, i) {
+    return '<div class="dot-item ' + (i === 0 ? "on" : "") + '" data-i="' + i + '"></div>';
+  }).join("");
+
+  const hist = getHist().slice(0, 8);
+  const contHtml = hist.length ? (
+    '<div class="sec-head"><span class="bar"></span><h2>继续观看</h2><span class="sub">' + hist.length + '部在看</span>' +
+      '<span class="more" onclick="goHist()">全部历史<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>' +
+    "</div>" +
+    '<div class="cont-scroll" id="contScroll">' +
+      hist.map(function (h, i) {
+        return '<div class="cont-card" data-i="' + i + '">' +
+          '<div class="cont-poster">' +
+            '<span class="pbadge">第' + esc(h.ep || 1) + "集</span>" +
+            "<img" + imgAttrs(h.pic, 260, true) + ">" +
+            '<div class="pmask"></div>' +
+            '<div class="presume">' +
+              '<span class="picon"><svg viewBox="0 0 24 24"><path d="M8 5.14v14l11-7-11-7z"/></svg></span>' +
+              "<span>" + fmtTime(h.pos || 0) + "</span>" +
+            "</div>" +
+          "</div>" +
+          '<div class="cont-title">' + esc(h.name) + "</div>" +
+          '<div class="cont-sub">' + (h.dur ? Math.round((h.pos || 0) / (h.dur || 1) * 100) + "% · " : "") + timeAgo(h.ts) + "</div>" +
+        "</div>";
+      }).join("") +
+    "</div>"
+  ) : "";
+
+  const moduleHtml = (state.modules || []).map(function (m, mi) {
+    const canMore = m.code === "latest" || m.code === "hot" || m.code === "multi" || m.code.indexOf("tag:") === 0;
+    return '<div class="sec-head" style="animation-delay:' + Math.min(mi * 0.05, 0.3) + 's"><span class="bar"></span><h2>' +
+      esc(m.title) + '</h2><span class="sub">' + (m.total ? m.total + "部" : "") + "</span>" +
+      (canMore ? '<span class="more" data-mod="' + esc(m.code) + '">查看更多<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span>' : "") +
+      "</div>" +
+      '<div class="grid" data-mod-grid="' + esc(m.code) + '">' +
+      m.list.map(function (v, i) { return cardHtml(v, i, { w: 300 }); }).join("") +
+      "</div>";
+  }).join("");
+
+  app.innerHTML =
+    (heroes.length ? '<div class="hero-scroll" id="heroScroll">' + heroCards + '</div><div class="hero-dots" id="heroDots">' + dots + "</div>" : "") +
+    contHtml +
+    (moduleHtml || '<div class="empty"><div class="ico">🎬</div><div>暂无内容</div></div>');
+
+  if (heroes.length) {
+    app.querySelectorAll(".hero-card").forEach(function (node) {
+      node.onclick = function () { openDetail(heroes[+node.dataset.i], null, "home"); };
+    });
+    const scroll = $("heroScroll");
+    const dotsEl = $("heroDots");
+    if (scroll && dotsEl) {
+      scroll.addEventListener("scroll", function () {
+        const cardW = (scroll.querySelector(".hero-card") || {}).offsetWidth || 1;
+        const idx = Math.round(scroll.scrollLeft / (cardW + 14));
+        dotsEl.querySelectorAll(".dot-item").forEach(function (d, i) {
+          d.classList.toggle("on", i === idx);
+        });
+      }, { passive: true });
+      dotsEl.querySelectorAll(".dot-item").forEach(function (d, i) {
+        d.onclick = function () {
+          const card = scroll.querySelectorAll(".hero-card")[i];
+          if (card) card.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+        };
+      });
+    }
+  }
+
+  app.querySelectorAll(".cont-card").forEach(function (node) {
+    node.onclick = function () {
+      const h = hist[+node.dataset.i];
+      openDetail({ vod_id: h.id, vod_name: h.name, vod_pic: h.pic, vod_remarks: h.remark, vod_tags: [] },
+        { ep: h.ep, pos: h.pos }, "home");
+    };
+  });
+
+  (state.modules || []).forEach(function (m) {
+    const grid = app.querySelector('[data-mod-grid="' + CSS.escape(m.code) + '"]');
+    bindCards(grid, m.list, function (v) { openDetail(v, null, "home"); });
+    const more = app.querySelector('.more[data-mod="' + CSS.escape(m.code) + '"]');
+    if (more) more.onclick = function () { openModule(m.code); };
+  });
+}
+
+/* ============================ 列表页 ============================ */
+function clearFilters() {
+  if (state.mode === "category") openCategory({ navId: state.navId, sort: state.sort, tags: [] });
+  else goHome();
+}
+
+function renderListPage() {
+  const app = $("app");
+  if (!state.fullList.length && state.mode !== "category") { renderEmpty("暂无内容"); return; }
+
+  const isRank = state.mode === "rank";
+  const isSearch = state.mode === "search";
+  const isTag = state.mode === "tag";
+  const pageSize = state.pageSize;
+  const offset = (state.pg - 1) * pageSize;
+  state.list = state.fullList.slice(offset, offset + pageSize);
+
+  let filtersHtml = "";
+  if (state.mode === "category") {
+    const navs = state.navs.length ? state.navs : NAV_FALLBACK;
+    const groups = state.filterGroups || [];
+    filtersHtml = '<div class="filters">' +
+      '<div class="frow"><span class="flabel">分区</span><div class="fchips">' +
+        navs.map(function (n) {
+          return '<span class="fchip ' + (String(state.navId) === String(n.id) ? "on" : "") +
+            '" data-nav="' + n.id + '">' + esc(n.frontendName || n.name || "全部") + "</span>";
+        }).join("") +
+      "</div></div>" +
+      '<div class="frow"><span class="flabel">排序</span><div class="fchips">' +
+        '<span class="fchip ' + (state.sort === "latest" ? "on" : "") + '" data-sort="latest">最新</span>' +
+        '<span class="fchip ' + (state.sort === "hot" ? "on" : "") + '" data-sort="hot">最热</span>' +
+      "</div></div>" +
+      groups.map(function (g) {
+        return '<div class="frow"><span class="flabel">' + esc(g.name) + '</span><div class="fchips">' +
+          g.tags.map(function (t) {
+            return '<span class="fchip ' + (state.tags.indexOf(t) >= 0 ? "on" : "") +
+              '" data-ftag="' + esc(t) + '">' + esc(t) + "</span>";
+          }).join("") +
+        "</div></div>";
+      }).join("") +
+      (state.tags.length ? '<div class="frow"><span class="flabel"></span><div class="fchips">' +
+        '<span class="fchip" data-clear="1">清空筛选 ✕</span></div></div>' : "") +
+    "</div>";
+  }
+
+  const cards = state.list.map(function (v, i) {
+    return cardHtml(v, i, { w: 300, rank: isRank ? offset + i + 1 : 0 });
+  }).join("");
+
+  const pg = state.pg;
+  const pagecount = Math.max(1, state.pagecount);
+  const pagerHtml = pagecount > 1 ? (
+    '<div class="pager">' +
+      '<button id="pgFirst" ' + (pg <= 1 ? "disabled" : "") + ">首页</button>" +
+      '<button id="pgPrev" ' + (pg <= 1 ? "disabled" : "") + ">上一页</button>" +
+      '<div class="pg-info">第 <b>' + pg + "</b> / " + pagecount + " 页" + (state.total ? " · 共" + state.total + "部" : "") + "</div>" +
+      '<button id="pgNext" ' + (pg >= pagecount ? "disabled" : "") + ">下一页</button>" +
+      '<button id="pgLast" ' + (pg >= pagecount ? "disabled" : "") + ">末页</button>" +
+      '<div class="goto"><input type="number" id="pgInput" min="1" max="' + pagecount + '" placeholder="页码"></div>' +
+    "</div>"
+  ) : (state.total ? '<div class="pager"><div class="pg-info">共 ' + state.total + " 部</div></div>" : "");
+
+  const title = isSearch ? ("搜索：" + esc(state.keyword))
+    : isTag ? ('<span class="hash">#</span>' + esc(state.tagName))
+    : isRank ? "排行榜"
+    : esc(state.catTitle);
+
+  const emptyHtml = '<div class="empty"><div class="ico">🎬</div><div>没有符合筛选的作品</div>' +
+    '<span class="eact" onclick="clearFilters()">清空筛选</span></div>';
+
+  app.innerHTML =
+    '<div class="list-tools"><span class="bar"></span><div><h2>' + title + "</h2>" +
+      (state.total ? '<div class="total">' + (isTag ? "该标签下共 " : "共 ") + state.total + " 部作品</div>" : "") +
+    "</div>" + (isRank ? '<span class="act" onclick="goHome()">回首页</span>' : "") + "</div>" +
+    filtersHtml +
+    (state.list.length ? '<div class="grid" id="listGrid">' + cards + "</div>" : emptyHtml) +
+    pagerHtml;
+
+  if (state.mode === "category") {
+    app.querySelectorAll(".filters [data-nav]").forEach(function (chip) {
+      chip.onclick = function () {
+        openCategory({ navId: chip.dataset.nav, sort: state.sort, tags: state.tags, title: navName(chip.dataset.nav) });
+      };
+    });
+    app.querySelectorAll(".filters [data-sort]").forEach(function (chip) {
+      chip.onclick = function () {
+        if (state.sort === chip.dataset.sort) return;
+        openCategory({ navId: state.navId, sort: chip.dataset.sort, tags: state.tags });
+      };
+    });
+    app.querySelectorAll(".filters [data-ftag]").forEach(function (chip) {
+      chip.onclick = function () {
+        const tag = chip.dataset.ftag;
+        const tags = state.tags.slice();
+        const idx = tags.indexOf(tag);
+        if (idx >= 0) tags.splice(idx, 1); else tags.push(tag);
+        openCategory({ navId: state.navId, sort: state.sort, tags: tags });
+      };
+    });
+    const clear = app.querySelector(".filters [data-clear]");
+    if (clear) clear.onclick = function () {
+      openCategory({ navId: state.navId, sort: state.sort, tags: [] });
+    };
+  }
+
+  bindCards($("listGrid"), state.list, function (v) { openDetail(v, null, state.mode); });
+
+  const jumpTo = function (p) {
+    p = Math.min(Math.max(1, p), pagecount);
+    if (p === state.pg) return;
+    state.pg = p;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    renderListPage();
+  };
+  const first = $("pgFirst"), prev = $("pgPrev"), next = $("pgNext"), last = $("pgLast"), input = $("pgInput");
+  if (first) first.onclick = function () { jumpTo(1); };
+  if (prev) prev.onclick = function () { jumpTo(pg - 1); };
+  if (next) next.onclick = function () { jumpTo(pg + 1); };
+  if (last) last.onclick = function () { jumpTo(pagecount); };
+  if (input) input.onkeydown = function (e) {
+    if (e.key === "Enter") {
+      const v = parseInt(input.value, 10);
+      if (v) jumpTo(v);
+    }
+  };
+}
+
+/* ============================ 收藏 / 历史 ============================ */
+function renderFav() {
+  const app = $("app");
+  const fav = getFav();
+  if (!fav.length) {
+    app.innerHTML = '<div class="empty"><div class="ico">💖</div><div>还没有收藏<br>播放页点「收藏」即可加入</div><span class="eact" onclick="goHome()">去逛逛</span></div>';
+    return;
+  }
+  const list = fav.map(function (f) {
+    return {
+      vod_id: f.id, vod_name: f.name, vod_pic: f.pic,
+      vod_remarks: f.remark, vod_tags: f.tags || [], vod_plays: "", vod_badge: ""
+    };
+  });
+  app.innerHTML =
+    '<div class="list-tools"><span class="bar"></span><div><h2>我的收藏</h2><div class="total">共 ' + list.length + ' 部</div></div>' +
+      '<span class="act" id="favClear">清空全部</span></div>' +
+    '<div class="grid" id="favGrid">' + list.map(function (v, i) {
+      return cardHtml(v, i, { w: 300, del: true, delAlways: true, sub: timeAgo(fav[i].ts) });
+    }).join("") + "</div>";
+
+  bindCards($("favGrid"), list, function (v) { openDetail(v, null, "fav"); }, function (v) {
+    removeFav(v.vod_id);
+    toast("已取消收藏");
+    renderFav();
+    renderNav();
+  });
+  const clr = $("favClear");
+  if (clr) clr.onclick = function () {
+    if (confirm("确定清空全部 " + list.length + " 部收藏？")) {
+      lsSet(LS_FAV, []);
+      renderFav();
+      renderNav();
+      toast("已清空收藏");
+    }
+  };
+}
+
+function renderHist() {
+  const app = $("app");
+  const hist = getHist();
+  if (!hist.length) {
+    app.innerHTML = '<div class="empty"><div class="ico">🕐</div><div>暂无观看记录</div><span class="eact" onclick="goHome()">去看剧</span></div>';
+    return;
+  }
+  const list = hist.map(function (h) {
+    return {
+      vod_id: h.id, vod_name: h.name, vod_pic: h.pic, vod_remarks: h.remark,
+      vod_tags: [], vod_plays: "", vod_badge: "",
+      ep: h.ep, epTitle: h.epTitle, pos: h.pos, dur: h.dur
+    };
+  });
+  app.innerHTML =
+    '<div class="list-tools"><span class="bar"></span><div><h2>观看历史</h2><div class="total">共 ' + list.length + ' 条</div></div>' +
+      '<span class="act" id="histClear">清空全部</span></div>' +
+    '<div class="grid" id="histGrid">' + list.map(function (v, i) {
+      return cardHtml(v, i, { w: 300, del: true, delAlways: true, hist: true });
+    }).join("") + "</div>";
+
+  bindCards($("histGrid"), list,
+    function (v, i) {
+      const h = hist[i];
+      openDetail(v, { ep: h.ep, pos: h.pos }, "hist");
+    },
+    function (v) {
+      removeHist(v.vod_id);
+      toast("已删除记录");
+      renderHist();
+      renderNav();
+    });
+  const clr = $("histClear");
+  if (clr) clr.onclick = function () {
+    if (confirm("确定清空全部 " + list.length + " 条观看记录？")) {
+      lsSet(LS_HIST, []);
+      renderHist();
+      renderNav();
+      toast("已清空历史");
+    }
+  };
+}
+
+/* ============================ 详情 & 播放 ============================ */
+async function openDetail(item, resume, fromMode) {
+  if (!item || !item.vod_id) return;
+  if (state.mode !== "detail") state.savedScrollY = window.scrollY || 0;
+  state.backTo = fromMode || (state.mode === "detail" ? state.backTo : state.mode);
+  state.mode = "detail";
+  state.detail = Object.assign({}, item);
+  state.episodes = [];
+  state.currentEp = 0;
+  state.resume = resume || null;
+  destroyPlayer();
+  renderNav();
+  window.scrollTo(0, 0);
+  renderDetailSkeleton();
+  progress(true);
+  try {
+    const d = await dataDetail(item.vod_id);
+    if (state.mode !== "detail") return;
+    state.detail = d.detail;
+    state.episodes = d.episodes;
+    renderDetail();
+  } catch (e) {
+    renderEmpty("加载详情失败：" + esc(e.message || "网络错误"), "返回", "closePlayer()");
+  } finally {
+    progress(false);
+  }
+}
+
+function renderDetailSkeleton() {
+  $("app").innerHTML =
+    '<div class="player-toolbar">' +
+      '<div class="back-btn" id="backBtn">← 返回</div>' +
+      '<div class="toolbar-right"><button class="close-btn" id="closeBtn" title="关闭">✕</button></div>' +
+    "</div>" +
+    '<div class="player-wrap" id="playerWrap"><video id="video" controls playsinline preload="metadata"></video></div>' +
+    '<div class="detail-head"><div class="poster"></div>' +
+      '<div class="detail-info"><h1 style="color:var(--sub);font-size:15px">加载中…</h1></div></div>';
+  $("backBtn").onclick = closePlayer;
+  $("closeBtn").onclick = closePlayer;
+}
+
+function renderDetail() {
+  const app = $("app");
+  const d = state.detail || {};
+  const title = d.vod_name || "作品";
+  const pic = d.vod_pic || "";
+  const desc = d.vod_content || "";
+  const remark = d.vod_remarks || "";
+  const tags = d.vod_tags || [];
+  const plays = d.vod_plays || "";
+  const favOn = isFav(d.vod_id);
+
+  let startEp = 0;
+  if (state.resume && state.resume.ep) {
+    const idx = state.episodes.findIndex(function (e) { return String(e.num) === String(state.resume.ep); });
+    if (idx >= 0) startEp = idx;
+  }
+
+  const epHtml = state.episodes.map(function (ep, i) {
+    return '<div class="ep ' + (i === startEp ? "on" : "") + '" data-idx="' + i + '">' + esc(ep.title) + "</div>";
+  }).join("");
+
+  app.innerHTML =
+    '<div class="player-toolbar">' +
+      '<div class="back-btn" id="backBtn">← 返回</div>' +
+      '<div class="toolbar-right">' +
+        '<button class="fav-btn ' + (favOn ? "on" : "") + '" id="favBtn">' +
+          '<svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>' +
+          '<span id="favBtnTxt">' + (favOn ? "已收藏" : "收藏") + "</span>" +
+        "</button>" +
+        '<button class="close-btn" id="closeBtn" title="关闭">✕</button>' +
+      "</div>" +
+    "</div>" +
+    '<div class="player-wrap" id="playerWrap"><video id="video" controls playsinline preload="metadata"></video></div>' +
+    '<div class="detail-head">' +
+      '<div class="poster"><img' + imgAttrs(pic, 400) + "></div>" +
+      '<div class="detail-info">' +
+        "<h1>" + esc(title) + "</h1>" +
+        '<div class="tags">' +
+          '<span class="tag accent">禁果短剧</span>' +
+          (remark ? '<span class="tag">' + esc(remark) + "</span>" : "") +
+          (plays ? '<span class="tag">' + esc(plays) + "</span>" : "") +
+          tags.slice(0, 6).map(function (t) {
+            return '<span class="tag tg" data-dtag="' + esc(t) + '">' + esc(t) + "</span>";
+          }).join("") +
+        "</div>" +
+        (desc ? '<div class="desc" id="descBox" title="点击展开/收起">' + esc(desc) + "</div>" : "") +
+      "</div>" +
+    "</div>" +
+    '<div class="ep-section-title">选集 · 共 ' + state.episodes.length + " 集</div>" +
+    '<div class="episodes">' + (epHtml || '<div style="color:var(--sub);font-size:13px">暂无剧集</div>') + "</div>";
+
+  $("backBtn").onclick = closePlayer;
+  $("closeBtn").onclick = closePlayer;
+  const descBox = $("descBox");
+  if (descBox) descBox.onclick = function () { descBox.classList.toggle("open"); };
+  app.querySelectorAll(".tag.tg").forEach(function (tagEl) {
+    tagEl.onclick = function (e) { e.stopPropagation(); goTag(tagEl.dataset.dtag); };
+  });
+
+  $("favBtn").onclick = function () {
+    const added = toggleFav({ id: d.vod_id, name: title, pic: pic, remark: remark, tags: tags });
+    $("favBtn").classList.toggle("on", added);
+    $("favBtnTxt").textContent = added ? "已收藏" : "收藏";
+    toast(added ? "已加入收藏 ♥" : "已取消收藏");
+    renderNav();
+  };
+
+  app.querySelectorAll(".ep").forEach(function (node) {
+    node.onclick = function () {
+      const idx = parseInt(node.dataset.idx, 10);
+      if (idx !== state.currentEp) playEpisode(idx);
+    };
+  });
+  if (state.episodes.length > 0) playEpisode(startEp);
+}
+
+function epNumOf(idx) {
+  const ep = state.episodes[idx];
+  return ep ? ep.num : idx + 1;
+}
+
+async function playEpisode(idx) {
+  if (idx < 0 || idx >= state.episodes.length) return;
+  state.currentEp = idx;
+  document.querySelectorAll(".ep").forEach(function (el, i) {
+    el.classList.toggle("on", i === idx);
+  });
+  const ep = state.episodes[idx];
+
+  let seekPos = 0;
+  if (state.resume && String(state.resume.ep) === String(ep.num) && state.resume.pos > 8) {
+    seekPos = state.resume.pos;
+  }
+  state.resume = null;
+
+  const d = state.detail || {};
+  upsertHist({
+    id: d.vod_id, name: d.vod_name, pic: d.vod_pic, remark: d.vod_remarks,
+    ep: ep.num, epTitle: ep.title, pos: seekPos, dur: 0
+  });
+
+  showPlayerLoading("正在加载 " + ep.title + "…");
+  state.hlsWait = 0;
+  try {
+    const p = await dataPlay(ep.id);
+    if (state.mode !== "detail") return;
+    playVideo(p.url, seekPos);
+  } catch (e) {
+    showPlayerError(e.message || "播放地址获取失败");
+  }
+}
+
+function closePlayer() {
+  saveCurrentProgress();
+  destroyPlayer();
+  const back = state.backTo || "home";
+  state.mode = back;
+  state.detail = null;
+  state.episodes = [];
+  state.currentEp = 0;
+  renderNav();
+  window.scrollTo(0, state.savedScrollY || 0);
+  if (back === "fav") renderFav();
+  else if (back === "hist") renderHist();
+  else if (back === "category" || back === "tag" || back === "rank" || back === "search" || back === "custom") {
+    if (state.fullList.length) renderListPage();
+    else if (back === "category") openCategory({ navId: state.navId, sort: state.sort, tags: state.tags });
+    else if (back === "tag") goTag(state.tagName);
+    else if (back === "rank") goRank();
+    else if (back === "search") doSearch(state.keyword);
+    else goHome();
+  } else if (state.modules.length) renderHome();
+  else goHome();
+}
+
+function destroyPlayer() {
+  if (state.hls) {
+    try { state.hls.destroy(); } catch (e) {}
+    state.hls = null;
+  }
+  const v = $("video");
+  if (v) {
+    try { v.pause(); } catch (e) {}
+    try { v.removeAttribute("src"); v.load(); } catch (e) {}
+    v.onended = null;
+    v.ontimeupdate = null;
+  }
+}
+
+function saveCurrentProgress() {
+  const v = $("video");
+  const d = state.detail;
+  if (!v || !d || !state.episodes.length || !v.currentTime) return;
+  try {
+    const ep = state.episodes[state.currentEp];
+    if (ep) saveProgress(d.vod_id, ep.num, ep.title, v.currentTime, isFinite(v.duration) ? v.duration : 0);
+  } catch (e) {}
+}
+
+function showPlayerLoading(msg) {
+  const wrap = $("playerWrap");
+  if (!wrap) return;
+  wrap.querySelectorAll(".player-error").forEach(function (n) { n.remove(); });
+  const div = document.createElement("div");
+  div.className = "player-error";
+  div.style.background = "rgba(0,0,0,.6)";
+  div.innerHTML = "<div>" + esc(msg) + "</div>";
+  wrap.appendChild(div);
+}
+function showPlayerError(msg) {
+  const wrap = $("playerWrap");
+  if (!wrap) return;
+  wrap.querySelectorAll(".player-error").forEach(function (n) { n.remove(); });
+  const div = document.createElement("div");
+  div.className = "player-error";
+  div.innerHTML = "<div>⚠️ " + esc(msg) + "</div><button id=\"retryPlay\">重试</button>";
+  wrap.appendChild(div);
+  const btn = div.querySelector("#retryPlay");
+  if (btn) btn.onclick = function () { div.remove(); playEpisode(state.currentEp); };
+}
+function showPlayerLoadingHide() {
+  const wrap = $("playerWrap");
+  if (!wrap) return;
+  wrap.querySelectorAll(".player-error").forEach(function (n) { n.remove(); });
+}
+function showFinishedOverlay() {
+  const wrap = $("playerWrap");
+  if (!wrap) return;
+  wrap.querySelectorAll(".player-error").forEach(function (n) { n.remove(); });
+  const div = document.createElement("div");
+  div.className = "player-error";
+  div.style.background = "rgba(0,0,0,.75)";
+  div.innerHTML = "<div>🎉 已看完最后一集</div>";
+  wrap.appendChild(div);
+}
+
+function makeProxyLoader() {
+  if (!window.Hls || !Hls.DefaultConfig || !Hls.DefaultConfig.loader) return null;
+  const Base = Hls.DefaultConfig.loader;
+  return class ProxyLoader extends Base {
+    load(context, config, callbacks) {
+      const u = context && context.url;
+      if (typeof u === "string" && /^https?:\/\//i.test(u) && u.indexOf(PROXY_BASE) !== 0) {
+        context.url = PROXY_BASE + u;
+      }
+      super.load(context, config, callbacks);
+    }
+  };
+}
+
+function playVideo(originalUrl, seekTo) {
+  destroyPlayer();
+  const v = $("video");
+  if (!v) return;
+  if (!originalUrl) { showPlayerError("播放地址为空"); return; }
+
+  const src = PROXY_BASE + originalUrl;
+  let lastSave = 0;
+  v.ontimeupdate = function () {
+    const now = Date.now();
+    if (now - lastSave > 5000 && v.currentTime > 1) {
+      lastSave = now;
+      saveCurrentProgress();
+    }
+  };
+
+  v.onended = function () {
+    saveCurrentProgress();
+    const next = state.currentEp + 1;
+    if (next < state.episodes.length) {
+      playEpisode(next);
+      setTimeout(function () {
+        const el = document.querySelector('.ep[data-idx="' + next + '"]');
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 100);
+    } else showFinishedOverlay();
+  };
+
+  const doSeek = function () {
+    if (seekTo > 0) {
+      try { v.currentTime = seekTo; } catch (e) {}
+      toast("已从 " + fmtTime(seekTo) + " 继续播放");
+    }
+  };
+
+  const isM3u8 = /\.m3u8($|\?)/i.test(originalUrl) || /mpegurl/i.test(originalUrl);
+  const nativeHls = !!(v.canPlayType && v.canPlayType("application/vnd.apple.mpegurl"));
+
+  if (isM3u8 && !(window.Hls && Hls.isSupported()) && !nativeHls) {
+    state.hlsWait = (state.hlsWait || 0) + 1;
+    if (state.hlsWait <= 6) {
+      showPlayerLoading("播放器加载中…");
+      setTimeout(function () {
+        if (state.mode === "detail") playVideo(originalUrl, seekTo);
+      }, 900);
+      return;
+    }
+  }
+
+  if (isM3u8 && window.Hls && Hls.isSupported()) {
+    const hlsConfig = {
+      maxBufferLength: 30,
+      maxMaxBufferLength: 60,
+      enableWorker: true,
+      lowLatencyMode: false,
+      manifestLoadingMaxRetry: 2,
+      levelLoadingMaxRetry: 2,
+      fragLoadingMaxRetry: 3
+    };
+    const ProxyLoader = makeProxyLoader();
+    if (ProxyLoader) hlsConfig.loader = ProxyLoader;
+    const hls = new Hls(hlsConfig);
+    state.hls = hls;
+    hls.loadSource(src);
+    hls.attachMedia(v);
+    const loadTimer = setTimeout(function () {
+      if (state.hls === hls && v.readyState < 2) showPlayerError("视频加载超时，请重试");
+    }, 25000);
+    hls.on(Hls.Events.MANIFEST_PARSED, function () {
+      clearTimeout(loadTimer);
+      doSeek();
+      showPlayerLoadingHide();
+      v.play().catch(function () {});
+    });
+    let recovered = false;
+    hls.on(Hls.Events.ERROR, function (e, data) {
+      if (!data || !data.fatal) return;
+      clearTimeout(loadTimer);
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        if (!recovered) {
+          recovered = true;
+          showPlayerLoading("网络波动，正在重试…");
+          try { hls.startLoad(); return; } catch (err) {}
+        }
+        showPlayerError("网络错误，播放失败");
+      } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+        try { hls.recoverMediaError(); }
+        catch (err) { showPlayerError("媒体解码失败"); }
+      } else {
+        showPlayerError("播放失败：" + (data.details || "未知错误"));
+      }
+    });
+  } else {
+    v.src = src;
+    v.addEventListener("loadedmetadata", function () {
+      doSeek();
+      showPlayerLoadingHide();
+      v.play().catch(function () {});
+    }, { once: true });
+    v.addEventListener("error", function () { showPlayerError("播放失败"); }, { once: true });
+  }
+}
+
+window.addEventListener("pagehide", saveCurrentProgress);
+document.addEventListener("visibilitychange", function () { if (document.hidden) saveCurrentProgress(); });
+
+/* ============================ 搜索 ============================ */
+function getRecentKeywords() {
+  const v = lsGet(LS_SEARCH, []);
+  return Array.isArray(v) ? v.slice(0, 10) : [];
+}
+function pushRecentKeyword(wd) {
+  const list = getRecentKeywords().filter(function (k) { return k !== wd; });
+  list.unshift(wd);
+  lsSet(LS_SEARCH, list.slice(0, 10));
+}
+function renderSearchHist() {
+  const box = $("spHist");
+  if (!box) return;
+  const list = getRecentKeywords();
+  if (!list.length) { box.classList.remove("show"); box.innerHTML = ""; return; }
+  box.classList.add("show");
+  box.innerHTML = '<span class="sp-label">最近搜索</span>' +
+    list.map(function (k) {
+      return '<span class="sp-chip" data-kw="' + esc(k) + '">' + esc(k) +
+        '<i class="sp-x" data-del="' + esc(k) + '" title="删除">✕</i></span>';
+    }).join("");
+  box.querySelectorAll(".sp-chip").forEach(function (chip) {
+    chip.onclick = function (e) {
+      if (e.target.closest(".sp-x")) {
+        e.stopPropagation();
+        const kw = e.target.closest(".sp-x").dataset.del;
+        lsSet(LS_SEARCH, getRecentKeywords().filter(function (k) { return k !== kw; }));
+        renderSearchHist();
+        return;
+      }
+      $("wd").value = chip.dataset.kw;
+      doSearch();
+    };
+  });
+}
+function openSearch() {
+  renderSearchHist();
+  $("searchPop").classList.add("show");
+  $("searchMask").classList.add("show");
+  document.body.style.overflow = "hidden";
+  const wd = $("wd");
+  setTimeout(function () { try { wd.focus(); wd.select(); } catch (e) {} }, 260);
+}
+function closeSearch() {
+  $("searchPop").classList.remove("show");
+  $("searchMask").classList.remove("show");
+  document.body.style.overflow = "";
+}
+
+async function doSearch(kw) {
+  const wd = (typeof kw === "string" ? kw : $("wd").value).trim();
+  if (!wd) return;
+  pushRecentKeyword(wd);
+  closeSearch();
+  resetView();
+  state.mode = "search";
+  state.backTo = "search";
+  state.keyword = wd;
+  state.pg = 1;
+  state.fullList = [];
+  state.savedScrollY = 0;
+  closeDrawer();
+  renderNav();
+  renderListSkeleton();
+  window.scrollTo(0, 0);
+  progress(true);
+  try {
+    const list = await dataSearch(wd);
+    if (state.mode !== "search") return;
+    state.fullList = list;
+    state.pageSize = SEARCH_SIZE;
+    state.total = list.length;
+    state.pagecount = Math.max(1, Math.ceil(list.length / SEARCH_SIZE));
+    renderListPage();
+    if (!list.length) renderEmpty("未找到「" + esc(wd) + "」相关作品");
+  } catch (e) {
+    renderEmpty("搜索失败：" + esc(e.message || "网络错误"), "重试", "doSearchRetry()");
+  } finally {
+    progress(false);
+  }
+}
+function doSearchRetry() { doSearch(state.keyword); }
+
+/* ============================ 主题 & 启动 ============================ */
+function initTheme() {
+  try {
+    const t = localStorage.getItem(LS_THEME) || "dark";
+    document.documentElement.setAttribute("data-theme", t === "light" ? "light" : "dark");
+  } catch (e) {}
+}
+function toggleTheme() {
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  try { localStorage.setItem(LS_THEME, next); } catch (e) {}
+}
+
+function bindBootEvents() {
+  const menuBtn = $("menuBtn");
+  if (menuBtn) menuBtn.onclick = openDrawer;
+  const drawerClose = $("drawerClose");
+  if (drawerClose) drawerClose.onclick = closeDrawer;
+  const drawerMask = $("drawerMask");
+  if (drawerMask) drawerMask.onclick = closeDrawer;
+  const themeBtn = $("themeBtn");
+  if (themeBtn) themeBtn.onclick = toggleTheme;
+  const searchBtn = $("searchBtn");
+  if (searchBtn) searchBtn.onclick = openSearch;
+  const searchCancel = $("searchCancel");
+  if (searchCancel) searchCancel.onclick = closeSearch;
+  const searchMask = $("searchMask");
+  if (searchMask) searchMask.onclick = closeSearch;
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      if ($("searchPop").classList.contains("show")) closeSearch();
+      else closeDrawer();
+    }
+  });
+}
+
+function boot() {
+  initTheme();
+  bindBootEvents();
+  renderNav();
+  goHome();
+}
+
+boot();
+
+</script>
+
+</body>
+</html>
