@@ -672,15 +672,15 @@ function saveHist(rec) {
 }
 
 /* ---------------- proxy ---------------- */
-/* 公共代理（适用于 GitHub Pages 等真实 https 源站）：
-   corsfix 拉页面/播放列表/分片；allorigins 拉 AES 密钥
-   （黄果的 /api/hls_key 对 corsfix 出口返回 403，只有 allorigins 能取到） */
+/* 公共中转（适用于 GitHub Pages / file://）：
+   corsfix 加 ?sdk=1 可在未注册域名下使用（GitHub Pages 首选，速度快）；
+   hexlet 不挑来源（file:// 与额度耗尽时的兜底，分片较慢） */
 var PROXIES = [
-  { name: "corsfix", tpl: "https://proxy.corsfix.com/?url={url}", nullOK: false, to: 12000 },
+  { name: "hexlet", tpl: "https://allorigins.hexlet.app/raw?url={url}", nullOK: true, to: 45000 },
+  { name: "corsfix", tpl: "https://proxy.corsfix.com/?sdk=1&url={url}", nullOK: false, to: 30000 },
   { name: "jina", tpl: "https://r.jina.ai/{rawurl}", nullOK: true, to: 28000, jina: true, hdrs: { "X-Return-Format": "html" } },
-  { name: "allorigins", tpl: "https://api.allorigins.win/raw?url={url}", nullOK: true, to: 30000 },
-  { name: "corsproxy", tpl: "https://corsproxy.io/?key=e5888b18&url={url}", nullOK: true, to: 12000 },
-  { name: "codetabs", tpl: "https://api.codetabs.com/v1/proxy?quest={url}", nullOK: true, to: 8000 }
+  { name: "corsproxy", tpl: "https://corsproxy.io/?key=e5888b18&url={url}", nullOK: true, to: 20000 },
+  { name: "codetabs", tpl: "https://api.codetabs.com/v1/proxy?quest={url}", nullOK: true, to: 15000 }
 ];
 function readProxyOverride() {
   try { return (localStorage.getItem(LS.proxy) || "").trim(); } catch (e) { return ""; }
@@ -699,6 +699,149 @@ function proxyTemplates(noJina) {
     return !(noJina && p.jina) && !(IS_FILE && p.nullOK === false);
   }).map(function (p) { return { tpl: p.tpl, to: p.to, hdrs: p.hdrs }; });
 }
+
+/* ---------- 中转调度：并行竞速 + 粘住可用通道（参考 hgdj） ---------- */
+var goodRelay = null;
+function relayList(noJina) {
+  return proxyTemplates(noJina);
+}
+function orderRelays(noJina, prefer) {
+  var list = relayList(noJina);
+  var first = prefer || goodRelay;
+  if (first) {
+    var hit = null;
+    for (var i = 0; i < list.length; i++) if (list[i].tpl === first.tpl) { hit = list[i]; break; }
+    hit = hit || first;
+    list = [hit].concat(list.filter(function (p) { return p.tpl !== hit.tpl; }));
+  }
+  return list;
+}
+async function fetchViaOne(item, target, outerSignal, timeoutMs) {
+  var ctrl = new AbortController();
+  var timer = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, timeoutMs || item.to || 30000);
+  var onAbort = function () { try { ctrl.abort(); } catch (e) {} };
+  if (outerSignal) outerSignal.addEventListener("abort", onAbort);
+  try {
+    var res = await fetch(applyTpl(item.tpl, target), {
+      signal: ctrl.signal, mode: "cors", credentials: "omit", cache: "no-store", headers: item.hdrs
+    });
+    if (!res.ok) { var err = new Error("HTTP " + res.status); err.status = res.status; throw err; }
+    return res;
+  } finally {
+    clearTimeout(timer);
+    if (outerSignal) outerSignal.removeEventListener("abort", onAbort);
+  }
+}
+function looksBlocked(buf) {
+  if (!buf || !buf.byteLength) return true;
+  var u8 = new Uint8Array(buf);
+  return u8[0] === 0x3C; /* '<' → HTML/拦截页 */
+}
+async function validateBuf(buf, expect) {
+  if (!buf || !buf.byteLength) throw new Error("empty response");
+  if (expect === "key") {
+    if (buf.byteLength !== 16) throw new Error("bad key (" + buf.byteLength + "B)");
+    return;
+  }
+  if (expect === "frag") {
+    if (looksBlocked(buf)) throw new Error("blocked page");
+    return;
+  }
+  if (expect === "m3u8") {
+    var u8 = new Uint8Array(buf);
+    var text;
+    if (isPng(u8)) {
+      var d = await decodePng(buf);
+      text = typeof d === "string" ? d : new TextDecoder("utf-8").decode(d);
+    } else {
+      text = new TextDecoder("utf-8").decode(u8);
+    }
+    if (text.indexOf("#EXTM3U") < 0) throw new Error("not a playlist");
+  }
+}
+/* 二进制请求：无可用通道时前两名并行竞速，之后粘住；每个请求都校验内容 */
+/* 媒体通道单独择优：corsfix 拉分片最快，hexlet 作为可达性兜底 */
+var goodMediaRelay = null;
+function mediaRelays() {
+  var list = relayList(true);
+  var pref = ["corsfix", "hexlet", "corsproxy", "codetabs"];
+  var out = [];
+  for (var i = 0; i < pref.length; i++) {
+    for (var j = 0; j < list.length; j++) {
+      if (list[j].tpl.indexOf(pref[i]) >= 0 && out.indexOf(list[j]) < 0) out.push(list[j]);
+    }
+  }
+  for (var k = 0; k < list.length; k++) if (out.indexOf(list[k]) < 0) out.push(list[k]);
+  return out;
+}
+async function fetchBufAny(target, signal, expect) {
+  var list = mediaRelays();
+  if (goodMediaRelay) {
+    list = [goodMediaRelay].concat(list.filter(function (p) { return p.tpl !== goodMediaRelay.tpl; }));
+  }
+  var lastErr = null;
+  var stickyTo = expect === "key" ? 45000 : 20000;
+  if (list.length) {
+    var first = list[0]; list = list.slice(1);
+    try {
+      var r0 = await fetchViaOne(first, target, signal, Math.min(first.to || 30000, stickyTo));
+      var b0 = await r0.arrayBuffer();
+      await validateBuf(b0, expect);
+      goodMediaRelay = first;
+      window.__lastProxy = first.tpl;
+      return b0;
+    } catch (e) { lastErr = e; if (goodMediaRelay === first) goodMediaRelay = null; }
+  }
+  for (var i = 0; i < list.length; i++) {
+    try {
+      var r = await fetchViaOne(list[i], target, signal, list[i].to);
+      var b = await r.arrayBuffer();
+      await validateBuf(b, expect);
+      goodMediaRelay = list[i];
+      window.__lastProxy = list[i].tpl;
+      return b;
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("relay failed");
+}
+async function fetchPageText(target, noJina) {
+  var list = orderRelays(noJina);
+  var lastErr = null;
+  var accept = function (t) {
+    if (!t || t.length < 30) throw new Error("empty response");
+    if (isChallengePage(t)) throw new Error("blocked page");
+    return t;
+  };
+  if (!goodRelay && list.length > 1) {
+    var top = list.slice(0, 2), rest = list.slice(2);
+    try {
+      return await Promise.any(top.map(async function (p) {
+        var res = await fetchViaOne(p, target, null, p.to);
+        var t = accept(await res.text());
+        goodRelay = p; window.__lastProxy = p.tpl;
+        return t;
+      }));
+    } catch (e) { lastErr = e; list = rest; }
+  } else if (list.length) {
+    var first = list[0]; list = list.slice(1);
+    try {
+      var r0 = await fetchViaOne(first, target, null, first.to);
+      var t0 = accept(await r0.text());
+      goodRelay = first; window.__lastProxy = first.tpl;
+      return t0;
+    } catch (e) { lastErr = e; if (goodRelay === first) goodRelay = null; }
+  }
+  for (var i = 0; i < list.length; i++) {
+    try {
+      var r = await fetchViaOne(list[i], target, null, list[i].to);
+      var t = accept(await r.text());
+      goodRelay = list[i]; window.__lastProxy = list[i].tpl;
+      return t;
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("all relays failed");
+}
+
 /* Cloudflare 挑战/拦截页：HTTP 200 但内容不可用，必须当失败处理，否则会被缓存 4 分钟 */
 function isChallengePage(text) {
   return /Just a moment|Attention Required|cf-browser-verification|cf_chl_|challenge-platform|Sorry, you have been blocked/.test(text.slice(0, 4000));
@@ -735,48 +878,7 @@ function markTplOk(tpl) { tplFails[tpl] = { n: 0, until: 0 }; }
 
 async function fetchText(target, opt) {
   opt = opt || {};
-  var timeout = opt.timeout || 12000;
-  var tries = opt.tries || (IS_FILE ? 3 : 2);
-  var tpls = proxyTemplates(opt.noJina);
-  var lastErr = null;
-  for (var ti = 0; ti < tpls.length; ti++) {
-    var item = tpls[ti];
-    var tpl = item.tpl;
-    if (tplCooling(tpl)) { dbg("proxy-skip", tpl); continue; }
-    for (var i = 0; i < tries; i++) {
-      var t0 = Date.now();
-      try {
-        var res = await timedFetch(applyTpl(tpl, target), item.to || timeout, item.hdrs);
-        if (!res.ok) {
-          lastErr = new Error("HTTP " + res.status);
-          dbg("proxy-fail", tpl, res.status, target);
-          if (res.status === 429) { await sleep(1500 * (i + 1)); continue; }
-          markTplFail(tpl);
-          break;
-        }
-        var text = await res.text();
-        if (!text || text.length < 30) { lastErr = new Error("空响应"); markTplFail(tpl); break; }
-        if (isChallengePage(text)) {
-          lastErr = new Error("代理出口被 Cloudflare 拦截");
-          dbg("proxy-challenge", tpl, target);
-          markTplFail(tpl);
-          continue;
-        }
-        dbg("proxy-ok", tpl, target, text.length, Date.now() - t0 + "ms");
-        window.__lastProxy = tpl;
-        markTplOk(tpl);
-        proxyHealthy = true;
-        return text;
-      } catch (e) {
-        lastErr = e;
-        dbg("proxy-err", tpl, target, e && e.message);
-        markTplFail(tpl);
-        if (e && e.name === "AbortError") break;
-      }
-    }
-  }
-  proxyHealthy = false;
-  throw lastErr || new Error("代理不可用");
+  return fetchPageText(target, opt.noJina);
 }
 async function getPage(target, opt) {
   var c = pageCache.get(target);
@@ -1866,22 +1968,16 @@ function makeLoader(H) {
       var ctrl = new AbortController();
       this.ctrl = ctrl;
       var isKey = context.type === "key" || String(context.url || "").indexOf("hls_key") >= 0;
-      var tpl = isKey ? keyTpl() : playTpl();
-      var target = applyTpl(tpl, context.url);
-      var tplTo = 30000;
-      for (var pi = 0; pi < proxyTemplates(true).length; pi++) {
-        if (proxyTemplates(true)[pi].tpl === tpl) { tplTo = proxyTemplates(true)[pi].to; break; }
-      }
-      if (isKey) tplTo = Math.max(tplTo, 45000);
-      var timer = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, tplTo);
+      var isPlaylist = context.type === "manifest" || context.type === "level" ||
+        context.type === "audioTrack" || context.type === "subtitle";
+      var expect = isKey ? "key" : (isPlaylist ? "m3u8" : "frag");
+      var timer = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, isKey ? 60000 : 50000);
       try {
         await gate();
         if (this.aborted) return;
-        dbg("seg-start", context.type, tpl, (context.url || "").slice(-26));
-        var res = await fetch(target, { signal: ctrl.signal, mode: "cors", credentials: "omit", cache: "no-store" });
-        if (!res.ok) { var err = new Error("HTTP " + res.status); err.status = res.status; throw err; }
-        var buf = await res.arrayBuffer();
-        dbg("seg-http", res.status, res.headers.get("content-type"), buf.byteLength);
+        dbg("seg-start", context.type, goodMediaRelay ? goodMediaRelay.tpl : "race", (context.url || "").slice(-26));
+        var buf = await fetchBufAny(context.url, ctrl.signal, expect);
+        dbg("seg-http", expect, buf.byteLength);
         stats.loaded = buf.byteLength;
         stats.total = buf.byteLength;
         stats.loading.first = stats.loading.end = performance.now();
@@ -1890,8 +1986,9 @@ function makeLoader(H) {
           try { data = await decodePng(buf); }
           catch (e) { dbg("decode-fail", context.type, e && e.message); }
         }
-        if (context.type === "manifest" || context.type === "level" || context.type === "audioTrack" || context.type === "subtitle") {
+        if (isPlaylist) {
           if (typeof data !== "string") data = new TextDecoder("utf-8").decode(data);
+          if (data.indexOf("#EXTM3U") < 0) throw new Error("invalid playlist");
         }
         stats.parsing.start = stats.parsing.end = performance.now();
         stats.buffering.end = performance.now();
@@ -1902,14 +1999,10 @@ function makeLoader(H) {
         clearTimeout(timer);
         if (this.aborted) return;
         var status = e && e.status || 0;
-        dbg("seg-err", context.type, status, e && e.message, tpl);
-        if (isKey) keyProxyIdx++;
-        var retryable = status === 429 || status === 0 || status === 403 || status >= 500;
-        if (retryable && attempt < (isKey ? 5 : 6)) {
-          if (!isKey && (status === 429 || status === 0 || status === 403)) markBadTpl(tpl);
-          var delay = Math.min(9000, 900 * Math.pow(1.7, attempt));
+        dbg("seg-err", context.type, status, e && e.message);
+        if (attempt < 2) {
           var self = this;
-          setTimeout(function () { if (!self.aborted) self._run(context, config, callbacks, attempt + 1); }, delay);
+          setTimeout(function () { if (!self.aborted) self._run(context, config, callbacks, attempt + 1); }, 800 * (attempt + 1));
           return;
         }
         stats.loading.end = performance.now();
@@ -1917,8 +2010,7 @@ function makeLoader(H) {
       } finally {
         clearTimeout(timer);
       }
-    }
-  };
+    }  };
 }
 
 /* ================= init: theme / search / settings / events ================= */
