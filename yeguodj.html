@@ -4,9 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>野果短剧</title>
+<!-- 预连接：提前建立 TLS，首屏接口与封面图更快 -->
+<link rel="preconnect" href="https://www.yeguodj.com" crossorigin>
+<link rel="preconnect" href="https://pic.sugfew.cn" crossorigin>
+<link rel="preconnect" href="https://imgpublic.ycomesc.live" crossorigin>
+<link rel="dns-prefetch" href="https://wsrv.nl">
 <script>
-/* hls.js 多 CDN 依次回退加载 */
+/* hls.js 多 CDN 依次回退加载；四个源文件字节一致，用同一份 SRI 校验防篡改 */
 (function loadHls() {
+  const HLS_SRI = "sha384-w6Gb3fXHb5e1LUYa/hYA5Q41bEDglN5ZPCG7Jvnoo8/X90oGnlPqBlBJCe38mEMm";
   const sources = [
     "https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js",
     "https://registry.npmmirror.com/hls.js/1.5.13/files/dist/hls.min.js",
@@ -18,6 +24,8 @@
     if (i >= sources.length) return;
     const s = document.createElement("script");
     s.src = sources[i++];
+    s.integrity = HLS_SRI;
+    s.crossOrigin = "anonymous";
     s.onerror = () => { s.remove(); next(); };
     document.head.appendChild(s);
   })();
@@ -99,6 +107,20 @@
   img.pending { opacity: 0; }
   img[data-enc] { transition: opacity .35s ease; }
   button { font-family: inherit; }
+
+  /* 老内核不支持毛玻璃时改用不透明底色，避免半透明栏背面穿透看不清 */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :root[data-theme="dark"] {
+      --header-bg: #0e0e12;
+      --drawer-bg: #13141a;
+      --mask: rgba(0,0,0,.72);
+    }
+    :root[data-theme="light"] {
+      --header-bg: #ffffff;
+      --drawer-bg: #ffffff;
+      --mask: rgba(30,30,50,.45);
+    }
+  }
 
   /* ============ 顶栏 ============ */
   header {
@@ -991,13 +1013,13 @@ const API_BASE = "https://www.yeguodj.com/api.php";
 const API_KEY = new TextEncoder().encode("2acf7e91e9864673");
 const API_IV  = new TextEncoder().encode("1c29882d3ddfcfd6");
 
-/* 封面图密钥：pic.jtzatly.cn 的封面是 AES-CBC 加密的（Content-Type 为 octet-stream），
-   必须解密后才能显示，与原 Worker 的 /proxy 逻辑一致 */
+/* 封面图密钥：加密封面（Content-Type 为 octet-stream）必须解密后才能显示，
+   与原 Worker 的 /proxy 逻辑一致 */
 const MEDIA_KEY = new TextEncoder().encode("f5d965df75336270");
 const MEDIA_IV  = new TextEncoder().encode("97b60394abc2fbe1");
 
-/* 已知加密封面主机 */
-const ENC_HOSTS = [/pic\.jtzatly\.cn/];
+/* 已知加密封面主机（图床域名会随站点换，均为 octet-stream 加密流，密钥相同） */
+const ENC_HOSTS = [/pic\.sugfew\.cn/, /pic\.jtzatly\.cn/];
 
 /* 分类筛选（值来自 exploreList 的 filters 接口） */
 const FILTERS = [
@@ -1127,7 +1149,7 @@ function listFromPayload(d) {
 
 /* ============================================================
    封面加载：按主机分流
-   1) pic.jtzatly.cn —— AES 加密图，取回后解密 + 缩放 + 转 blobURL
+   1) pic.sugfew.cn / pic.jtzatly.cn —— AES 加密图，取回后解密 + 缩放 + 转 blobURL
    2) imgpublic.ycomesc.live —— 原图 1MB+ 的 PNG，走 wsrv.nl 压成 webp（约 18KB）
    3) 其它 —— 直接加载
    ============================================================ */
@@ -1169,6 +1191,21 @@ const imgBlobCache = new Map();
 const imgQueue = [];
 let imgActive = 0;
 const IMG_CONCURRENCY = 4;
+const IMG_CACHE_MAX = 260;
+
+/* 缓存解码后的 blob URL；超上限时回收最早的，且在页面上仍在用的不回收 */
+function cacheBlob(key, objUrl) {
+  imgBlobCache.set(key, objUrl);
+  if (imgBlobCache.size <= IMG_CACHE_MAX) return;
+  const inUse = new Set();
+  for (const im of document.images) inUse.add(im.src);
+  for (const [k, u] of imgBlobCache) {
+    if (imgBlobCache.size <= IMG_CACHE_MAX) break;
+    if (k === key || inUse.has(u)) continue;
+    imgBlobCache.delete(k);
+    try { URL.revokeObjectURL(u); } catch (e) {}
+  }
+}
 
 async function fetchDecodedBlob(url, wantW) {
   const r = await fetch(url, { cache: "force-cache" });
@@ -1214,12 +1251,12 @@ async function loadEncImg(img) {
   try {
     const blob = await fetchDecodedBlob(url, parseInt(img.dataset.w) || 300);
     const objUrl = URL.createObjectURL(blob);
-    imgBlobCache.set(key, objUrl);
+    cacheBlob(key, objUrl);
     img.src = objUrl;
     img.classList.remove("pending");
   } catch (e) {
-    img.classList.remove("pending");
-    img.src = url;
+    /* 加密封面无法直接当图片用，失败就保留骨架底色，不显示破图 */
+    console.log("[cover]", e.message);
   }
 }
 
@@ -1523,7 +1560,6 @@ const state = {
   hls: null,
   savedScrollY: 0,
   backTo: "category",
-  listApi: "category",
 };
 
 async function api(path, params) {
@@ -1555,14 +1591,6 @@ function toast(msg) {
   t.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
-}
-function shuffle(arr) {
-  const a = [...(arr || [])];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
 }
 
 /* ---- 卡片 ---- */
@@ -1725,16 +1753,21 @@ function goHome() {
   document.getElementById("wd").value = "";
   closeDrawer();
   renderNav();
-  renderSkeletonHome();
+  const hasCache = (state.modules || []).length > 0;
+  if (hasCache) renderHome(); else renderSkeletonHome();
   window.scrollTo(0, 0);
-  progress(true);
+  if (!hasCache) progress(true);
   api("/home").then(homeData => {
-    if (homeData.error) { renderEmpty("加载失败，请稍后重试", "重试", "goHome()"); return; }
-    state.heroList = shuffle(homeData.hero || []).slice(0, 6);
-    state.modules = (homeData.modules || []).map(m => ({ ...m, list: shuffle(m.list) }));
-    renderHome();
+    if (homeData.error) {
+      if (!hasCache) renderEmpty("加载失败，请稍后重试", "重试", "goHome()");
+      return;
+    }
+    /* 保持接口返回的热度顺序，不再打乱（Hero 上的「热播榜 TOPn」才对得上真实名次） */
+    state.heroList = (homeData.hero || []).slice(0, 6);
+    state.modules = homeData.modules || [];
+    if (!hasCache) renderHome();
   }).catch(() => {
-    renderEmpty("加载失败，请稍后重试", "重试", "goHome()");
+    if (!hasCache) renderEmpty("加载失败，请稍后重试", "重试", "goHome()");
   }).finally(() => progress(false));
 }
 
@@ -1763,7 +1796,6 @@ function switchList(mode, title, apiPath) {
   state.mode = mode;
   state.backTo = mode;
   state.catTitle = title;
-  state.listApi = apiPath;
   state.pg = 1;
   state.list = [];
   state.savedScrollY = 0;
