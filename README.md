@@ -6,5 +6,5 @@
 <a target="_blank" href="https://fengying915.github.io/hgdj.html">黄果短剧</a>
 <a target="_blank" href="https://fengying915.github.io/jinguodj.html">禁果短剧</a>
 # 日志
-2026.10.16 hgdj.html 修复搜索，优化直连加载，新增专题等分类
-2026.10
+<p>2026.10.14 yeguodj.html 优化安卓端卡片列表</p>
+<p>2026.10.16 hgdj.html 修复搜索，优化直连加载，新增专题等分类</p>
